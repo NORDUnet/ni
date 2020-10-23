@@ -29,11 +29,11 @@ def main():
     parser.add_argument('--no_header', action='store_true', default=False, help='CSV file has no header')
     args = parser.parse_args()
 
-    with open(args.csv_file, 'rb') as csv_file:
+    with open(args.csv_file, 'r') as csv_file:
         rows = csv.reader(csv_file)
         #skip header
         if not args.no_header:
-            rows.next()
+            next(rows, None)
         for name, service_class in rows:
             insert_service_type(name, service_class)
 

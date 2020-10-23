@@ -180,6 +180,7 @@ TEMPLATES = [
                 'dynamic_preferences.processors.global_preferences',
                 'apps.noclook.announcements.page_flash',
                 'apps.noclook.context_processors.brand',
+                'apps.noclook.context_processors.url_script_name',
             ]
         }
     }
@@ -386,6 +387,7 @@ CSRF_COOKIE_HTTPONLY = True
 
 ########## GRAPHQL CONFIGURATION
 USE_GRAPHIQL = False
+INSPECT_SCHEMA = False
 ########## END GRAPHQL CONFIGURATION
 
 SILENCED_SYSTEM_CHECKS=['admin.E408', 'admin.E410']

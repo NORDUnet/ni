@@ -7,6 +7,7 @@ from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar, IPAddr, JSON
 
+import datetime
 import graphene
 import types as pytypes
 import warnings
@@ -117,6 +118,19 @@ class NIIntField(NIBasicField):
         return -1
 
 
+class NIFloatField(NIBasicField):
+    '''
+    Int type
+    '''
+    def __init__(self, field_type=graphene.Float, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIFloatField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_default_value(self):
+        return 0.0
+
+
 class NIBooleanField(NIBasicField):
     '''
     Boolean type
@@ -165,6 +179,40 @@ class NIJSONField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIJSONField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
+
+
+class NIDateField(NIBasicField):
+    '''
+    JSO type
+    '''
+    def __init__(self, field_type=graphene.types.DateTime, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIDateField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(instance, info, **kwargs):
+            possible_value = self.get_inner_node(instance).data.get(field_name)
+
+            if possible_value == None:
+                possible_value = self.get_default_value()
+            else:
+                if 'T' in possible_value:
+                    possible_value = possible_value.split('T')[0]
+
+                possible_value = datetime.datetime.strptime(possible_value,
+                                    '%Y-%m-%d').date()
+
+            return possible_value
+
+        return resolve_node_value
 
 
 class NISingleRelationField(NIBasicField):
@@ -219,7 +267,8 @@ class NIListField(NIBasicField):
     '''
     def __init__(self, field_type=graphene.List, manual_resolver=False,
                     type_args=None, rel_name=None, rel_method=None,
-                    not_null_list=False, unique=False, **kwargs):
+                    not_null_list=False, unique=False,
+                    filter=None, **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
@@ -228,6 +277,7 @@ class NIListField(NIBasicField):
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
         self.unique          = unique
+        self.filter          = filter
 
     def get_default_value(self):
         return []
@@ -235,6 +285,24 @@ class NIListField(NIBasicField):
     def get_resolver(self, **kwargs):
         rel_name   = kwargs.get('rel_name')
         rel_method = kwargs.get('rel_method')
+        filter_label = None
+
+        # try to get the label from the type args to filter out unwanted values
+        try:
+            # try to get it from the lambda value:
+            # eg type_args=(lambda: Customer,)
+            filter_label = self.type_args[0]().NIMetaType.ni_type
+        except:
+            try:
+                # get if from a straight value:
+                # eg type_args=(Customer,)
+                filter_label = self.type_args[0].NIMetaType.ni_type
+            except:
+                # if it isn't present, continue
+                pass
+
+        if filter_label:
+            filter_label = filter_label.replace(' ', '_')
 
         def resolve_relationship_list(instance, info, **kwargs):
             neo4jnode = self.get_inner_node(instance)
@@ -246,17 +314,28 @@ class NIListField(NIBasicField):
                 for node in nodes:
                     relation_id = node['relationship_id']
                     node_elem = node['node']
-                    node_id = node_elem.data.get('handle_id')
 
-                    if not relation_id:
-                        relation_id = -1
-                        warnings.warn(
-                            "relationship_id is None".format(node),
-                            RuntimeWarning
-                        )
+                    # filter out nodes
+                    if self.filter:
+                        node_elem = self.filter(node_elem)
+
+                    # if we can get the label from the
+                    if filter_label:
+                        if filter_label not in node_elem.labels:
+                            node_elem = None
+
+                    if node_elem:
+                        node_id = node_elem.data.get('handle_id')
+
+                        if not relation_id:
+                            relation_id = -1
+                            warnings.warn(
+                                "relationship_id is None".format(node),
+                                RuntimeWarning
+                            )
 
 
-                    id_list.append((node_id, relation_id))
+                        id_list.append((node_id, relation_id))
 
             id_list = sorted(id_list, key=lambda x: x[0])
 

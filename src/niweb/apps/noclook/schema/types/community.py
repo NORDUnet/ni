@@ -61,6 +61,8 @@ class Address(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     phone = NIStringField()
     street = NIStringField()
+    floor = NIStringField() 
+    room = NIStringField()
     postal_code = NIStringField()
     postal_area = NIStringField()
 

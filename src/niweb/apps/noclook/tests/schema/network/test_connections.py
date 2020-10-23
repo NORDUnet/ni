@@ -13,8 +13,17 @@ from pprint import pformat
 from . import Neo4jGraphQLNetworkTest
 
 test_types = [
-    'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
-    'Cable', 'Port', 'Host', 'Router', 'Optical Node', 'ODF']
+    ## organizations
+    'Customer', 'End User', 'Site Owner', 'Provider',
+    ## peering
+    'Peering Group', 'Peering Partner',
+    ## equipment and cables
+    'Cable', 'Port', 'Host', 'Router', 'Optical Node', 'ODF',
+    ## optical layers
+    'Optical Filter', 'Optical Link', 'Optical Multiplex Section', 'Optical Path',
+    ## locations
+    'Site',
+]
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +62,9 @@ class NetworkListTest(Neo4jGraphQLNetworkTest):
 
         self.create_organization_nodes(entity_num)
         self.create_equicables_nodes(entity_num)
+        self.create_peering_nodes(entity_num)
+        self.create_optical_nodes(entity_num)
+        self.create_logical_nodes(entity_num)
 
 
 class SimpleListTest(NetworkListTest):

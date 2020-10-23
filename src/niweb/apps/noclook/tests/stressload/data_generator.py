@@ -5,18 +5,32 @@ __author__ = 'ffuentes'
 from collections import OrderedDict
 from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
-from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, Choice, NodeHandleContext
+from apps.noclook import helpers, unique_ids
+from apps.noclook.forms import NewServiceForm
+from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, \
+                                Choice, NodeHandleContext, UniqueIdGenerator, \
+                                NordunetUniqueId, ServiceType
 from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.template.defaultfilters import slugify
+from dynamic_preferences.registries import global_preferences_registry
 import norduniclient as nc
 from norduniclient import META_TYPES
 
 import apps.noclook.vakt.utils as sriutils
 import random
+import string
+import os
 
 class FakeDataGenerator:
+    counties = [
+        'Blekinge', 'Dalarna', 'Gotland', 'Gävleborg', 'Halland', 'Jämtland',
+        'Jönköping', 'Kalmar', 'Kronoberg', 'Norrbotten', 'Skåne', 'Halland',
+        'Västra Götaland', 'Värmland', 'Örebro', 'Västmanland', 'Dalarna',
+        'Gävleborg', 'Västernorrland', 'Jämtland,'
+    ]
+
     def __init__(self, seed=None):
         locales = OrderedDict([
             ('en_GB', 1),
@@ -29,8 +43,23 @@ class FakeDataGenerator:
 
         self.user = get_user()
 
+    def add_community_context(self, nh):
+        com_ctx = sriutils.get_community_context()
+        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+
+    def add_network_context(self, nh):
+        net_ctx = sriutils.get_network_context()
+        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
+
     def escape_quotes(self, str_in):
-        return str_in.replace("'", "`")
+        out = str_in
+
+        try:
+            out = str_in.replace("'", "`")
+        except AttributeError:
+            pass
+
+        return out
 
     def company_name(self):
         return self.escape_quotes( self.fake.company() )
@@ -45,6 +74,8 @@ class FakeDataGenerator:
         person_name = '{} {}'.format(self.first_name(), self.last_name())
         company_name = self.company_name()
         name = random.choice((person_name, company_name))
+
+        name = self.escape_quotes(name)
 
         return name
 
@@ -75,7 +106,7 @@ class FakeDataGenerator:
             name = data.get(name_key, None)
 
         nh = self.get_or_create_node(
-            name, type_name, metatype) # Logical
+            name, type_name, metatype)
 
         # add context
         self.add_community_context(nh)
@@ -87,11 +118,41 @@ class FakeDataGenerator:
         return nh
 
 
-class CommunityFakeDataGenerator(FakeDataGenerator):
-    def add_community_context(self, nh):
-        com_ctx = sriutils.get_community_context()
-        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+    def create_address(self, name=None, context_f=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
 
+        address = self.get_or_create_node(
+            name, 'Address', META_TYPES[1]) # Logical
+
+        if not context_f:
+            context_f = self.add_community_context
+
+        # add context
+        context_f(address)
+
+        data = {
+            'phone': self.fake.phone_number(),
+            'street': self.fake.street_address(),
+            'floor': str(random.randint(1,12)),
+            'room': '{}{}'.format(random.randint(1,20), \
+                                    random.choice(string.ascii_letters).upper()),
+            'postal_code': self.fake.postcode(),
+            'postal_area': self.fake.country_code(),
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            address.get_node().add_property(key, value)
+
+        return address
+
+    def random_county(self):
+        return random.choice(self.counties)
+
+
+class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
         contact_types_drop = DropModel.objects.get(name='contact_type')
@@ -144,7 +205,7 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
     def create_fake_group(self):
         group_dict = {
-            'name': self.fake.sentence(),
+            'name': self.fake.job(),
             'description': self.fake.paragraph(),
         }
 
@@ -174,13 +235,21 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
         )
 
     def create_organization(self, name=None):
-        return self.create_entity(
+        organization = self.create_entity(
             data_f=self.create_fake_organization,
             type_name='Organization',
             metatype=META_TYPES[2], # Relation
             name_alias='account_name',
             name=name,
         )
+
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address()
+            helpers.add_address_organization(self.user, address, organization.handle_id)
+
+        return organization
 
 
 class NetworkFakeDataGenerator(FakeDataGenerator):
@@ -199,12 +268,27 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'Router': self.create_router,
             'Switch': self.create_switch,
             'OpticalPath': self.create_optical_path,
-            # 'Service': self.create_service
+            'Service': self.create_service
         }
 
-    def add_network_context(self, nh):
-        net_ctx = sriutils.get_network_context()
-        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
+        self.service_dependency_types = {
+            'Host': self.create_host,
+            'Firewall': self.create_firewall,
+            'ODF': self.create_odf,
+            'OpticalNode': self.create_optical_node,
+            'OpticalPath': self.create_optical_path,
+            'OpticalLink': self.create_optical_link,
+            #'OpticalFilter': self.create_optical_filter,
+            'Router': self.create_router,
+            'Service': self.create_service,
+            'Switch': self.create_switch,
+            #'ExternalEquipment': self.create_external_equipment,
+        }
+
+        self.service_user_categories = {
+            'Customer': self.create_customer,
+            'EndUser': self.create_end_user,
+        }
 
     def get_port_name(self):
         return str(random.randint(0, 50000))
@@ -234,6 +318,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             customer.get_node().add_property(key, value)
 
         return customer
@@ -256,6 +341,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             enduser.get_node().add_property(key, value)
 
         return enduser
@@ -273,12 +359,44 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             peering_partner.get_node().add_property(key, value)
 
         # add context
         self.add_network_context(peering_partner)
 
         return peering_partner
+
+    def create_unit(self, name=None):
+        # create object
+        if not name:
+            name = self.fake.isbn10()
+
+        unit = self.get_or_create_node(
+            name, 'Unit', META_TYPES[1]) # Logical
+
+        # add data
+        num_ips = random.randint(0,4)
+        ip_addresses = [self.fake.ipv4()]
+
+        for i in range(num_ips):
+            ip_addresses.append(self.fake.ipv4())
+
+        data = {
+            'description' : self.fake.paragraph(),
+            'vlan' : self.fake.ipv4(),
+            'ip_addresses': ip_addresses,
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            unit.get_node().add_property(key, value)
+
+        # add context
+        self.add_network_context(unit)
+
+        return unit
+
 
     def create_peering_group(self, name=None):
         # create object
@@ -293,15 +411,55 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.add_network_context(peering_group)
 
         # add random dependents
-        num_dependencies = random.randint(1, 3)
+        num_dependencies = random.randint(2, 4)
+        rel_maker = LogicalDataRelationMaker()
+
+        unit_ips = []
 
         for i in range(0, num_dependencies):
-            dependency = random.choice([
-                self.create_host,
-            ])
-            dependency = dependency()
-            rel_maker = PhysicalLogicalDataRelationMaker()
-            rel_maker.add_dependency(self.user, peering_group, dependency)
+            unit = self.create_unit()
+            unit_ip = self.fake.ipv4()
+            unit_ips.append(unit_ip)
+
+            # get an existent router or add one
+            router = self.create_router(add_ports=True)
+
+            # get a port from the router
+            ports = router.get_node().get_ports()
+            port = NodeHandle.objects.get(handle_id=\
+                random.choice(ports['Has'])['node'].handle_id)
+
+            rel_maker.add_part_of(self.user, unit, port)
+
+            # add dependency
+            peering_group.get_node().set_group_dependency(
+                unit.handle_id, unit_ip
+            )
+
+        # add random peering partners
+        num_dependencies = random.randint(0, 3)
+        ppartner_type = NetworkFakeDataGenerator.get_nodetype('Peering Partner')
+        all_ppartners = NodeHandle.objects.filter(node_type=ppartner_type)
+        all_ppartners = list(all_ppartners)
+        ppartners = []
+
+        for i in range(num_dependencies):
+            if all_ppartners:
+                ppartner = random.choice(all_ppartners)
+                all_ppartners.remove(ppartner)
+                ppartners.append(ppartner)
+            else:
+                ppartner = self.create_peering_partner()
+                ppartners.append(ppartner)
+
+        for ppartner in ppartners:
+            ppartner_node = ppartner.get_node()
+            ip = self.fake.ipv4()
+            if unit_ips:
+                ip = random.choice(unit_ips)
+
+            ppartner_node.set_peering_group(peering_group.handle_id,
+                                            ip)
 
         return peering_group
 
@@ -321,6 +479,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             provider.get_node().add_property(key, value)
 
         return provider
@@ -342,6 +501,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             siteowner.get_node().add_property(key, value)
 
         return siteowner
@@ -369,6 +529,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             port.get_node().add_property(key, value)
 
         return port
@@ -431,6 +592,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             cable.get_node().add_property(key, value)
 
         # add relationship to provider
@@ -490,11 +652,12 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             host.get_node().add_property(key, value)
 
         return host
 
-    def create_router(self, name=None):
+    def create_router(self, name=None, add_ports=False):
         # create object
         if not name:
             name = '{}-{}'.format(
@@ -519,7 +682,17 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             router.get_node().add_property(key, value)
+
+        # add ports
+        if add_ports:
+            num_ports = random.randint(1, 5) # rather small but fine for our purpose
+            relation_maker = PhysicalDataRelationMaker()
+
+            for i in range(num_ports):
+                port = self.create_port()
+                relation_maker.add_has(self.user, router, port)
 
         return router
 
@@ -536,6 +709,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             switch.get_node().add_property(key, value)
 
         return switch
@@ -553,6 +727,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             firewall.get_node().add_property(key, value)
 
         return firewall
@@ -575,6 +750,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             hostuser.get_node().add_property(key, value)
 
         return hostuser
@@ -604,6 +780,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             onode.get_node().add_property(key, value)
 
         return onode
@@ -633,6 +810,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             odf.get_node().add_property(key, value)
 
         return odf
@@ -675,6 +853,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_link.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -726,6 +905,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_multisection.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -780,6 +960,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_path.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -796,6 +977,246 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             rel_maker.add_dependency(self.user, optical_path, dependency)
 
         return optical_path
+
+
+    def create_site(self, name=None):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        site = self.get_or_create_node(
+            name, 'Site', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(site)
+
+        # choices
+        country_codes = self.get_dropdown_keys('countries')
+        countries = [ x[1] for x in DropModel.get('countries').as_choices()[1:] ]
+        site_types = self.get_dropdown_keys('site_types')
+
+        data = {
+            'country_code': random.choice(country_codes),
+            'country': random.choice(countries),
+            'longitude': self.fake.longitude(),
+            'latitude': self.fake.latitude(),
+            'area': self.random_county(),
+            'owner_id': self.fake.license_plate(),
+            'owner_site_name': self.fake.company(),
+            'url': self.fake.url(),
+            'telenor_subscription_id': self.fake.license_plate(),
+        }
+
+        # add site type
+        if site_types:
+            data['site_type'] = random.choice(site_types)
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                site.get_node().add_property(key, value)
+
+        # add address
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address(context_f=self.add_network_context)
+            helpers.set_has_address(self.user, site.get_node(), address.handle_id)
+
+        # add site owner
+        site_owner = self.create_site_owner()
+        helpers.set_responsible_for(self.user, site.get_node(), site_owner.handle_id)
+
+        return site
+
+
+    def create_room(self, name=None, add_parent=True):
+        # create object
+        if not name:
+            name = '{}{}'.format(random.randint(1,20), \
+                                    random.choice(string.ascii_letters).upper())
+
+        room = self.get_or_create_node(
+            name, 'Room', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(room)
+
+        data = {
+            'floor': str(random.randint(0, 20)),
+        }
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                room.get_node().add_property(key, value)
+
+        # add parent site
+        if add_parent:
+            parent_site = self.create_site()
+            rel_maker = LocationDataRelationMaker()
+            rel_maker.add_parent(self.user, room, parent_site)
+
+        return room
+
+    def create_rack(self, name=None, add_parent=True):
+        # create object
+        if not name:
+            name = self.escape_quotes(self.fake.license_plate())
+
+        rack = self.get_or_create_node(
+            name, 'Rack', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(rack)
+
+        data = {
+            'height': str(random.randint(0, 20)),
+            'depth': str(random.randint(0, 20)),
+            'width': str(random.randint(0, 20)),
+            'rack_units': str(random.randint(0, 20)),
+        }
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                rack.get_node().add_property(key, value)
+
+        # add parent room
+        if add_parent:
+            parent_room = self.create_room()
+            rel_maker = LocationDataRelationMaker()
+            rel_maker.add_parent(self.user, rack, parent_room)
+
+        return rack
+
+    def create_service(self, name=None):
+        # import services class / types if necesary
+        if not ServiceType.objects.all():
+            dirpath = os.path.dirname(os.path.realpath(__file__))
+            csv_file = \
+                '{}/../../../../../scripts/service_types/ndn_service_types.csv'\
+                    .format(dirpath)
+
+            call_command(
+                'import_service_types',
+                csv_file=csv_file
+            )
+
+        default_test_gen_name = "service_id_generator"
+
+        service_types = ServiceType.objects.all()
+        service_type = random.choice(service_types)
+
+        # get or create a default UniqueIdGenerator
+        if not name:
+            global_preferences = global_preferences_registry.manager()
+            id_generator_name = global_preferences\
+                                [NewServiceForm.Meta.id_generator_property]
+
+            if not id_generator_name:
+                global_preferences[NewServiceForm.Meta.id_generator_property] =\
+                        default_test_gen_name
+
+            id_generator = UniqueIdGenerator.objects.get_or_create(
+                name=default_test_gen_name,
+                zfill=False,
+                creator=self.user,
+                modifier=self.user,
+            )[0]
+
+            # id_collection is always the same so we do not need config
+            name = unique_ids.get_collection_unique_id(
+                                    id_generator, NordunetUniqueId)
+
+        # create object
+        service = self.get_or_create_node(
+            name, 'Service', META_TYPES[1]) # Logical
+
+        # add context
+        self.add_network_context(service)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        helpers.set_provider(self.user, service.get_node(), provider.handle_id)
+
+        service_type_name = service_type.name
+        operational_state = random.choice(operational_states)
+
+        data = {
+            'service_class': service_type.service_class.name,
+            'service_type': service_type_name,
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        if service_type_name == "Project":
+            data['project_end_date'] = self.fake.date_time_this_year()\
+                                        .isoformat().split('T')[0]
+
+        if data['operational_state'] == "Decommissioned":
+            data['decommissioned_date'] = self.fake.date_time_this_year()\
+                                            .isoformat().split('T')[0]
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                service.get_node().add_property(key, value)
+
+        # set responsible and support groups
+        group_type = NetworkFakeDataGenerator.get_nodetype('Group')
+        groups_nhs = NodeHandle.objects.filter(node_type=group_type)
+
+        responsible_group = None
+        support_group = None
+        community_generator = CommunityFakeDataGenerator()
+
+        if groups_nhs.exists():
+            responsible_group = random.choice(groups_nhs)
+            support_group = random.choice(groups_nhs)
+        else:
+            responsible_group = community_generator.create_group()
+            support_group = community_generator.create_group()
+
+        helpers.set_takes_responsibility(
+            self.user, service.get_node(), responsible_group.handle_id)
+        helpers.set_supports(
+            self.user, service.get_node(), support_group.handle_id)
+
+        # add users
+        num_users = random.randint(0, 4)
+
+        for i in range(0, num_users):
+            user_type = random.choice(list(self.service_user_categories.keys()))
+            user_f = self.service_user_categories[user_type]
+            user = user_f()
+            rel_maker = LogicalDataRelationMaker()
+            rel_maker.add_user(self.user, service, user)
+
+        # add dependencies
+        num_dependencies = random.randint(0, 4)
+
+        for i in range(0, num_dependencies):
+            dep_type = random.choice(list(self.service_dependency_types.keys()))
+            dep_f = self.service_dependency_types[dep_type]
+            dependency = dep_f()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, service, dependency)
+
+        return service
 
 
 class DataRelationMaker:
@@ -820,6 +1241,10 @@ class LogicalDataRelationMaker(DataRelationMaker):
         main_logical_handle_id = main_logical_nh.handle_id
         dep_logical_nh = dep_logical_nh.get_node()
         helpers.set_depends_on(user, dep_logical_nh, main_logical_handle_id)
+
+    def add_user(self, user, main_logical_nh, usr_relation_nh):
+        helpers.set_user(user, main_logical_nh.get_node(),
+                            usr_relation_nh.handle_id)
 
 
 class RelationDataRelationMaker(DataRelationMaker):
@@ -853,3 +1278,12 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+    def add_has(self, user, physical_nh, physical_has_nh):
+        helpers.set_has(user, physical_nh.get_node(),
+                                    physical_has_nh.handle_id)
+
+
+class LocationDataRelationMaker(DataRelationMaker):
+    def add_parent(self, user, location_nh, parent_nh):
+        helpers.set_has(user, parent_nh.get_node(), location_nh.handle_id)

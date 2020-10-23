@@ -79,6 +79,11 @@ class NOCRootMutation(graphene.ObjectType):
     delete_switch = NISwitchMutationFactory.get_delete_mutation().Field()
     composite_switch = CompositeSwitchMutation.Field()
 
+    create_unit = NIUnitMutationFactory.get_create_mutation().Field()
+    update_unit = NIUnitMutationFactory.get_update_mutation().Field()
+    delete_unit = NIUnitMutationFactory.get_delete_mutation().Field()
+    composite_unit = CompositeUnitMutation.Field()
+
     update_router = NIRouterMutationFactory.get_update_mutation().Field()
     delete_router = NIRouterMutationFactory.get_delete_mutation().Field()
     composite_router = CompositeRouterMutation.Field()
@@ -136,6 +141,28 @@ class NOCRootMutation(graphene.ObjectType):
     update_peeringGroup = NIPeeringGroupMutationFactory.get_update_mutation().Field()
     delete_peeringGroup = NIPeeringGroupMutationFactory.get_delete_mutation().Field()
     composite_peeringGroup = CompositePeeringGroupMutation.Field()
+
+    ## Location
+    create_site = NISiteMutationFactory.get_create_mutation().Field()
+    update_site = NISiteMutationFactory.get_update_mutation().Field()
+    delete_site = NISiteMutationFactory.get_delete_mutation().Field()
+    composite_site = CompositeSiteMutation.Field()
+
+    create_room = NIRoomMutationFactory.get_create_mutation().Field()
+    update_room = NIRoomMutationFactory.get_update_mutation().Field()
+    delete_room = NIRoomMutationFactory.get_delete_mutation().Field()
+    composite_room = CompositeRoomMutation.Field()
+
+    create_rack = NIRackMutationFactory.get_create_mutation().Field()
+    update_rack = NIRackMutationFactory.get_update_mutation().Field()
+    delete_rack = NIRackMutationFactory.get_delete_mutation().Field()
+    composite_rack = CompositeRackMutation.Field()
+
+    ## Service
+    create_service = NIServiceMutationFactory.get_create_mutation().Field()
+    update_service = NIServiceMutationFactory.get_update_mutation().Field()
+    delete_service = NIServiceMutationFactory.get_delete_mutation().Field()
+    composite_service = CompositeServiceMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()

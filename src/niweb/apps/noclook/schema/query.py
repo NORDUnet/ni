@@ -88,13 +88,6 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
 
-                # add simple counter
-                field_name    = 'count_{}s'.format(fmt_type_slug)
-                resolver_name = 'resolve_{}'.format(fmt_type_slug)
-
-                setattr(cls, field_name, graphene.Int())
-                setattr(cls, resolver_name, graphql_type.get_count_resolver())
-
                 # add connection attribute
                 field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
@@ -162,6 +155,20 @@ class NOCAutoQuery(graphene.ObjectType):
             # set resolver
             setattr(cls, field_resolver['resolver'][0], field_resolver['resolver'][1])
 
+        ## add metatype connections
+        metatypes = getattr(_nimeta, 'metatypes', [])
+
+        for metatype in metatypes:
+            connection_name = '{}s'.format(str(metatype).lower())
+            connection_field = relay.ConnectionField(
+                                    metatype.get_connection_class(),
+                                    filter=graphene.Argument(MetatypeFilter),
+                                    orderBy=graphene.Argument(MetatypeOrder),
+                                    resolver=metatype.get_connection_resolver())
+
+            setattr(cls, connection_name, connection_field)
+
+
 def get_typelist_resolver(class_list):
     def resolve_class_list(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -204,7 +211,7 @@ host_owner_types = [Customer, EndUser, Provider, HostUser]
 optical_path_dependency_types = [
                                     ODF, OpticalLink, OpticalMultiplexSection,
                                     OpticalNode, Router, Switch, OpticalPath,
-                                    #Service,
+                                    Service,
                                 ]
 
 
@@ -249,10 +256,13 @@ class NOCRootQuery(NOCAutoQuery):
     getOpticalPathDependencyTypes = graphene.List(TypeInfo,
             resolver=get_typelist_resolver(optical_path_dependency_types))
 
+    # service types
+    getServiceTypes = graphene.List(ServiceType, resolver=resolve_getServiceTypes)
+
+
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             ret = []
-            #import pdb; pdb.set_trace()
 
             group_type_str = 'Group'
             group_type, created = NodeType.objects.get_or_create(
@@ -465,16 +475,24 @@ class NOCRootQuery(NOCAutoQuery):
             Customer, EndUser, Provider, SiteOwner,
             ## Equipment and cables
             Port, Host, Cable, Router, Switch, Firewall, ExternalEquipment,
-                OpticalNode, ODF,
+                OpticalNode, ODF, Unit,
             ## Optical Nodes
             OpticalFilter, OpticalLink, OpticalMultiplexSection, OpticalPath,
             ## Peering
             PeeringPartner, PeeringGroup,
+            ## Locations
+            Site, Room, Rack,
             ## Other
             HostUser,
+            ## Service
+            Service,
         ]
 
         search_queries = [
             GeneralSearchConnection,
             PortSearchConnection,
+        ]
+
+        metatypes = [
+            PhysicalLogical, Logical, Physical, Relation, Location,
         ]

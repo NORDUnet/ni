@@ -46,6 +46,19 @@ class NodeType(models.Model):
     def get_absolute_url(self):
         return self.url()
 
+    @classmethod
+    def get_from_camelcase(cls, type_cc):
+        ret = None
+
+        try:
+            splitted = re.findall(r'[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))', type_cc)
+            type_name = ' '.join(splitted)
+            ret = cls.objects.get(type=type_name)
+        except:
+            pass # just return None
+
+        return ret
+
     def url(self):
         return reverse('generic_list', args=[self.slug])
 

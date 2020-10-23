@@ -26,3 +26,27 @@ class Neo4jGraphQLNetworkTest(Neo4jGraphQLGenericTest):
                 'verbosity': 0,
             }
         )
+
+    def create_peering_nodes(self, entity_num):
+        call_command(DFCommand.cmd_name,
+            **{
+                DFCommand.option_peering: entity_num,
+                'verbosity': 0,
+            }
+        )
+
+    def create_optical_nodes(self, entity_num):
+        call_command(DFCommand.cmd_name,
+            **{
+                DFCommand.option_optical: entity_num,
+                'verbosity': 0,
+            }
+        )
+
+    def create_logical_nodes(self, entity_num):
+        call_command(DFCommand.cmd_name,
+            **{
+                DFCommand.option_location: entity_num,
+                'verbosity': 0,
+            }
+        )

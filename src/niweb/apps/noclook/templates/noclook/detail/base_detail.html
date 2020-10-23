@@ -26,7 +26,7 @@
 {% if node.noclook_auto_manage and expired %}
     <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
 {% endif %}
-<h1><a href="/{{ node_handle.node_type|slugify }}/">{{ node_handle.node_type }}</a> {{ node.data.name }}</h1>
+<h1><a href="{{ script_name }}/{{ node_handle.node_type|slugify }}/">{{ node_handle.node_type }}</a> {{ node.data.name }}</h1>
 {% if same_name_relations %}
     <h5 class="site">also as
         {% for nh in same_name_relations|dictsort:"node_type.type" %}
