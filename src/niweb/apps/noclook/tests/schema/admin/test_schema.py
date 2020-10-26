@@ -5,18 +5,120 @@ from apps.noclook.tests.schema.base import Neo4jGraphQLGenericTest
 from apps.noclook.models import NodeHandleContext
 from django.contrib.auth.models import User
 from niweb.schema import schema
+from pprint import pformat
 
+from . import BasicAdminTest
 
-class GenericUserPermissionTest(Neo4jGraphQLGenericTest):
-    def setUp(self, group_dict=None):
-        super().setUp(group_dict=group_dict)
+import graphene
 
-        # create another user
-        another_user = User.objects.create_user(username='another user',
-            email='another@localhost', password='test')
-        another_user.is_staff = True
-        another_user.save()
-        self.another_user = another_user
+class GenericUserPermissionTest(BasicAdminTest):
+    def test_node_list(self):
+        if not hasattr(self, 'test_type'):
+            return
+
+        context_t = "contexts: [{context_input}]"
+        query_t = """
+        {{
+          ninodes(filter: {{
+            type_in: [{types_str}]
+            with_context: {{
+              {context}
+              exclude: {exclude}
+            }}
+          }}){{
+            edges{{
+              node{{
+                __typename
+                id
+                name
+              }}
+            }}
+          }}
+        }}
+        """
+        types_str = ", ".join([
+            '"{}"'.format(x) for x in \
+                ["Organization", "Host", "Address", "Service", "Cable"]
+        ])
+
+        organization_id = graphene.relay.Node.to_global_id(
+            str(self.organization.node_type), str(self.organization.handle_id))
+
+        host_id = graphene.relay.Node.to_global_id(
+            str(self.host.node_type), str(self.host.handle_id))
+
+        address_id = graphene.relay.Node.to_global_id(
+            str(self.address.node_type), str(self.address.handle_id))
+
+        service_id = graphene.relay.Node.to_global_id(
+            str(self.service.node_type), str(self.service.handle_id))
+
+        cable_id = graphene.relay.Node.to_global_id(
+            str(self.cable.node_type), str(self.cable.handle_id))
+
+        # test empty context (test empty parameter and invalid contexts):
+        for context_input in [None, '"Invalid Ctx", "Module"']:
+            context_str = ""
+            if context_input != None:
+                context_str = context_t.format(context_input=context_input)
+
+            # test exclude true: only contexted nodes
+            exclude = str(True).lower()
+
+            query = query_t.format(
+                types_str=types_str, context=context_str, exclude=exclude,
+            )
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            expected = {'ninodes':
+                            {'edges': [
+                                    {'node': {'__typename': 'Organization',
+                                    'id': organization_id,
+                                    'name': 'organization1'}},
+                                    {'node': {'__typename': 'Host',
+                                    'id': host_id,
+                                    'name': 'host1'}},
+                                    {'node': {'__typename': 'Address',
+                                    'id': address_id,
+                                    'name': 'address1'}}
+                                ]
+                            }
+                        }
+
+            self.assert_correct(result, expected)
+
+            # test exclude false: uncontexted nodes (only for superadmin)
+            exclude = str(False).lower()
+
+            query = query_t.format(
+                types_str=types_str, context=context_str, exclude=exclude,
+            )
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            expected = {'ninodes': {'edges': []}}
+
+            if self.test_type == "superadmin":
+                expected = {'ninodes': {'edges': [
+                                {'node': {'__typename': 'Service',
+                                'id': service_id,
+                                'name': 'service1'}},
+                                {'node': {'__typename': 'Cable',
+                                'id': cable_id,
+                                'name': 'cable1'}}
+                            ]}}
+
+            self.assert_correct(result, expected)
+
+        # test filled context:
+        # test exclude true: show nodes out of those contexts
+        exclude = str(True).lower()
+
+        # test exclude false: show nodes in of those contexts
+        exclude = str(False).lower()
 
     def test_user_list(self):
         if not hasattr(self, 'test_type'):
@@ -51,8 +153,8 @@ class GenericUserPermissionTest(Neo4jGraphQLGenericTest):
                     }},
                     {'node': {
                         'id': str(self.another_user.id),
-                        'username': 'another user'
-                    }}
+                        'username': 'another_user'
+                    }},
                 ]
             }
         }

@@ -57,7 +57,7 @@ def resolve_users(self, info, **kwargs):
 
     # all authenticated users can query the user list
     if info.context and info.context.user.is_authenticated:
-        ret = DjangoUser.objects.all()
+        ret = DjangoUser.objects.all().order_by('id')
 
         # filter by name
         filter_name_contains = filter.get('username_contains', None)

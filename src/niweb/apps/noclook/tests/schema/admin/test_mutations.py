@@ -7,33 +7,12 @@ from django.contrib.auth.models import User
 from niweb.schema import schema
 from pprint import pformat
 
+from . import BasicAdminTest
+
 import apps.noclook.vakt.utils as sriutils
 import graphene
 
-class AdminMutationsTest(Neo4jGraphQLGenericTest):
-    def setUp(self, group_dict=None):
-        super().setUp(group_dict=group_dict)
-
-        # create another user
-        another_user = User.objects.create_user(username='another_user',
-            email='another@localhost', password='test')
-        another_user.is_staff = True
-        another_user.save()
-        self.another_user = another_user
-
-        # create some nodes
-        self.organization = self.create_node(
-                                'organization1', 'organization', meta='Relation')
-        self.host = self.create_node(
-                                'host1', 'host', meta='Logical')
-        self.address = self.create_node(
-                                'address1', 'address', meta='Logical')
-
-        # set contexts
-        sriutils.set_nodehandle_context(self.community_ctxt, self.organization)
-        sriutils.set_nodehandle_context(self.network_ctxt, self.host)
-        sriutils.set_nodehandle_context(self.contracts_ctxt, self.address)
-
+class AdminMutationsTest(BasicAdminTest):
     def test_set_node_context(self):
         # only run mutations if we have set this value
         if not hasattr(self, 'test_type'):

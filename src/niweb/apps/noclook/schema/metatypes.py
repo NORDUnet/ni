@@ -132,7 +132,17 @@ class NINode(graphene.Node):
                 exclude = with_context.get('exclude')
                 contexts = with_context.get('contexts', None)
 
-                if not contexts:
+                all_contexts = sriutils.get_all_contexts()
+                filter_contexts = []
+
+                if contexts:
+                    for context_name in contexts:
+                        context_name = context_name.lower()
+
+                        if context_name in all_contexts:
+                            filter_contexts.append(all_contexts[context_name])
+
+                if not filter_contexts:
                     # if we have an empty context list
                     if exclude:
                         # exclude true: show contexted nodes
@@ -147,15 +157,6 @@ class NINode(graphene.Node):
                             skip_readable = True
                 else:
                     # if the context list is not empty:
-                    all_contexts = sriutils.get_all_contexts()
-                    filter_contexts = []
-
-                    for context_name in contexts:
-                        context_name = context_name.lower()
-
-                        if context_name in all_contexts:
-                            filter_contexts.append(all_contexts[context_name])
-
                     if exclude:
                         # if exclude true: show nodes that don't match the contexts
                         q_filters.append(~Q(contexts__in=filter_contexts))
