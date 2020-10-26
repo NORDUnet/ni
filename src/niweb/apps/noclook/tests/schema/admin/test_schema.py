@@ -57,7 +57,7 @@ class GenericUserPermissionTest(BasicAdminTest):
             str(self.cable.node_type), str(self.cable.handle_id))
 
         # test empty context (test empty parameter and invalid contexts):
-        for context_input in [None, '"Invalid Ctx", "Module"']:
+        for context_input in [None, '"Invalid Ctx", "Module"', ""]:
             context_str = ""
             if context_input != None:
                 context_str = context_t.format(context_input=context_input)
