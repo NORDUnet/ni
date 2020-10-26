@@ -114,11 +114,56 @@ class GenericUserPermissionTest(BasicAdminTest):
             self.assert_correct(result, expected)
 
         # test filled context:
+        context_input = ", ".join([
+            '"{}"'.format(x) for x in ["Community", "Network"]
+        ])
+        context_str = context_t.format(context_input=context_input)
+
         # test exclude true: show nodes out of those contexts
         exclude = str(True).lower()
 
+        query = query_t.format(
+            types_str=types_str, context=context_str, exclude=exclude,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = {'ninodes':
+                        {'edges': [
+                                {'node': {'__typename': 'Address',
+                                'id': address_id,
+                                'name': 'address1'}}
+                            ]
+                        }
+                    }
+
+        self.assert_correct(result, expected)
+
         # test exclude false: show nodes in of those contexts
         exclude = str(False).lower()
+
+        query = query_t.format(
+            types_str=types_str, context=context_str, exclude=exclude,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = {'ninodes':
+                        {'edges': [
+                                {'node': {'__typename': 'Organization',
+                                'id': organization_id,
+                                'name': 'organization1'}},
+                                {'node': {'__typename': 'Host',
+                                'id': host_id,
+                                'name': 'host1'}},
+                            ]
+                        }
+                    }
+
+        self.assert_correct(result, expected)
+
 
     def test_user_list(self):
         if not hasattr(self, 'test_type'):
