@@ -2442,6 +2442,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               os_version: "{os_version}"
               contract_number: "{contract_number}"
               services_locked: {services_locked}
+              {location_input}
               {extra_input}
             }}
             {subinputs}
@@ -2480,6 +2481,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 rack_back
                 services_locked
                 services_checked
+                location{{
+                  id
+                  name
+                }}
                 {extra_query}
               }}
             }}
@@ -2535,6 +2540,15 @@ class HostTest(Neo4jGraphQLNetworkTest):
             'physical': None,
         }
 
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(
+            str(location.node_type).replace(' ', ''),
+            str(location.handle_id)
+        )
+        location_input = 'relationship_location: "{location_id}"'.format(
+            location_id=location_id
+        )
+
         for iteration in range(0,2):
             for k, host_id in host_ids.items():
                 host_name = community_generator.fake.hostname()
@@ -2576,6 +2590,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 services_locked = bool(random.getrandbits(1))
 
+                if k == 'logical':
+                    location_input = ''
+
                 query = edit_query.format(
                             host_id=host_id,
                             host_name=host_name, host_description=host_description,
@@ -2588,6 +2605,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                             os_version=os_version, contract_number=contract_number,
                             services_locked=str(services_locked).lower(),
                             extra_input=extra_input, extra_query=extra_query,
+                            location_input=location_input,
                             subinputs='', subquery='')
 
                 result = schema.execute(query, context=self.context)
@@ -2603,17 +2621,21 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 self.assertEqual(updated_host['name'], host_name)
                 self.assertEqual(updated_host['description'], host_description)
-                self.assertEqual(updated_host['operational_state']['value'], operational_state)
+                self.assertEqual(updated_host['operational_state']['value'], \
+                    operational_state)
                 self.assertEqual(updated_host['rack_units'], rack_units)
                 self.assertEqual(updated_host['rack_position'], rack_position)
                 self.assertEqual(updated_host['rack_back'], rack_back)
                 self.assertEqual(updated_host['ip_addresses'], ip_addresses)
-                self.assertEqual(updated_host['managed_by']['value'], managed_by)
+                self.assertEqual(updated_host['managed_by']['value'], \
+                    managed_by)
                 self.assertEqual(updated_host['backup'], backup)
                 self.assertEqual(updated_host['os'], os)
                 self.assertEqual(updated_host['os_version'], os_version)
-                self.assertEqual(updated_host['contract_number'], contract_number)
-                self.assertEqual(updated_host['services_locked'], services_locked)
+                self.assertEqual(updated_host['contract_number'], \
+                    contract_number)
+                self.assertEqual(updated_host['services_locked'], \
+                    services_locked)
 
                 check_id = None
 
@@ -2751,7 +2773,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
                         services_locked=str(services_locked).lower(),
-                        extra_input='', extra_query='',
+                        extra_input='', extra_query='', location_input='',
                         subinputs=subinput, subquery=subquery)
 
             result = schema.execute(query, context=self.context)
