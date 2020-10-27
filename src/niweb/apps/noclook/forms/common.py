@@ -657,7 +657,7 @@ class EditOdfForm(NewOdfForm):
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class EditPatchPanelForm(RackableForm):
