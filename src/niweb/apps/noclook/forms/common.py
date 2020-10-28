@@ -860,9 +860,14 @@ class EditServiceForm(forms.Form):
         #TODO: Handle when service type does not exist?
         service_type_ = ServiceType.objects.get(name=cleaned_data.get('service_type'))
         cleaned_data['service_class'] = service_type_.service_class.name
+
         # Check that project_end_date is filled in for Project service type
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self.add_error('project_end_date', 'Missing project end date.')
+
+        if cleaned_data['service_type'] != 'Project':
+            cleaned_data['project_end_date'] = None
+
         if cleaned_data.get('operational_state', None):
             # Check that decommissioned_date is filled in for operational state Decommissioned
             if cleaned_data['operational_state'] == 'Decommissioned':

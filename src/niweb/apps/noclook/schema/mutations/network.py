@@ -651,6 +651,7 @@ class NIServiceMutationFactory(NIMutationFactory):
             'responsible_group': responsible_relation_processor,
             'support_group': supports_relation_processor,
         }
+        nullable_keys = ['decommissioned_date', 'project_end_date']
 
     class Meta:
         abstract = False
