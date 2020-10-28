@@ -1775,6 +1775,7 @@ class UpdateNIMutation(AbstractNIMutation):
         nimetaclass     = getattr(cls, 'NIMetaClass')
         graphql_type    = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
+        nullable_keys   = getattr(nimetaclass, 'nullable_keys', [])
         relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
@@ -1807,7 +1808,8 @@ class UpdateNIMutation(AbstractNIMutation):
             form = form_class(post_data)
             if form.is_valid():
                 # Generic node update
-                helpers.form_update_node(request.user, nodehandler.handle_id, form, property_update)
+                helpers.form_update_node(request.user, nodehandler.handle_id, \
+                    form, property_update, nullable_keys)
 
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
