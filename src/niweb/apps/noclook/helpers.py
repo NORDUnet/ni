@@ -139,7 +139,7 @@ def form_update_node(user, handle_id, form, property_keys=None, \
                 if key == 'name':
                     nh.node_name = form.cleaned_data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
-        elif form.cleaned_data.get(key, None) == '' and key in node.data.keys()
+        elif form.cleaned_data.get(key, None) == '' and key in node.data.keys()\
                 or (form.cleaned_data.get(key, None) == None \
                     and key in node.data.keys() and key in nullable_keys):
             if key != 'name':  # Never delete name

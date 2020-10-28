@@ -1090,6 +1090,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return rack
 
+    def get_random_date(self):
+        return self.fake.date_time_this_year().isoformat().split('T')[0]
+
     def create_service(self, name=None):
         # import services class / types if necesary
         if not ServiceType.objects.all():
@@ -1164,12 +1167,10 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         if service_type_name == "Project":
-            data['project_end_date'] = self.fake.date_time_this_year()\
-                                        .isoformat().split('T')[0]
+            data['project_end_date'] = self.get_random_date()
 
         if data['operational_state'] == "Decommissioned":
-            data['decommissioned_date'] = self.fake.date_time_this_year()\
-                                            .isoformat().split('T')[0]
+            data['decommissioned_date'] = self.get_random_date()
 
         for key, value in data.items():
             if value:

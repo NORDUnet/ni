@@ -2532,6 +2532,7 @@ class NIMutationFactory():
         update_include  = getattr(ni_metaclass, 'update_include', None)
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
+        nullable_keys   = getattr(ni_metaclass, 'nullable_keys', [])
         relay_extra_ids = getattr(ni_metaclass, 'relay_extra_ids', None)
         unique_node     = getattr(ni_metaclass, 'unique_node', False)
 
@@ -2585,6 +2586,7 @@ class NIMutationFactory():
             'include': create_include,
             'exclude': create_exclude,
             'property_update': property_update,
+            'nullable_keys': nullable_keys,
             'relay_extra_ids': relay_extra_ids,
         }
 
@@ -2638,6 +2640,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        del attr_dict['nullable_keys']
         del attr_dict['relay_extra_ids']
         attr_dict['is_delete'] = True
 
