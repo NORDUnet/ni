@@ -521,13 +521,40 @@ class PeeringGroup(NIObjectType, LogicalMixin):
 
 
 # Service
+class ServiceClassFilter(graphene.InputObjectType):
+    id = graphene.ID()
+    name_contains = graphene.String()
+
+
+class ServiceClassOrder(graphene.Enum):
+    name_ASC = 'name_ASC'
+    name_DESC = 'name_DESC'
+
+
 class ServiceClass(DjangoObjectType):
     '''
     This class represents a ServiceType for service's mutations
     '''
+
+    @classmethod
+    def get_connection_class(cls):
+        class_name = '{}Connection'.format(cls)
+        meta_class = type('Meta', (object,), dict(node=cls))
+        the_class = type(class_name, (graphene.relay.Connection, ),
+                            dict(Meta=meta_class))
+
+        return the_class
+
     class Meta:
         model = ServiceClassModel
         interfaces = (graphene.relay.Node, )
+
+
+def resolve_service_classes_connection(self, info, **kwargs):
+    if info.context and info.context.user.is_authenticated:
+        return ServiceClassModel.objects.all()
+    else:
+        raise GraphQLAuthException()
 
 
 class ServiceType(DjangoObjectType):
