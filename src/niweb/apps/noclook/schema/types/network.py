@@ -531,6 +531,50 @@ class ServiceClassOrder(graphene.Enum):
     name_DESC = 'name_DESC'
 
 
+def resolve_service_classes_connection(self, info, **kwargs):
+    ret = None
+
+    if info.context and info.context.user.is_authenticated:
+        ret = ServiceClassModel.objects.all()
+
+        # get filter
+        filter = kwargs.get('filter', {})
+
+        if filter:
+            if filter.get('name_contains', None):
+                # filter by name
+                name_contains = filter.get('name_contains', None)
+                ret = ret.filter(name__icontains=name_contains)
+            elif filter.get('id', None):
+                # filter by id
+                id = filter.get('id', None)
+                django_id = None
+
+                try:
+                    _type, django_id = relay.Node.from_global_id(id)
+                except:
+                    # we'll return None
+                    django_id = None
+
+                if django_id:
+                    ret = ret.filter(id=django_id)
+
+        # get order
+        orderBy = kwargs.get('orderBy', None)
+
+        if orderBy:
+            order = orderBy.split('_')[1]
+            if order == 'ASC':
+                ret = ret.order_by('-name')
+            elif order == 'DESC':
+                ret = ret.order_by('name')
+
+    else:
+        raise GraphQLAuthException()
+
+    return ret
+
+
 class ServiceClass(DjangoObjectType):
     '''
     This class represents a ServiceType for service's mutations
@@ -548,13 +592,6 @@ class ServiceClass(DjangoObjectType):
     class Meta:
         model = ServiceClassModel
         interfaces = (graphene.relay.Node, )
-
-
-def resolve_service_classes_connection(self, info, **kwargs):
-    if info.context and info.context.user.is_authenticated:
-        return ServiceClassModel.objects.all()
-    else:
-        raise GraphQLAuthException()
 
 
 class ServiceType(DjangoObjectType):
