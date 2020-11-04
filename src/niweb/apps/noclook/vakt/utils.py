@@ -3,7 +3,8 @@ __author__ = 'ffuentes'
 
 import logging
 
-from apps.noclook.models import NodeHandle, AuthzAction, GroupContextAuthzAction, NodeHandleContext, Context
+from apps.noclook.models import NodeHandle, AuthzAction, \
+                            GroupContextAuthzAction, NodeHandleContext, Context
 from djangovakt.storage import DjangoStorage
 from vakt import Guard, RulesChecker, Inquiry
 
@@ -237,6 +238,17 @@ def authorize_superadmin(user, cmodel=Context):
             break
 
     return is_superadmin
+
+
+def user_is_admin(user):
+    nh_contexts = get_all_contexts()
+    is_admin = False
+
+    for name, nh_context in nh_contexts.items():
+        if authorize_admin_module(user, nh_context):
+            return True
+
+    return is_admin
 
 
 def get_ids_user_canread(user):

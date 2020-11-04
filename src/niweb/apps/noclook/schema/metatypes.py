@@ -42,6 +42,18 @@ class GenericNodeOrder(graphene.Enum):
 class NINode(graphene.Node):
     name = graphene.String(required=True)
     relation_id = graphene.Int()
+    contexts = graphene.List(graphene.String)
+
+    def resolve_contexts(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            if sriutils.user_is_admin(info.context.user):
+                ret = [ c.name for c in self.contexts.all() ]
+        else:
+            raise GraphQLAuthException()
+
+        return ret
 
     def resolve_relation_id(self, info, **kwargs):
         ret = None

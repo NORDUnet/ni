@@ -9,9 +9,81 @@ from pprint import pformat
 
 from . import BasicAdminTest
 
+import apps.noclook.vakt.utils as sriutils
 import graphene
 
 class GenericUserPermissionTest(BasicAdminTest):
+    def test_contexts(self):
+        if not hasattr(self, 'test_type'):
+            return
+
+        # add adittional contexts
+        sriutils.set_nodehandle_context(self.network_ctxt, self.organization)
+        sriutils.set_nodehandle_context(self.contracts_ctxt, self.host)
+        sriutils.set_nodehandle_context(self.community_ctxt, self.address)
+
+        # query
+        context_t = "contexts: [{context_input}]"
+        query_t = """
+        {{
+          ninodes(filter: {{
+            type_in: [{types_str}]
+            with_context: {{
+              {context}
+              exclude: {exclude}
+            }}
+          }}){{
+            edges{{
+              node{{
+                __typename
+                name
+                contexts
+              }}
+            }}
+          }}
+        }}
+        """
+        types_str = ", ".join([
+            '"{}"'.format(x) for x in \
+                ["Organization", "Host", "Address", "Service", "Cable"]
+        ])
+
+        context = context_t.format(context_input=', '.join(
+            [ '"{}"'.format(v.name) for k, v in sriutils.get_all_contexts().items()]
+        ))
+        query = query_t.format(types_str=types_str, context=context,
+                    exclude='false')
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        if self.test_type == "admin" or self.test_type == "superadmin":
+            # check the contexts are the expecteds
+            expected = [{'node': {'__typename': 'Organization',
+                                   'contexts': ['Community', 'Network'],
+                                   'name': 'organization1'}},
+                         {'node': {'__typename': 'Organization',
+                                   'contexts': ['Community', 'Network'],
+                                   'name': 'organization1'}},
+                         {'node': {'__typename': 'Host',
+                                   'contexts': ['Network', 'Contracts'],
+                                   'name': 'host1'}},
+                         {'node': {'__typename': 'Host',
+                                   'contexts': ['Network', 'Contracts'],
+                                   'name': 'host1'}},
+                         {'node': {'__typename': 'Address',
+                                   'contexts': ['Contracts', 'Community'],
+                                   'name': 'address1'}},
+                         {'node': {'__typename': 'Address',
+                                   'contexts': ['Contracts', 'Community'],
+                                   'name': 'address1'}}]
+            
+            self.assertEquals(result.data['ninodes']['edges'], expected)
+        else:
+            # test contexts attribute comes empty
+            for node in result.data['ninodes']['edges']:
+                self.assertEquals(node['node']['contexts'], None)
+
     def test_node_list(self):
         if not hasattr(self, 'test_type'):
             return
