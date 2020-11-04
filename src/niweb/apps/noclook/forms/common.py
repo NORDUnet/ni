@@ -237,6 +237,7 @@ class NewCableForm(forms.Form):
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
+    cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
 
@@ -244,6 +245,7 @@ class NewCableForm(forms.Form):
 class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
 
 class NewSwitchForm(forms.Form):
     def __init__(self, *args, **kwargs):
