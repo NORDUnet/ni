@@ -176,3 +176,4 @@ class NOCRootMutation(graphene.ObjectType):
     ## Admin mutations
     set_nodes_context = SetNodesContext.Field()
     grant_user_permission = GrantUserPermission.Field()
+    grant_users_permissions = GrantUsersPermission.Field()

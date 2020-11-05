@@ -119,6 +119,50 @@ class GrantUserPermission(relay.ClientIDMutation):
         return ret
 
 
+class GrantUsersPermission(relay.ClientIDMutation):
+    class Input:
+        users_ids = graphene.List(graphene.NonNull(graphene.ID, \
+            required=True))
+        context = graphene.String(required=True)
+        read = graphene.Boolean()
+        write = graphene.Boolean()
+        list = graphene.Boolean()
+        admin = graphene.Boolean()
+
+    results = graphene.List(GrantUserPermission)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get input values
+        users_ids = input.get("users_ids")
+        context = input.get("context")
+        read = input.get("read")
+        write = input.get("write")
+        list = input.get("list")
+        admin = input.get("admin")
+
+        results = []
+
+        for user_id in users_ids:
+            subinput = dict(
+                user_id=user_id,
+                context=context,
+                read=read,
+                write=write,
+                list=list,
+                admin=admin,
+            )
+
+            ret = \
+                GrantUserPermission.mutate_and_get_payload(root, info, **subinput)
+            results.append(ret)
+
+        return cls(results=results)
+
+
 # set context to a nodehandle list
 class SetNodesContext(relay.ClientIDMutation):
     class Input:

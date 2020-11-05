@@ -14,12 +14,18 @@ class BasicAdminTest(Neo4jGraphQLGenericTest):
     def setUp(self, group_dict=None):
         super().setUp(group_dict=group_dict)
 
-        # create another user
+        # create another users
         another_user = User.objects.create_user(username='another_user',
             email='another@localhost', password='test')
         another_user.is_staff = True
         another_user.save()
         self.another_user = another_user
+
+        other_user = User.objects.create_user(username='other_user',
+            email='other@localhost', password='test')
+        other_user.is_staff = True
+        other_user.save()
+        self.other_user = other_user
 
         # create some nodes
         self.organization = self.create_node(
