@@ -318,3 +318,12 @@ def edit_aaction_context_user(auth_action, context, user, add=False):
 def set_nodehandle_context(context, nh):
     # set new context
     NodeHandleContext.objects.get_or_create(context=context, nodehandle=nh)
+
+
+def set_nodehandle_contexts(contexts, nh):
+    # delete unrelated NodeHandleContext
+    NodeHandleContext.objects.filter(nodehandle=nh)\
+        .exclude(context__in=contexts).delete()
+
+    for context in contexts:
+        set_nodehandle_context(context, nh)

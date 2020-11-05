@@ -122,7 +122,8 @@ class GrantUserPermission(relay.ClientIDMutation):
 # set context to a nodehandle list
 class SetNodesContext(relay.ClientIDMutation):
     class Input:
-        context = graphene.String(required=True)
+        contexts = graphene.List(graphene.NonNull(graphene.String, \
+            required=True))
         nodes = graphene.List(graphene.NonNull(graphene.ID))
 
     success = graphene.Boolean()
@@ -136,42 +137,37 @@ class SetNodesContext(relay.ClientIDMutation):
         errors = []
 
         nodes_ids = input.get("nodes", [])
-        context_name = input.get("context")
+        contexts_names = input.get("contexts")
 
-        if not context_name:
+        if not DjangoContext.objects.filter(name__in=contexts_names).exists():
             errors.append(
                 ErrorType(
                     field=node_id,
                     messages=\
-                        ["The id {} ".format(node_id)]
+                        ["The context {} doesn't exists".format(contexts_names)]
                     )
                 )
             return SetNodesContext(success=success, errors=errors, nodes=nodes)
 
-        if not DjangoContext.objects.filter(name=context_name).exists():
-            errors.append(
-                ErrorType(
-                    field=node_id,
-                    messages=\
-                        ["The context {} doesn't exists".format(context_name)]
-                    )
-                )
-            return SetNodesContext(success=success, errors=errors, nodes=nodes)
-
-        context = DjangoContext.objects.get(name=context_name)
+        contexts = DjangoContext.objects.filter(name__in=contexts_names)
 
         if info.context and info.context.user.is_authenticated:
             # check if we have rights over the context
-            authorized = sriutils.authorize_admin_module(info.context.user,
-                            context)
+            final_contexts = contexts
+            for context in contexts:
+                authorized_c = sriutils.authorize_admin_module(info.context.user,
+                                context)
+                if not authorized_c:
+                    # remove context from list
+                    final_contexts.remove(context)
 
-            if not authorized:
+
+            if not final_contexts:
                 errors.append(
                     ErrorType(
                         field=node_id,
                         messages=\
-                            ["Only administrators can perform this operation" \
-                                .format(context_name)]
+                            ["You need admin rights to perform this operation"]
                         )
                     )
                 return SetNodesContext(success=success, errors=errors,
@@ -189,7 +185,7 @@ class SetNodesContext(relay.ClientIDMutation):
                         handle_id):
 
                         nh = NodeHandle.objects.get(handle_id=handle_id)
-                        sriutils.set_nodehandle_context(context, nh)
+                        sriutils.set_nodehandle_contexts(contexts, nh)
                         nodes.append(nh)
                     else:
                         errors.append(

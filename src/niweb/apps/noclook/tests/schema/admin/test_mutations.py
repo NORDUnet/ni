@@ -13,7 +13,7 @@ import apps.noclook.vakt.utils as sriutils
 import graphene
 
 class AdminMutationsTest(BasicAdminTest):
-    def test_set_node_context(self):
+    def test_set_node_contexts(self):
         # only run mutations if we have set this value
         if not hasattr(self, 'test_type'):
             return
@@ -21,7 +21,7 @@ class AdminMutationsTest(BasicAdminTest):
         query_t = """
         mutation{{
           set_nodes_context(input:{{
-            context: "{context_name}"
+            contexts: [ {contexts_name} ]
             nodes:[ {nodes_ids} ]
           }}){{
             success
@@ -39,7 +39,7 @@ class AdminMutationsTest(BasicAdminTest):
         """
 
         # test fully successful mutation:
-        context_name = self.network_ctxt.name
+        contexts_name = '"{}"'.format(self.network_ctxt.name)
         nodes_ids = []
 
         for nh in [self.organization, self.host]:
@@ -49,7 +49,7 @@ class AdminMutationsTest(BasicAdminTest):
         nodes_ids_str = ", ".join([ '"{}"'.format(x) for x in nodes_ids])
 
         query = query_t.format(
-            context_name=context_name, nodes_ids=nodes_ids_str)
+            contexts_name=contexts_name, nodes_ids=nodes_ids_str)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -82,7 +82,7 @@ class AdminMutationsTest(BasicAdminTest):
         nodes_ids_str = ", ".join([ '"{}"'.format(x) for x in nodes_ids])
 
         query = query_t.format(
-            context_name=context_name, nodes_ids=nodes_ids_str)
+            contexts_name=contexts_name, nodes_ids=nodes_ids_str)
 
         if self.test_type == "admin":
             # admin test: It should be able to change only the contexts of
