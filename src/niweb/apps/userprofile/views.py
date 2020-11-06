@@ -51,6 +51,7 @@ def whoami(request):
             user_profile.save()
 
         user = {
+            'id': user_profile.pk,
             'userid': request.user.pk,
             'display_name': user_profile.display_name,
             'email': request.user.email,
