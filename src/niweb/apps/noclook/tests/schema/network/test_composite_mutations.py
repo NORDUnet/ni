@@ -2442,6 +2442,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               os_version: "{os_version}"
               contract_number: "{contract_number}"
               services_locked: {services_locked}
+              {location_input}
               {extra_input}
             }}
             {subinputs}
@@ -2480,6 +2481,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 rack_back
                 services_locked
                 services_checked
+                location{{
+                  id
+                  name
+                }}
                 {extra_query}
               }}
             }}
@@ -2535,6 +2540,15 @@ class HostTest(Neo4jGraphQLNetworkTest):
             'physical': None,
         }
 
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(
+            str(location.node_type).replace(' ', ''),
+            str(location.handle_id)
+        )
+        location_input = 'relationship_location: "{location_id}"'.format(
+            location_id=location_id
+        )
+
         for iteration in range(0,2):
             for k, host_id in host_ids.items():
                 host_name = community_generator.fake.hostname()
@@ -2576,6 +2590,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 services_locked = bool(random.getrandbits(1))
 
+                if k == 'logical':
+                    location_input = ''
+
                 query = edit_query.format(
                             host_id=host_id,
                             host_name=host_name, host_description=host_description,
@@ -2588,6 +2605,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                             os_version=os_version, contract_number=contract_number,
                             services_locked=str(services_locked).lower(),
                             extra_input=extra_input, extra_query=extra_query,
+                            location_input=location_input,
                             subinputs='', subquery='')
 
                 result = schema.execute(query, context=self.context)
@@ -2603,17 +2621,21 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 self.assertEqual(updated_host['name'], host_name)
                 self.assertEqual(updated_host['description'], host_description)
-                self.assertEqual(updated_host['operational_state']['value'], operational_state)
+                self.assertEqual(updated_host['operational_state']['value'], \
+                    operational_state)
                 self.assertEqual(updated_host['rack_units'], rack_units)
                 self.assertEqual(updated_host['rack_position'], rack_position)
                 self.assertEqual(updated_host['rack_back'], rack_back)
                 self.assertEqual(updated_host['ip_addresses'], ip_addresses)
-                self.assertEqual(updated_host['managed_by']['value'], managed_by)
+                self.assertEqual(updated_host['managed_by']['value'], \
+                    managed_by)
                 self.assertEqual(updated_host['backup'], backup)
                 self.assertEqual(updated_host['os'], os)
                 self.assertEqual(updated_host['os_version'], os_version)
-                self.assertEqual(updated_host['contract_number'], contract_number)
-                self.assertEqual(updated_host['services_locked'], services_locked)
+                self.assertEqual(updated_host['contract_number'], \
+                    contract_number)
+                self.assertEqual(updated_host['services_locked'], \
+                    services_locked)
 
                 check_id = None
 
@@ -2751,7 +2773,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
                         services_locked=str(services_locked).lower(),
-                        extra_input='', extra_query='',
+                        extra_input='', extra_query='', location_input='',
                         subinputs=subinput, subquery=subquery)
 
             result = schema.execute(query, context=self.context)
@@ -3722,6 +3744,11 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
         port1_type = port2_type
         port1_description = port2_description
 
+        # get another location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalFilter(input:{{
@@ -3733,6 +3760,7 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
           	update_has_port:[
               {{
@@ -3772,6 +3800,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             has_port_updated{{
@@ -3805,7 +3837,7 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                     rack_back=str(rack_back).lower(),
                     port1_id=port1_id, port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
-                    port2_id=port2_id)
+                    port2_id=port2_id, location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -3851,6 +3883,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertFalse(port2_id in has_ids)
+
+        # check location
+        check_location = updated_ofilter['location']
+        self.assertEqual(check_location['id'], location_id)
 
 
 class OpticalLinkTest(Neo4jGraphQLNetworkTest):
@@ -6948,21 +6984,28 @@ class RackTest(Neo4jGraphQLNetworkTest):
 
 class ServiceTest(Neo4jGraphQLNetworkTest):
     def test_service(self):
+        self.check_service(
+            service_type_create="Project",
+            service_type_update="Confluence",
+            opstate_create="Decommissioned",
+            opstate_update="Testing",
+        )
+
+    def check_service(self, service_type_create, service_type_update, \
+            opstate_create, opstate_update):
         data_generator = NetworkFakeDataGenerator()
 
         ## creation
         # data service
         a_service = data_generator.create_service()
         srv_name = a_service.get_node().data.get("name")
-        srv_service_type = a_service.get_node().data\
-            .get("service_type")
-        srv_operational_state = a_service.get_node().data\
-            .get("operational_state")
+        srv_service_type = service_type_create
+        srv_operational_state = opstate_create
         srv_description = a_service.get_node().data.get("description")
         srv_project_end_date = a_service.get_node().data\
-            .get("project_end_date", None)
+            .get("project_end_date", data_generator.get_random_date())
         srv_decommissioned_date = a_service.get_node().data\
-            .get("decommissioned_date", None)
+            .get("decommissioned_date", data_generator.get_random_date())
 
         # get provider
         incoming = a_service.get_node()._incoming()
@@ -7008,7 +7051,7 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
 
         # create end user
         enduser = data_generator.create_end_user()
-        enduser_id = relay.Node.to_global_id(str(enduser.node_type.type\
+        enduser_id = relay.Node.to_global_id(str(enduser.node_type.type \
                                                     .replace(' ', '')),
                                             str(enduser.handle_id))
         enduser_name = enduser.get_node().data.get("name")
@@ -7025,10 +7068,10 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         if srv_decommissioned_date:
             srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
 
-        project_end_date = "" if not srv_project_end_date else \
+        project_end_date = "" if srv_service_type != "Project" else \
                     'project_end_date: "{}"'.format(srv_project_end_date)
-        decommissioned_date = "" if not srv_decommissioned_date else \
-                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+        decommissioned_date = "" if srv_operational_state != "Decommissioned" \
+                else 'decommissioned_date: "{}"'.format(srv_decommissioned_date)
 
         query_t = """
         mutation{{
@@ -7224,6 +7267,9 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
                             srv_operational_state)
         self.assertEquals(check_service['description'], srv_description)
         self.assertEquals(check_service['service_type']['name'], srv_service_type)
+        self.assertEquals(check_service['project_end_date'], srv_project_end_date)
+        self.assertEquals(check_service['decommissioned_date'], \
+            srv_decommissioned_date)
 
         # check customer
         check_customer = all_data['used_by_customer_updated'][0]['customer']
@@ -7271,15 +7317,11 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         # data service
         a_service = data_generator.create_service()
         srv_name = a_service.get_node().data.get("name")
-        srv_service_type = a_service.get_node().data\
-            .get("service_type")
-        srv_operational_state = a_service.get_node().data\
-            .get("operational_state")
+        srv_service_type = service_type_update
+        srv_operational_state = opstate_update
         srv_description = a_service.get_node().data.get("description")
-        srv_project_end_date = a_service.get_node().data\
-            .get("project_end_date", None)
-        srv_decommissioned_date = a_service.get_node().data\
-            .get("decommissioned_date", None)
+        srv_project_end_date = None
+        srv_decommissioned_date = None
 
         # get provider
         incoming = a_service.get_node()._incoming()
@@ -7331,16 +7373,8 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         main_input_id = 'id: "{}"'.format(service_id)
         main_payload = 'updated'
 
-        if srv_project_end_date:
-            srv_project_end_date = srv_project_end_date.split("T")[0]
-
-        if srv_decommissioned_date:
-            srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
-
-        project_end_date = "" if not srv_project_end_date else \
-                    'project_end_date: "{}"'.format(srv_project_end_date)
-        decommissioned_date = "" if not srv_decommissioned_date else \
-                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+        project_end_date = ""
+        decommissioned_date = ""
 
         query = query_t.format(main_input=main_input,
             main_input_id=main_input_id, main_payload=main_payload,
@@ -7401,6 +7435,9 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
                             srv_operational_state)
         self.assertEquals(check_service['description'], srv_description)
         self.assertEquals(check_service['service_type']['name'], srv_service_type)
+        self.assertEquals(check_service['project_end_date'], srv_project_end_date)
+        self.assertEquals(check_service['decommissioned_date'], \
+            srv_decommissioned_date)
 
         # check customer
         check_customer = all_data['used_by_customer_updated'][0]['customer']

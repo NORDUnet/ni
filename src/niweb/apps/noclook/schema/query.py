@@ -259,6 +259,12 @@ class NOCRootQuery(NOCAutoQuery):
     # service types
     getServiceTypes = graphene.List(ServiceType, resolver=resolve_getServiceTypes)
 
+    services_classes = relay.ConnectionField(
+        ServiceClass.get_connection_class(),
+        filter=graphene.Argument(ServiceClassFilter),
+        orderBy=graphene.Argument(ServiceClassOrder),
+        resolver=resolve_service_classes_connection)
+
 
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:

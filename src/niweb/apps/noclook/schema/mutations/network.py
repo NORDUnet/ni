@@ -7,7 +7,7 @@ from apps.noclook.forms import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
 import apps.noclook.vakt.utils as sriutils
 from apps.noclook.schema.types import *
-from apps.noclook.views.edit import _nh_safe_get
+from apps.noclook.views.edit import _nh_safe_get, _handle_location
 
 from .common import get_unique_relation_processor
 
@@ -651,6 +651,7 @@ class NIServiceMutationFactory(NIMutationFactory):
             'responsible_group': responsible_relation_processor,
             'support_group': supports_relation_processor,
         }
+        nullable_keys = ['decommissioned_date', 'project_end_date']
 
     class Meta:
         abstract = False
