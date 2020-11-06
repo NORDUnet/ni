@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from apps.userprofile.models import UserProfile as DjangoUserProfile
 from django.contrib.auth.models import User as DjangoUser
+from graphene_django import DjangoObjectType
 from ..core import User
 
 import graphene
@@ -20,6 +22,19 @@ class UserFilter(graphene.InputObjectType):
 class UserOrder(graphene.Enum):
     username_ASC = 'username_ASC'
     username_DESC = 'username_DESC'
+
+
+class LandingPage(graphene.Enum):
+    NETWORK = 'Network'
+    SERVICES = 'Services'
+    COMMUNITY = 'Community'
+
+
+class UserProfile(DjangoObjectType):
+    landing_page = graphene.Field(LandingPage)
+
+    class Meta:
+        model = DjangoUserProfile
 
 
 # resolvers

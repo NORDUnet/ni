@@ -163,6 +163,29 @@ class GrantUsersPermission(relay.ClientIDMutation):
         return cls(results=results)
 
 
+# edit user profile
+class EditUserProfile(relay.ClientIDMutation):
+    class Input:
+        user_id = graphene.ID(required=True)
+        first_name = graphene.String()
+        last_name = graphene.String()
+        email = graphene.String()
+        is_staff = graphene.Boolean()
+        is_active = graphene.Boolean()
+        landing_page = graphene.Field(LandingPage)
+        view_network = graphene.Boolean()
+        view_services = graphene.Boolean()
+        view_community = graphene.Boolean()
+
+    success = graphene.Boolean()
+    errors = graphene.List(ErrorType)
+    user = graphene.Field(UserProfile)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        pass
+
+
 # set context to a nodehandle list
 class SetNodesContext(relay.ClientIDMutation):
     class Input:
