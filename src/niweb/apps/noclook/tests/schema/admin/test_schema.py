@@ -77,7 +77,7 @@ class GenericUserPermissionTest(BasicAdminTest):
                          {'node': {'__typename': 'Address',
                                    'contexts': ['Contracts', 'Community'],
                                    'name': 'address1'}}]
-            
+
             self.assertEquals(result.data['ninodes']['edges'], expected)
         else:
             # test contexts attribute comes empty
@@ -271,6 +271,10 @@ class GenericUserPermissionTest(BasicAdminTest):
                     {'node': {
                         'id': str(self.another_user.id),
                         'username': 'another_user'
+                    }},
+                    {'node': {
+                        'id': str(self.other_user.id),
+                        'username': 'other_user'
                     }},
                 ]
             }
