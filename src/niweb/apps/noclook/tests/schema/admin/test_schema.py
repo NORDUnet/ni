@@ -97,7 +97,9 @@ class GenericUserPermissionTest(BasicAdminTest):
               {context}
               exclude: {exclude}
             }}
-          }}){{
+          }}
+            orderBy: name_ASC
+          ){{
             edges{{
               node{{
                 __typename
