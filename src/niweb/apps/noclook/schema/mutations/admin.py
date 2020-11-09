@@ -4,6 +4,7 @@ __author__ = 'ffuentes'
 from apps.noclook.schema.core import CommentType
 from apps.noclook.schema.types import *
 from apps.noclook.models import Context as DjangoContext
+from apps.userprofile.models import UserProfile as DjangoUserProfile
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
@@ -133,6 +134,7 @@ class GrantUsersPermission(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        # reject non authenticated users
         if not info.context or not info.context.user.is_authenticated:
             raise GraphQLAuthException()
 
@@ -145,6 +147,16 @@ class GrantUsersPermission(relay.ClientIDMutation):
         admin = input.get("admin")
 
         results = []
+
+        if not DjangoContext.objects.filter(name=context).exists():
+            raise GraphQLAuthException()
+
+        nh_context = DjangoContext.objects.get(name=context)
+
+        # reject not superadmins or admins that can't manage the context
+        if not (sriutils.authorize_superadmin(info.context.user) or \
+                sriutils.authorize_admin_module(info.context.user, nh_context)):
+            raise GraphQLAuthException()
 
         for user_id in users_ids:
             subinput = dict(
@@ -167,8 +179,7 @@ class GrantUsersPermission(relay.ClientIDMutation):
 class EditUserProfile(relay.ClientIDMutation):
     class Input:
         user_id = graphene.ID(required=True)
-        first_name = graphene.String()
-        last_name = graphene.String()
+        display_name = graphene.String()
         email = graphene.String()
         is_staff = graphene.Boolean()
         is_active = graphene.Boolean()
@@ -179,11 +190,70 @@ class EditUserProfile(relay.ClientIDMutation):
 
     success = graphene.Boolean()
     errors = graphene.List(ErrorType)
-    user = graphene.Field(UserProfile)
+    userprofile = graphene.Field(UserProfile)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        pass
+        if not (info.context and info.context.user.is_authenticated and \
+            (sriutils.authorize_superadmin(info.context.user) or \
+                sriutils.user_is_admin(info.context.user)) ):
+            raise GraphQLAuthException()
+
+        user_id = input.get("user_id")
+        userprofile = None
+        success = False
+        errors = None
+
+        if not DjangoUser.objects.filter(id=user_id).exists():
+            errors = [
+                ErrorType(
+                    field="_",
+                    messages=\
+                        ["An error occurred while processing your request"])
+            ]
+
+            return EditUserProfile(success=success, errors=errors,
+                    userprofile=userprofile)
+
+        the_user = DjangoUser.objects.filter(id=user_id)
+
+        # if user profile doesn't exists, we should create one
+        if not DjangoUserProfile.objects.filter(user=the_user).exists():
+            userprofile = DjangoUserProfile(user=the_user)
+        else:
+            userprofile = DjangoUserProfile.objects.get(user=the_user)
+
+        # get optional values
+        display_name = input.get("display_name")
+        email = input.get("email")
+        is_staff = input.get("is_staff", False)
+        is_active = input.get("is_active", False)
+        landing_page = input.get("landing_page", "community")
+        view_network = input.get("view_network", False)
+        view_services = input.get("view_services", False)
+        view_community = input.get("view_community", False)
+
+        # set the values
+        if display_name:
+            userprofile.display_name = display_name
+
+        if email:
+            userprofile.email = email
+
+        userprofile.is_staff = is_staff
+        userprofile.is_active = is_active
+        userprofile.landing_page = landing_page
+        userprofile.view_network = view_network
+        userprofile.view_services = view_services
+        userprofile.view_community = view_community
+
+        userprofile.save()
+        success = True
+
+        ret = EditUserProfile(success=success, errors=errors,
+                userprofile=userprofile)
+
+        return ret
 
 
 # set context to a nodehandle list
