@@ -215,20 +215,23 @@ class EditUserProfile(relay.ClientIDMutation):
             return EditUserProfile(success=success, errors=errors,
                     userprofile=userprofile)
 
-        the_user = DjangoUser.objects.filter(id=user_id)
+        the_user = DjangoUser.objects.get(id=user_id)
 
         # if user profile doesn't exists, we should create one
-        if not DjangoUserProfile.objects.filter(user=the_user).exists():
+        up_exists = DjangoUserProfile.objects.all().exists() and \
+                        DjangoUserProfile.objects.filter(user=the_user).exists()
+
+        if not up_exists:
             userprofile = DjangoUserProfile(user=the_user)
         else:
             userprofile = DjangoUserProfile.objects.get(user=the_user)
 
         # get optional values
         display_name = input.get("display_name")
-        email = input.get("email")
+        email = input.get("email", None)
         is_staff = input.get("is_staff", False)
         is_active = input.get("is_active", False)
-        landing_page = input.get("landing_page", "community")
+        landing_page = input.get("landing_page", LandingPage.COMMUNITY)
         view_network = input.get("view_network", False)
         view_services = input.get("view_services", False)
         view_community = input.get("view_community", False)
@@ -239,9 +242,12 @@ class EditUserProfile(relay.ClientIDMutation):
 
         if email:
             userprofile.email = email
+            the_user.email = email
 
-        userprofile.is_staff = is_staff
-        userprofile.is_active = is_active
+        the_user.is_staff = is_staff
+        the_user.is_active = is_active
+        the_user.save()
+
         userprofile.landing_page = landing_page
         userprofile.view_network = view_network
         userprofile.view_services = view_services

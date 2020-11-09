@@ -103,6 +103,8 @@ class User(DjangoObjectType):
     The django user type
     '''
     user_permissions = graphene.Field(UserPermissions)
+    is_staff = graphene.Boolean()
+    is_active = graphene.Boolean()
 
     def resolve_user_permissions(self, info, **kwargs):
         ret = None
@@ -133,6 +135,28 @@ class User(DjangoObjectType):
 
             if authorized:
                 ret = get_user_permissions(the_user)
+
+        return ret
+
+    def resolve_is_staff(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated and \
+            (sriutils.authorize_superadmin(info.context.user) or \
+                sriutils.user_is_admin(info.context.user)) :
+
+            ret = self.is_staff
+
+        return ret
+
+    def resolve_is_active(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated and \
+            (sriutils.authorize_superadmin(info.context.user) or \
+                sriutils.user_is_admin(info.context.user)) :
+
+            ret = self.is_active
 
         return ret
 

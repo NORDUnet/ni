@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.tests.schema.base import Neo4jGraphQLGenericTest
+from apps.userprofile.models import UserProfile
 from collections import OrderedDict
 from django.contrib.auth.models import User
 from niweb.schema import schema
@@ -13,6 +14,103 @@ import apps.noclook.vakt.utils as sriutils
 import graphene
 
 class AdminMutationsTest(BasicAdminTest):
+    def test_user_profile(self):
+        if not hasattr(self, 'test_type'):
+            return
+
+        # edit user profile for the first time
+        # check that the user profile object doesn't exist yet
+        up_exists = UserProfile.objects.filter(user=self.another_user).exists()
+        self.assertFalse(up_exists)
+
+        # the data
+        user_id = self.another_user.id
+        display_name = "Another User"
+        email = "anotheruser@sunet.se"
+        is_staff = False
+        is_active = False
+
+        view_network = False
+        view_services = False
+        view_community = False
+
+        # do the mutation
+        query_t = """
+        mutation{{
+          edit_user_profile(input:{{
+            user_id: {user_id}
+            display_name: "{display_name}"
+            email: "{email}"
+            is_staff: {is_staff}
+            is_active: {is_active}
+            view_network: {view_network}
+            view_services: {view_services}
+            view_community: {view_community}
+          }}){{
+            success
+            errors{{
+              field
+              messages
+            }}
+            userprofile{{
+              id
+              user{{
+                id
+                email
+                is_staff
+                is_active
+              }}
+              display_name
+              email
+              landing_page
+              view_network
+              view_services
+              view_community
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(user_id=user_id, display_name=display_name,
+                    email=email, is_staff=str(is_staff).lower(),
+                    is_active=str(is_staff).lower(),
+                    view_network=str(view_network).lower(),
+                    view_services=str(view_services).lower(),
+                    view_community=str(view_community).lower())
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check that the user profile now exists
+        up_exists = UserProfile.objects.filter(user=self.another_user).exists()
+        self.assertTrue(up_exists)
+
+        # check data
+        self.another_user = User.objects.get(id=self.another_user.id)
+        uprofile = UserProfile.objects.get(user=self.another_user)
+
+        self.assertEquals(uprofile.display_name, display_name)
+        self.assertEquals(uprofile.email, email)
+        self.assertEquals(self.another_user.email, email)
+        self.assertEquals(self.another_user.is_staff, is_staff)
+        self.assertEquals(self.another_user.is_active, is_active)
+        self.assertEquals(uprofile.view_network, view_network)
+        self.assertEquals(uprofile.view_services, view_services)
+        self.assertEquals(uprofile.view_community, view_community)
+
+        # check query result
+        up_data = result.data['edit_user_profile']['userprofile']
+
+        self.assertEquals(up_data["display_name"], display_name)
+        self.assertEquals(up_data["email"], email)
+        self.assertEquals(up_data["user"]["email"], email)
+        self.assertEquals(up_data["user"]["is_staff"], is_staff)
+        self.assertEquals(up_data["user"]["is_active"], is_active)
+        self.assertEquals(up_data["landing_page"], "COMMUNITY")
+        self.assertEquals(up_data["view_network"], view_network)
+        self.assertEquals(up_data["view_services"], view_services)
+        self.assertEquals(up_data["view_community"], view_community)
+
     def test_set_node_contexts(self):
         # only run mutations if we have set this value
         if not hasattr(self, 'test_type'):
