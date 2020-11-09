@@ -216,6 +216,11 @@ optical_path_dependency_types = [
 
 
 class NOCRootQuery(NOCAutoQuery):
+    ninodes = relay.ConnectionField(NINode.get_connection_class(),
+        filter=graphene.Argument(GenericNodeFilter),
+        orderBy=graphene.Argument(GenericNodeOrder),
+        resolver=NINode.get_connection_resolver())
+
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
@@ -227,13 +232,18 @@ class NOCRootQuery(NOCAutoQuery):
 
     # get metatypes lookup
     getMetatypes = graphene.List(MetaType)
-    getTypesForMetatype = graphene.List(TypeInfo, metatype=graphene.Argument(MetaType))
+    getTypesForMetatype = graphene.List(TypeInfo,
+                            metatype=graphene.Argument(MetaType))
 
     # activity connection
-    getAvailableContexts = graphene.List(graphene.String, resolver=resolve_available_contexts)
+    getAvailableContexts = graphene.List(graphene.String,
+                            resolver=resolve_available_contexts)
     getContextActivity = relay.ConnectionField(
-        ActionConnection, filter=graphene.Argument(ActionFilter,required=True),
-        orderBy=graphene.Argument(ActionOrderBy), resolver=resolve_context_activity)
+                            ActionConnection,
+                            filter=graphene.Argument(ActionFilter,
+                                                        required=True),
+                            orderBy=graphene.Argument(ActionOrderBy),
+                            resolver=resolve_context_activity)
 
     # switch types
     getSwitchTypes = graphene.List(SwitchType, resolver=resolve_getSwitchTypes)
@@ -257,7 +267,20 @@ class NOCRootQuery(NOCAutoQuery):
             resolver=get_typelist_resolver(optical_path_dependency_types))
 
     # service types
-    getServiceTypes = graphene.List(ServiceType, resolver=resolve_getServiceTypes)
+    getServiceTypes = graphene.List(ServiceType, \
+                        resolver=resolve_getServiceTypes)
+
+    # user permissions
+    getUserPermissions = graphene.Field(UserPermissions,
+                            resolver=resolve_getUserPermissions)
+
+    # users list and query
+    getUserById = graphene.Field(User, ID=graphene.Argument(graphene.ID),
+                    resolver=resolve_getUserById)
+    users = relay.ConnectionField(UserConnection,
+                filter=graphene.Argument(UserFilter),
+                orderBy=graphene.Argument(UserOrder),
+                resolver=resolve_users)
 
     services_classes = relay.ConnectionField(
         ServiceClass.get_connection_class(),
@@ -274,10 +297,12 @@ class NOCRootQuery(NOCAutoQuery):
             group_type, created = NodeType.objects.get_or_create(
                 type=group_type_str, slug=group_type_str.lower())
 
-            groups = NodeHandle.objects.filter(node_type=group_type).order_by('handle_id')
+            groups = NodeHandle.objects.filter(node_type=group_type) \
+                        .order_by('handle_id')
 
             for group in groups:
-                id = relay.Node.to_global_id(group_type_str, str(group.handle_id))
+                id = relay.Node.to_global_id(group_type_str, \
+                                                str(group.handle_id))
                 name = group.node_name
 
                 ret.append(PlainGroup(id=id, name=name))
@@ -286,6 +311,7 @@ class NOCRootQuery(NOCAutoQuery):
         else:
             raise GraphQLAuthException()
 
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -293,6 +319,7 @@ class NOCRootQuery(NOCAutoQuery):
             return django_dropdowns
         else:
             raise GraphQLAuthException()
+
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -306,6 +333,7 @@ class NOCRootQuery(NOCAutoQuery):
                 raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
         else:
             raise GraphQLAuthException()
+
 
     def resolve_roles(self, info, **kwargs):
         qs = RoleModel.objects.none()
@@ -348,6 +376,7 @@ class NOCRootQuery(NOCAutoQuery):
             # 401
             raise GraphQLAuthException()
 
+
     def resolve_getAvailableRoleGroups(self, info, **kwargs):
         ret = []
 
@@ -389,6 +418,7 @@ class NOCRootQuery(NOCAutoQuery):
 
         return ret
 
+
     def resolve_checkExistentOrganizationId(self, info, **kwargs):
         ret = False
 
@@ -409,11 +439,14 @@ class NOCRootQuery(NOCAutoQuery):
 
                 organization_id = kwargs.get('organization_id')
 
-                ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+                ret = nc.models.OrganizationModel \
+                        .check_existent_organization_id(
+                            organization_id, handle_id, nc.graphdb.manager)
         else:
             raise GraphQLAuthException()
 
         return ret
+
 
     def resolve_getMetatypes(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -427,6 +460,7 @@ class NOCRootQuery(NOCAutoQuery):
             return metatypes
         else:
             raise GraphQLAuthException()
+
 
     def resolve_getTypesForMetatype(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:

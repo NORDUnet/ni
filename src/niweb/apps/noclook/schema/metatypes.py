@@ -24,10 +24,36 @@ class MetatypeOrder(graphene.Enum):
     name_DESC = 'name_DESC'
 
 
+class WithContext(graphene.InputObjectType):
+    contexts = graphene.List(graphene.String)
+    exclude = graphene.Boolean(required=True)
+
+
+class GenericNodeFilter(MetatypeFilter):
+    with_context = WithContext()
+
+
+class GenericNodeOrder(graphene.Enum):
+    name_ASC = 'name_ASC'
+    name_DESC = 'name_DESC'
+
+
 ## metatype interfaces
 class NINode(graphene.Node):
     name = graphene.String(required=True)
     relation_id = graphene.Int()
+    contexts = graphene.List(graphene.String)
+
+    def resolve_contexts(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            if sriutils.user_is_admin(info.context.user):
+                ret = [ c.name for c in self.contexts.all() ]
+        else:
+            raise GraphQLAuthException()
+
+        return ret
 
     def resolve_relation_id(self, info, **kwargs):
         ret = None
@@ -70,22 +96,28 @@ class NINode(graphene.Node):
             ret = NodeHandle.objects.none()
             q_filters = []
 
-            # get user's readable id list
-            readable_ids = sriutils.get_ids_user_canread(info.context.user)
             # get filter
             filter = args.get('filter', {})
 
             # remove filter values of non existent nodetypes or
             # nodetypes that don't belong to this metatype
-            subclasses = subclasses_interfaces[cls]
-            subclasses_names = [str(x) for x in subclasses]
+            subclasses_names = []
+
+            if cls in subclasses_interfaces:
+                subclasses = subclasses_interfaces[cls]
+                subclasses_names = [str(x) for x in subclasses]
 
             filter_type_in = filter.get('type_in', [])
             filter_types = []
 
             for filter_nodetype in filter_type_in:
+                add = False
                 if filter_nodetype in subclasses_names:
-                    #filter_type_in.remove(filter_nodetype)
+                    add = True
+                elif cls == NINode:
+                    add = True
+
+                if add:
                     node_type = NodeType.get_from_camelcase(filter_nodetype)
                     filter_types.append(node_type)
 
@@ -98,6 +130,53 @@ class NINode(graphene.Node):
             if filter_name_contains:
                 q_filters.append(Q(node_name__icontains=filter_name_contains))
 
+            # filter by context argument
+            with_context = filter.get('with_context', None)
+
+            # if the user is superadmin and wants to see nodes without context
+            # we should skip trim_readable_queryset (otherwise these nodes
+            # would get filtered out)
+            skip_readable = False
+
+            if with_context:
+                is_superadmin = sriutils.authorize_superadmin(info.context.user)
+
+                exclude = with_context.get('exclude')
+                contexts = with_context.get('contexts', None)
+
+                all_contexts = sriutils.get_all_contexts()
+                filter_contexts = []
+
+                if contexts:
+                    for context_name in contexts:
+                        context_name = context_name.lower()
+
+                        if context_name in all_contexts:
+                            filter_contexts.append(all_contexts[context_name])
+
+                if not filter_contexts:
+                    # if we have an empty context list
+                    if exclude:
+                        # exclude true: show contexted nodes
+                        q_filters.append(~Q(contexts=None)) # context not none
+                    else:
+                        # exclude false: show uncontexted nodes
+                        q_filters.append(Q(contexts=None)) # context not none
+
+                        # a superadmin will skip the readable nodes filter
+                        # otherwise the list will be empty
+                        if is_superadmin:
+                            skip_readable = True
+                else:
+                    # if the context list is not empty:
+                    if exclude:
+                        # if exclude true: show nodes that don't match the contexts
+                        q_filters.append(~Q(contexts__in=filter_contexts))
+                    else:
+                        # if exclude false: show nodes for that contexts
+                        q_filters.append(Q(contexts__in=filter_contexts))
+
+
             # get filtered and ordered queryset
             if q_filters:
                 full_filter = None
@@ -108,6 +187,10 @@ class NINode(graphene.Node):
                         full_filter = full_filter & q_filter
 
                 ret = NodeHandle.objects.filter(full_filter)
+
+                if not skip_readable:
+                    ret = sriutils.trim_readable_queryset(ret,
+                            info.context.user)
 
             # get order values
             orderBy = args.get('orderBy', None)

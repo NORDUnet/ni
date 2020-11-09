@@ -167,6 +167,31 @@ class SRIVaktUtilsTest(NeoTestCase):
         self.assertEqual(readable_ids, expected_ids)
 
     def test_read_resource(self):
+        # check the read permissions over the contexts for the users
+        result_read_ucm1 = sriutils.authorize_read_module(self.user1, self.community_ctxt)
+        result_read_ucm2 = sriutils.authorize_read_module(self.user1, self.community_ctxt)
+        result_read_ucm3 = sriutils.authorize_read_module(self.user1, self.community_ctxt)
+
+        result_read_unt1 = sriutils.authorize_read_module(self.user2, self.network_ctxt)
+        result_read_unt2 = sriutils.authorize_read_module(self.user2, self.network_ctxt)
+        result_read_unt3 = sriutils.authorize_read_module(self.user2, self.network_ctxt)
+
+        result_read_uct1 = sriutils.authorize_read_module(self.user3, self.contracts_ctxt)
+        result_read_uct2 = sriutils.authorize_read_module(self.user3, self.contracts_ctxt)
+        result_read_uct3 = sriutils.authorize_read_module(self.user3, self.contracts_ctxt)
+
+        self.assertTrue(result_read_ucm1)
+        self.assertTrue(result_read_ucm2)
+        self.assertTrue(result_read_ucm3)
+
+        self.assertTrue(result_read_unt1)
+        self.assertTrue(result_read_unt2)
+        self.assertTrue(result_read_unt3)
+
+        self.assertTrue(result_read_uct1)
+        self.assertTrue(result_read_uct2)
+        self.assertTrue(result_read_uct3)
+
         # check if the three users can read the organization1
         result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.organization1.handle_id)
         result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.organization1.handle_id)

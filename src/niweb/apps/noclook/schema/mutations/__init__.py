@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from .admin import *
 from .common import *
 from .community import *
 from .network import *
@@ -171,3 +172,9 @@ class NOCRootMutation(graphene.ObjectType):
 
     delete_relationship = DeleteRelationship.Field()
     create_option = CreateOptionForDropdown.Field()
+
+    ## Admin mutations
+    set_nodes_context = SetNodesContext.Field()
+    grant_user_permission = GrantUserPermission.Field()
+    grant_users_permissions = GrantUsersPermission.Field()
+    edit_user_profile = EditUserProfile.Field()
