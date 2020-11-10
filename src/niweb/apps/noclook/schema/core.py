@@ -1466,8 +1466,13 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if not is_create:
             inner_fields['id'] = graphene.ID(required=True)
 
+        # add skip_update flag (we don't want to iterate it to make the request)
+        input_innerfields = inner_fields
+        if not is_create and not is_delete:
+            input_innerfields['skip_update'] = graphene.Boolean()
+
         # add Input attribute to class
-        inner_class = type('Input', (object,), inner_fields)
+        inner_class = type('Input', (object,), input_innerfields)
         setattr(cls, 'Input', inner_class)
 
         # add Input to private attribute
@@ -1475,6 +1480,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
             op_name = 'Create' if is_create else 'Update'
             op_name = 'Delete' if is_delete else op_name
             type_name = graphql_type.__name__
+
+            # TODO: delete these lines, multiple mutation is not used
             inner_input = type('Single{}Input'.format(op_name + type_name),
                 (graphene.InputObjectType, ), inner_fields)
 
@@ -1641,6 +1648,11 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if not info.context or not info.context.user.is_authenticated:
             raise GraphQLAuthException()
 
+        # get skip parameter if it exists
+        skip_update = input.get('skip_update')
+        if 'skip_update' in input:
+            input.pop('skip_update')
+
         # convert the input to a request object for the form to processs
         reqinput = cls.from_input_to_request(info.context.user, **input)
 
@@ -1654,6 +1666,9 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # add it to the dict
         reqinput[1]['input_context'] = input_context
+
+        if skip_update:
+            reqinput[1]['skip_update'] = skip_update
 
         # call subclass do_request method
         has_error, ret = cls.do_request(reqinput[0], **reqinput[1])
@@ -1867,7 +1882,7 @@ class UpdateNIMutation(AbstractNIMutation):
     @classmethod
     def do_request(cls, request, **kwargs):
         form_class      = kwargs.get('form_class')
-        context    = kwargs.get('input_context')
+        context         = kwargs.get('input_context')
 
         nimetaclass     = getattr(cls, 'NIMetaClass')
         graphql_type    = getattr(nimetaclass, 'graphql_type')
@@ -1890,6 +1905,11 @@ class UpdateNIMutation(AbstractNIMutation):
             raise GraphQLAuthException()
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
+
+        # if skip_update is set, we'll skip and return a successful result
+        if 'skip_update' in kwargs and kwargs.get('skip_update'):
+            return has_error, { cls.get_returntype_name(graphql_type): nh }
+
         if request.POST:
             post_data = request.POST.copy()
 
