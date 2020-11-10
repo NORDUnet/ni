@@ -6983,6 +6983,197 @@ class RackTest(Neo4jGraphQLNetworkTest):
 
 
 class ServiceTest(Neo4jGraphQLNetworkTest):
+    def test_skip_update(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data service
+        a_service = data_generator.create_service()
+        srv_name = a_service.get_node().data.get("name")
+        srv_service_type = a_service.get_node().data.get("service_type")
+        srv_operational_state = a_service.get_node().data\
+            .get("operational_state")
+        srv_description = a_service.get_node().data.get("description")
+        srv_project_end_date = a_service.get_node().data\
+            .get("project_end_date", data_generator.get_random_date())
+        srv_decommissioned_date = a_service.get_node().data\
+            .get("decommissioned_date", data_generator.get_random_date())
+
+        # get provider
+        incoming = a_service.get_node()._incoming()
+        provider = NodeHandle.objects.get(handle_id=\
+                        incoming['Provides'][0]['node'].handle_id)
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get support and responsible groups
+        group_s = NodeHandle.objects.get(handle_id=\
+                        incoming['Supports'][0]['node'].handle_id)
+        group_r = NodeHandle.objects.get(handle_id=\
+                        incoming['Takes_responsibility'][0]['node'].handle_id)
+
+        group_support_id = relay.Node.to_global_id(str(group_s.node_type),
+                                            str(group_s.handle_id))
+        group_responsible_id = relay.Node.to_global_id(str(group_r.node_type),
+                                            str(group_r.handle_id))
+
+        # dependencies
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        query_t = """
+        mutation{{
+          composite_service(input:{{
+            create_input:{{
+              name: "{srv_name}"
+              service_type: "{srv_service_type}"
+              operational_state: "{srv_operational_state}"
+              description: "{srv_description}"
+              relationship_provider: "{provider_id}"
+            }}
+            update_dependencies_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+                skip_update: true
+              }}
+            ]
+            update_dependencies_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+                skip_update: true
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              service{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                service_type{{
+                  name
+                }}
+                description
+                project_end_date
+                decommissioned_date
+                dependencies{{
+                  id
+                  name
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            dependencies_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(
+            srv_name=srv_name, srv_operational_state=srv_operational_state,
+            srv_description=srv_description, srv_service_type=srv_service_type,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            provider_id=provider_id,
+        )
+
+        a_service.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_service']
+        created_errors = all_data['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'dependencies_firewall_updated': None,
+            'dependencies_switch_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], \
+                            indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], \
+                        indent=1)
+
+        # check that the firewall and the service are related to the service
+        check_service = all_data['created']['service']
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
     def test_service(self):
         self.check_service(
             service_type_create="Project",
