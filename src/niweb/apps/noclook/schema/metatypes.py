@@ -41,8 +41,20 @@ class GenericNodeOrder(graphene.Enum):
 ## metatype interfaces
 class NINode(graphene.Node):
     name = graphene.String(required=True)
+    description = graphene.String()
     relation_id = graphene.Int()
     contexts = graphene.List(graphene.String)
+
+    def resolve_description(self, info, **kwargs):
+        ret = None
+
+        if sriutils.authorice_read_resource(info.context.user, self.handle_id):
+            try:
+                ret = self.get_node().data.get("description")
+            except:
+                pass
+
+        return ret
 
     def resolve_contexts(self, info, **kwargs):
         ret = None
