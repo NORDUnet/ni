@@ -274,6 +274,7 @@ class NewCableForm(forms.Form):
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
+    cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
 
