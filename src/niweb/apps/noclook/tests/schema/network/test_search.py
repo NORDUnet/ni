@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-import logging
 from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
@@ -10,8 +9,22 @@ from apps.noclook.tests.stressload.data_generator import \
     CommunityFakeDataGenerator, NetworkFakeDataGenerator
 from . import Neo4jGraphQLNetworkTest
 
+import logging
+import norduniclient as nc
+
 
 class GlobalSearchTest(Neo4jGraphQLNetworkTest):
+    def get_expected_length(self, search):
+        q = """
+            MATCH (n:Node)
+            WHERE any(prop in keys(n) WHERE n[prop] =~ "(?i).*{search}.*")
+            RETURN count(n) as total
+            """.format(search=search)
+
+        res = nc.query_to_dict(nc.graphdb.manager, q, search=search)
+
+        return res['total']
+
     def test_global_search(self):
         community_generator = CommunityFakeDataGenerator()
         network_generator = NetworkFakeDataGenerator()
@@ -24,79 +37,60 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
         port2 = network_generator.create_port(name="port-02")
 
         # search common pattern
-        query = '''
-        {
-          search_generalsearch(filter:{query: "-0"}){
-            edges{
-              node{
-                ninode{
+        query_t = '''
+        {{
+          search_generalsearch(filter:{{query: "{search}"}}){{
+            edges{{
+              node{{
+                ninode{{
                   id
                   name
                   __typename
-                }
+                }}
                 match_txt
-              }
-            }
-          }
-        }
+              }}
+            }}
+          }}
+        }}
         '''
+
+        search = '-0'
+        query = query_t.format(search=search)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
+        expected_num = self.get_expected_length(search)
+
         results = result.data['search_generalsearch']['edges']
-        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results), expected_num, \
+            pformat(result.data, indent=1))
 
         # search first pattern
-        query = '''
-        {
-          search_generalsearch(filter:{query: "-01"}){
-            edges{
-              node{
-                ninode{
-                  id
-                  name
-                  __typename
-                }
-                match_txt
-              }
-            }
-          }
-        }
-        '''
+        search = '-01'
+        query = query_t.format(search=search)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
+        expected_num = self.get_expected_length(search)
         results = result.data['search_generalsearch']['edges']
-        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results), expected_num, \
+            pformat(result.data, indent=1))
 
         # search second pattern
-        query = '''
-        {
-          search_generalsearch(filter:{query: "-02"}){
-            edges{
-              node{
-                ninode{
-                  id
-                  name
-                  __typename
-                }
-                match_txt
-              }
-            }
-          }
-        }
-        '''
+        search = '-02'
+        query = query_t.format(search=search)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
+        expected_num = self.get_expected_length(search)
         results = result.data['search_generalsearch']['edges']
-        self.assertEqual(len(results), 2)
+        self.assertEqual(len(results), expected_num)
 
 
 class SearchPortTest(Neo4jGraphQLNetworkTest):
