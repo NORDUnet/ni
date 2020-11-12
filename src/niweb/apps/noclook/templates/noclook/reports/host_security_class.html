@@ -7,19 +7,19 @@
     <hr>
     <ul class="nav nav-pills">
         {% if status == "all" or status == None %}
-            <li class="active"><a href="/reports/hosts/host-security-class/all/">All</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-security-class/all/">All</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-security-class/all/">All</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-security-class/all/">All</a></li>
         {% endif %}
         {% if status == "classified" %}
-            <li class="active"><a href="/reports/hosts/host-security-class/classified/">Classified</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-security-class/classified/">Classified</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-security-class/classified/">Classified</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-security-class/classified/">Classified</a></li>
         {% endif %}
         {% if status == "not-classified" %}
-            <li class="active"><a href="/reports/hosts/host-security-class/not-classified/">Not Classified</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-security-class/not-classified/">Not Classified</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-security-class/not-classified/">Not Classified</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-security-class/not-classified/">Not Classified</a></li>
         {% endif %}
     </ul>
     <h3>Hosts: {{ hosts|length }}</h3>
