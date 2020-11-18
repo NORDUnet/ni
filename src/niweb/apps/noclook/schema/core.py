@@ -503,10 +503,17 @@ class NIObjectType(DjangoObjectType):
         return cls.create_mutation
 
     @classmethod
-    def set_create_mutation(cls, create_mutation):
+    def can_create(cls):
         can_create = cls.get_from_nimetatype("can_create")
         if can_create == None:
             can_create = True
+
+        return can_create
+
+    @classmethod
+    def set_create_mutation(cls, create_mutation):
+        can_create = cls.can_create()
+
         if can_create:
             cls.create_mutation = create_mutation
         else:

@@ -190,11 +190,14 @@ def get_typelist_resolver(class_list):
                     all_name = NOCRootQuery.\
                         graph_all_type_resolvers[clazz]['field_name']
 
+                    can_create = clazz.can_create()
+
                     elem = TypeInfo(
                         type_name=clazz,
                         connection_name=connection_name,
                         byid_name=byid_name,
                         all_name=all_name,
+                        can_create=can_create,
                     )
 
                     classes.append(elem)
