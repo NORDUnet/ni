@@ -213,6 +213,9 @@ optical_path_dependency_types = [
                                     OpticalNode, Router, Switch, OpticalPath,
                                     Service,
                                 ]
+router_dependents_types = [
+    Service, OpticalPath, OpticalMultiplexSection, OpticalLink
+]
 
 
 class NOCRootQuery(NOCAutoQuery):
@@ -265,6 +268,10 @@ class NOCRootQuery(NOCAutoQuery):
     # optical_path_dependency_types
     getOpticalPathDependencyTypes = graphene.List(TypeInfo,
             resolver=get_typelist_resolver(optical_path_dependency_types))
+
+    # router_dependents_types
+    getRouterDependentsTypes = graphene.List(TypeInfo,
+            resolver=get_typelist_resolver(router_dependents_types))
 
     # service types
     getServiceTypes = graphene.List(ServiceType, \
