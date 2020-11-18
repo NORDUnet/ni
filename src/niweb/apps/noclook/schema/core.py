@@ -481,7 +481,7 @@ class NIObjectType(DjangoObjectType):
     @classmethod
     def get_from_nimetatype(cls, attr):
         ni_metatype = getattr(cls, 'NIMetaType', None)
-        return getattr(ni_metatype, attr)
+        return getattr(ni_metatype, attr, None)
 
     @classmethod
     def get_type_name(cls):
@@ -504,7 +504,13 @@ class NIObjectType(DjangoObjectType):
 
     @classmethod
     def set_create_mutation(cls, create_mutation):
-        cls.create_mutation = create_mutation
+        can_create = cls.get_from_nimetatype("can_create")
+        if can_create == None:
+            can_create = True
+        if can_create:
+            cls.create_mutation = create_mutation
+        else:
+            cls.create_mutation = None
 
     @classmethod
     def get_update_mutation(cls):
