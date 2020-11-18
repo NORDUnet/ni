@@ -87,6 +87,7 @@ class Unit(NIObjectType, LogicalMixin):
         ni_type = 'Unit'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class Port(NIObjectType, PhysicalMixin):
@@ -199,6 +200,7 @@ class Router(NIObjectType, PhysicalMixin):
         ni_type = 'Router'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class SwitchType(DjangoObjectType):
@@ -286,6 +288,7 @@ class Firewall(NIObjectType, PhysicalMixin):
         ni_type = 'Firewall'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class ExternalEquipment(NIObjectType, PhysicalMixin):
@@ -519,6 +522,7 @@ class PeeringGroup(NIObjectType, LogicalMixin):
         ni_type = 'Peering Group'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 # Service
