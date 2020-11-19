@@ -2,6 +2,3 @@
 ipython
 django-nose<1.5
 django-extensions
-ipdb
-Faker
-django-test-migrations
