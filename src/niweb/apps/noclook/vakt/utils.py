@@ -3,7 +3,8 @@ __author__ = 'ffuentes'
 
 import logging
 
-from apps.noclook.models import NodeHandle, AuthzAction, GroupContextAuthzAction, NodeHandleContext, Context
+from apps.noclook.models import NodeHandle, AuthzAction, \
+                            GroupContextAuthzAction, NodeHandleContext, Context
 from djangovakt.storage import DjangoStorage
 from vakt import Guard, RulesChecker, Inquiry
 
@@ -107,6 +108,16 @@ def get_default_context(cmodel=Context):
     return get_community_context(cmodel)
 
 
+def get_all_contexts(cmodel=Context):
+    contexts = dict(
+        community = get_community_context(cmodel),
+        network = get_network_context(cmodel),
+        contracts = get_contracts_context(cmodel),
+    )
+
+    return contexts
+
+
 def authorize_aa_resource(user, handle_id, get_aa_func):
     '''
     This function checks if an user is authorized to do a specific action over
@@ -174,6 +185,16 @@ def authorize_aa_operation(user, context, get_aa_func):
     return ret
 
 
+def authorize_read_module(user, context):
+    '''
+    This function authorizes the read operation on a resource within a defined
+    context, it checks if the user can read objects from this SRI module
+    '''
+    logger.debug('Authorizing user to read a node within the module {}'\
+        .format(context.name))
+    return authorize_aa_operation(user, context, get_read_authaction)
+
+
 def authorize_create_resource(user, context):
     '''
     This function authorizes the creation of a resource within a particular
@@ -201,9 +222,10 @@ def authorize_list_module(user, context):
         .format(context.name))
     return authorize_aa_operation(user, context, get_list_authaction)
 
+
 def authorize_superadmin(user, cmodel=Context):
     '''
-    This function checks if the user can perform admin actions inside a module
+    This function checks if the user can perform super admin actions
     '''
     logger.debug('Authorizing user {} as a superadmin'.format(user.username))
 
@@ -216,6 +238,17 @@ def authorize_superadmin(user, cmodel=Context):
             break
 
     return is_superadmin
+
+
+def user_is_admin(user):
+    nh_contexts = get_all_contexts()
+    is_admin = False
+
+    for name, nh_context in nh_contexts.items():
+        if authorize_admin_module(user, nh_context):
+            return True
+
+    return is_admin
 
 
 def get_ids_user_canread(user):
@@ -251,3 +284,46 @@ def get_nh_contexts(nh):
 
 def get_nh_named_contexts(nh):
     return [ { 'context_name': c } for c in get_nh_contexts(nh) ]
+
+
+def get_aaction_context_group(auth_action, context):
+    groupctxaa = None
+    groupctxaa_f = GroupContextAuthzAction.objects.filter(
+        authzprofile=auth_action, context=context)
+
+    if groupctxaa_f:
+        groupctxaa = groupctxaa_f.first()
+
+    return groupctxaa.group
+
+
+def edit_aaction_context_user(auth_action, context, user, add=False):
+    # get the relation between the authorized action and the context
+    # to get the user group
+    group = get_aaction_context_group(auth_action, context)
+
+    if group:
+        # add user to group
+        group_users = group.user_set.all()
+
+        if add and user not in group_users:
+            group.user_set.add(user)
+
+        if not add and user in group_users:
+            group.user_set.remove(user)
+
+        group.save()
+
+
+def set_nodehandle_context(context, nh):
+    # set new context
+    NodeHandleContext.objects.get_or_create(context=context, nodehandle=nh)
+
+
+def set_nodehandle_contexts(contexts, nh):
+    # delete unrelated NodeHandleContext
+    NodeHandleContext.objects.filter(nodehandle=nh)\
+        .exclude(context__in=contexts).delete()
+
+    for context in contexts:
+        set_nodehandle_context(context, nh)

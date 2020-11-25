@@ -12,6 +12,7 @@
             <tr>
                 <th>Cable type:</th><td>{{ node.data.cable_type|capfirst }}</td>
             </tr>
+            {% info_row 'Cable length:' node.data.cable_length %}
 
             {% info_row 'Trunk ID:' node.data.telenor_trunk_id %}
             {% info_row 'TN1 number:' node.data.telenor_tn1_number %}

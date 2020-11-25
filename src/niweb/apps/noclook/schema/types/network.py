@@ -87,6 +87,7 @@ class Unit(NIObjectType, LogicalMixin):
         ni_type = 'Unit'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class Port(NIObjectType, PhysicalMixin):
@@ -105,6 +106,7 @@ class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField(dropdown_name="cable_types")
     description = NIStringField()
+    cable_length = NIFloatField()
     provider = NISingleRelationField(field_type=(lambda: Provider), \
         rel_name="Provides", rel_method="_incoming")
     ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', \
@@ -198,6 +200,7 @@ class Router(NIObjectType, PhysicalMixin):
         ni_type = 'Router'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class SwitchType(DjangoObjectType):
@@ -285,6 +288,7 @@ class Firewall(NIObjectType, PhysicalMixin):
         ni_type = 'Firewall'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 class ExternalEquipment(NIObjectType, PhysicalMixin):
@@ -518,6 +522,7 @@ class PeeringGroup(NIObjectType, LogicalMixin):
         ni_type = 'Peering Group'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+        can_create = False
 
 
 # Service

@@ -19,3 +19,5 @@ vakt
 django-vakt
 django-graphql-jwt
 Pillow
+Faker
+django-test-migrations

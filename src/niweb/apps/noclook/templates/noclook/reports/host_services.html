@@ -7,24 +7,24 @@
     <hr>
     <ul class="nav nav-pills">
         {% if status == "unauthorized-ports" %}
-            <li class="active"><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
         {% endif %}
         {% if status == "locked" %}
-            <li class="active"><a href="/reports/hosts/host-services/locked/">Locked Hosts</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-services/locked/">Locked Hosts</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-services/locked/">Locked Hosts</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-services/locked/">Locked Hosts</a></li>
         {% endif %}
         {% if status == "not-locked" %}
-            <li class="active"><a href="/reports/hosts/host-services/not-locked/">Not locked hosts</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-services/not-locked/">Not locked hosts</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-services/not-locked/">Not locked hosts</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-services/not-locked/">Not locked hosts</a></li>
         {% endif %}
         {% if status == "public" %}
-            <li class="active"><a href="/reports/hosts/host-services/public/">Public ports</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-services/public/">Public ports</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-services/public/">Public ports</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-services/public/">Public ports</a></li>
         {% endif %}
     </ul>
     {% if hosts %}

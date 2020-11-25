@@ -35,6 +35,7 @@ class TypeInfo(graphene.ObjectType):
     connection_name = graphene.String(required=True)
     byid_name = graphene.String(required=True)
     all_name = graphene.String(required=True)
+    can_create = graphene.Boolean()
 
 
 class Action(DjangoObjectType):

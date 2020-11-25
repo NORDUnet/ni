@@ -11,13 +11,15 @@ from apps.noclook.tests.testing import nc
 from pprint import pformat
 from graphene import relay
 
+
 class TestContext():
     def __init__(self, user, *ignore):
         self.user = user
 
+
 class Neo4jGraphQLGenericTest(NeoTestCase):
     def assert_correct(self, result, expected):
-        fmt_str = '{} \n != {}'.format(
+        fmt_str = '\n{} \n != \n{}'.format(
                                     pformat(result.data, indent=1),
                                     pformat(expected, indent=1)
                                 )
@@ -56,16 +58,20 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
         for acontext in iter_contexts:
             # create group for read in community context
             context_name = acontext.name.lower()
-            group_read  = Group( name="{} read".format(context_name) )
+            group_read = sriutils.get_aaction_context_group(
+                self.get_read_authaction, acontext)
 
             # create group for write in community context
-            group_write = Group( name="{} write".format(context_name) )
+            group_write = sriutils.get_aaction_context_group(
+                self.get_write_authaction, acontext)
 
             # create group for list in community context
-            group_list  = Group( name="{} list".format(context_name) )
+            group_list = sriutils.get_aaction_context_group(
+                self.get_list_authaction, acontext)
 
             # create group for admin in community context
-            group_admin = Group( name="{} admin".format(context_name) )
+            group_admin = sriutils.get_aaction_context_group(
+                self.get_admin_authaction, acontext)
 
             add_read  = False
             add_write = False
