@@ -56,7 +56,7 @@
 
 {% block content %}
     {{ block.super }}
-    
+
     {% block before_table %}{% endblock %}
     <div class="pull-right">
         {% block table_labels %}
@@ -67,7 +67,7 @@
         {% endblock %}
     </div>
     <table id="{% block table_id %}{% endblock %}" data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" class="table table-condensed table-striped table-hover compact" data-tablesort cellspacing="1">
-        <thead> 
+        <thead>
             <tr>
                 {% block table_head %}{% endblock %}
             </tr>
@@ -79,7 +79,7 @@
     {% block after_table %}{% endblock %}
     <!-- Hidden table to post json data to download table as a file -->
     <div class="hidden">
-        <form id="json-table-form" action="/download/tabletofile/" method="post">{% csrf_token %}
+        <form id="json-table-form" action="{{ script_name }}/download/tabletofile/" method="post">{% csrf_token %}
             <input id="form-file-format" name="format" type="text">
             <input id="form-json-header" name="header" type="text">
             <input id="form-json-data" name="data" type="text">

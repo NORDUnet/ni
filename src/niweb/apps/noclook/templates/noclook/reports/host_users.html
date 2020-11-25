@@ -8,21 +8,21 @@
     <hr>
     <ul class="nav nav-pills">
         {% if host_user_name == "All" or host_user_name == None %}
-            <li class="active"><a href="/reports/hosts/host-users/All/">All</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-users/All/">All</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-users/All/">All</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-users/All/">All</a></li>
         {% endif %}
         {% for key in host_users %}
             {% if key == host_user_name %}
-                <li class="active"><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+                <li class="active"><a href="{{ script_name }}/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
             {% else %}
-                <li class=""><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+                <li class=""><a href="{{ script_name }}/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
             {% endif %}
         {% endfor %}
         {% if host_user_name == "Missing" %}
-            <li class="active"><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+            <li class="active"><a href="{{ script_name }}/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
         {% else %}
-            <li class=""><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+            <li class=""><a href="{{ script_name }}/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
         {% endif %}
     </ul>
     <h3>Hosts for {{ host_user_name|default:"All" }}: {{ num_of_hosts }}</h3>
