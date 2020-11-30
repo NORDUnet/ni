@@ -1321,13 +1321,18 @@ class NewRoleForm(forms.ModelForm):
 
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
-        initial_name = self.initial['name']
-        role = super(EditRoleForm, self).save(False)
+        role = None
 
-        if self.has_changed():
-            if 'name' in self.changed_data:
-                nc.models.RoleRelationship.update_roles_withname(initial_name, role.name)
-            role.save()
+        if 'name' in self.initial:
+            initial_name = self.initial['name']
+            role = super(EditRoleForm, self).save(False)
+
+            if self.has_changed():
+                if 'name' in self.changed_data:
+                    nc.models.RoleRelationship.update_roles_withname(initial_name, role.name)
+                role.save()
+        else:
+            role = super(EditRoleForm, self).save(commit)
 
         return role
 
