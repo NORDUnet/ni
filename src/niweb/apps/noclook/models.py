@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from django.contrib.auth.models import User, Group
 from django_comments.signals import comment_was_posted, comment_was_flagged
-from django.dispatch import receiver
 from django_comments.models import Comment
+from django.contrib.auth.models import User, Group
+from django.core.exceptions import PermissionDenied
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
 from actstream import action
@@ -160,6 +161,16 @@ class RoleGroup(models.Model):
 
     def __str__(self):
         return 'RoleGroup %s' % (self.name)
+
+    def delete(self, **kwargs):
+        """
+        Block the deletion of the default rolegroup
+        """
+
+        if self.name != DEFAULT_ROLEGROUP_NAME:
+            super(RoleGroup, self).delete(**kwargs)
+        else:
+            raise PermissionDenied("The default rolegroup shouldn't be deleted")
 
 
 @python_2_unicode_compatible
