@@ -8,6 +8,8 @@ from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator,\
     NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, \
     Choice, GroupContextAuthzAction, NodeHandleContext, SwitchType
 
+from .forms import EditRoleForm as RoleForm
+
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
 
@@ -89,8 +91,13 @@ class DropdownAdmin(admin.ModelAdmin):
 class ChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'dropdown')
 
+
 class SwitchTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'ports')
+
+
+class RoleAdmin(admin.ModelAdmin):
+    form = RoleForm
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
@@ -105,7 +112,7 @@ admin.site.register(ServiceClass)
 admin.site.register(Dropdown, DropdownAdmin)
 admin.site.register(Choice, ChoiceAdmin)
 admin.site.register(RoleGroup)
-admin.site.register(Role)
+admin.site.register(Role, RoleAdmin)
 admin.site.register(GroupContextAuthzAction)
 admin.site.register(NodeHandleContext)
 admin.site.register(SwitchType, SwitchTypeAdmin)
