@@ -26,8 +26,8 @@ import argparse
 import logging
 import utils
 
-from niweb.apps.noclook.models import NodeHandle, NodeHandleContext
-import niweb.apps.noclook.vakt.utils as sriutils
+from apps.noclook.models import NodeHandle, NodeHandleContext
+import apps.noclook.vakt.utils as sriutils
 from django.conf import settings as django_settings
 from django_comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
