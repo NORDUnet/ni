@@ -71,6 +71,7 @@ class Unit(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     vlan = NIStringField()
+    ip_addresses = NIIPAddrField()
     ip_address = graphene.String() # only for PeeringGroup's "dependencies" list
 
     def resolve_ip_address(self, info, **kwargs):
