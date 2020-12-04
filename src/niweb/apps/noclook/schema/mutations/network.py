@@ -599,8 +599,7 @@ class NISiteMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = Site
         unique_node  = True
-        form_exclude = ('address', 'floor', 'room', 'postarea', 'postcode',
-                        'country_code')
+        form_exclude = ('address', 'floor', 'room', 'postarea', 'postcode')
         relations_processors = {
             'relationship_responsible_for': get_unique_relation_processor(
                 'Provides',
