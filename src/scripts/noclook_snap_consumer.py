@@ -67,6 +67,9 @@ def insert_snap(json_list):
             # Dont default to False
             properties['syslog'] = True
 
+        if d.get('service_tag'):
+            properties['service_tag'] = d.get('service_tag')
+
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
         logger.info('{} has been imported'.format(name))
 
