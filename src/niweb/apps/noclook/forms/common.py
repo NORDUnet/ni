@@ -178,6 +178,7 @@ class NewSiteForm(forms.Form):
         self.fields['country_code'].choices = country_codes()
 
     name = forms.CharField()
+    description = description_field('Site')
     country_code = forms.ChoiceField(widget=forms.widgets.Select)
     country = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     address = forms.CharField(required=False)
@@ -202,6 +203,7 @@ class EditSiteForm(forms.Form):
         self.fields['relationship_responsible_for'].choices = get_node_type_tuples('Site_Owner')
 
     name = forms.CharField()
+    description = description_field('Site')
     country_code = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     site_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
@@ -373,12 +375,14 @@ class NewRoomForm(forms.Form):
         self.fields['relationship_location'].choices = get_node_type_tuples('Site')
 
     name = forms.CharField(help_text='Room need to be uniq to the building')
+    description = description_field('Room')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_location = relationship_field('location', True)
 
 
 class EditRoomForm(forms.Form):
     name = forms.CharField(help_text='Name need to be uniq to the building')
+    description = description_field('Room')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_parent = relationship_field('parent')
 

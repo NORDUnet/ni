@@ -6,6 +6,7 @@
 {{ block.super }}
     <div class="well">
         {{ form.name | as_crispy_field}}
+        {{ form.description | as_crispy_field}}
         {{ form.floor | as_crispy_field}}
         {% include "noclook/edit/includes/parent_group.html" %}
     </div>

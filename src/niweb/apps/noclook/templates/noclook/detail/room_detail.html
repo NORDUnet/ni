@@ -13,6 +13,11 @@
                     <th>Floor:</th><td>{{ node.data.floor }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.description %}
+                <tr>
+                    <th>Description:</th><td>{{ node.data.description }}</td>
+                </tr>
+            {% endif %}
             <tr>
                 <th>More information:</th>
                 <td>
