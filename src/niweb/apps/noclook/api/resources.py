@@ -809,6 +809,42 @@ class RackResource(NodeHandleResource):
         }
 
 
+class RoomResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='room')
+        resource_name = 'room'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class PatchPanelResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='patch-panel')
+        resource_name = 'patch-panel'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class OutletResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='outlet')
+        resource_name = 'outlet'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
 class RouterResource(NodeHandleResource):
 
     class Meta:
