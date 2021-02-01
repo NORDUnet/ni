@@ -977,7 +977,7 @@ def edit_rack(request, handle_id):
     nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
     located_in = rack.get_located_in()
-    located_in_categories = ['host', 'odf', 'optical-node', 'router']
+    located_in_categories = ['host', 'odf', 'optical-node', 'router', 'patch-panel']
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():

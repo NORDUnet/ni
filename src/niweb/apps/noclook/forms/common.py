@@ -344,13 +344,9 @@ class EditPeeringGroupForm(forms.Form):
 
 
 class NewRackForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewRackForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-
     name = forms.CharField(help_text='Name should be the grid location.')
     label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
-    relationship_location = relationship_field('location', True)
+    relationship_location = relationship_field('location')
 
 
 class EditRackForm(forms.Form):
@@ -362,6 +358,8 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_direction_top = forms.BooleanField(required=False, help_text='First rack unit at top of rack?',
+                                   label='Top down counting')
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
     label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
