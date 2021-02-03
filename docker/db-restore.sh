@@ -94,7 +94,7 @@ docker-compose -f  $SCRIPT_DIR/compose-dev.yml start neo4j
 postgres_id=$(docker ps | awk '/postgres/ {print $1}')
 
 msg "Drop, Create DB"
-cat << EOM | docker exec -i $postgres_id psql -q postgres postgres
+cat << EOM | docker exec -i $postgres_id psql -q -U ni postgres
 DROP DATABASE norduni;
 CREATE DATABASE norduni;
 GRANT ALL PRIVILEGES ON DATABASE norduni to ni;
