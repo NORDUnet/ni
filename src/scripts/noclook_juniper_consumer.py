@@ -463,7 +463,10 @@ def consume_juniper_conf(json_list, is_switches):
     """
     bgp_peerings = []
     for i in json_list:
-        jconf = i['host']['juniper_conf']
+        if 'nso_juniper' in i['host']:
+            jconf = i['host']['nso_juniper']
+        else:
+            jconf = i['host']['juniper_conf']
         name = jconf['name']
         version = jconf.get('version', 'Unknown')
         model = jconf.get('model', 'Unknown')

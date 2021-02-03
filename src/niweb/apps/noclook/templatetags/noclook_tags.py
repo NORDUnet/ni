@@ -206,20 +206,25 @@ def as_json(value):
 def hardware_module(module, level=0):
     result = ""
     indent = " "*4*level
-    keys = ["name", 
-            "version", 
-            "part_number", 
-            "serial_number", 
+    keys = ["name",
+            "version",
+            "part_number",
+            "part-number",
+            "serial_number",
+            "serial-number",
             "description",
-            "hardware_description", 
+            "hardware_description",
             "model_number",
-            "clei_code"]
+            "model-number",
+            "clei_code",
+            "clei-code"]
+    module_keys = ['modules', 'sub_modules', 'sub-modules']
     if module:
         result += "\n".join([u"{0}{1}: {2}".format(indent,key,module[key]) for key in keys if key in module ])
-        if module.get('modules') or module.get('sub_modules'):
+        if any(key in module for key in module_keys):
             result += "\n{0}Modules:\n\n".format(indent)
-            result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('modules',[]) ])
-            result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('sub_modules',[]) ])
+            for key in module_keys:
+                result += "\n".join([ hardware_module(mod, level+1) for mod in module.get(key,[]) ])
         result += "\n{0}{1}\n".format(indent,"-"*8)
     
     return result
