@@ -704,6 +704,20 @@ class OpticalNodeResource(NodeHandleResource):
         }
 
 
+class OpticalFilterResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-filter')
+        resource_name = 'optical-filter'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+
 class OpticalPathResource(NodeHandleResource):
 
     class Meta:
