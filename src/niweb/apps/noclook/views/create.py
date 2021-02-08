@@ -168,7 +168,8 @@ def new_cable(request, **kwargs):
 
 
 def _csv_to_cable_form(data):
-    data['cable_type'] = data.get('cable_type', '').strip()
+    if data.get('cable_type'):
+        data['cable_type'] = data['cable_type'].strip()
     if data.get('name'):
         data['name'] = data['name'].strip()
     return forms.NewCableForm(data)
@@ -177,7 +178,7 @@ def _csv_to_cable_form(data):
 def _form_to_csv(form, headers):
     cleaned = form.cleaned_data
     raw = form.data
-    return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
+    return u",".join([cleaned.get(h) or raw.get(h, '') or '' for h in headers])
 
 
 def _forms_to_csv(forms, headers):
