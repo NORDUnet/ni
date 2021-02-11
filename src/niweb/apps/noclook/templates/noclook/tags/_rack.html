@@ -2,7 +2,7 @@
 {% if racked_equipment %}
 <div>
   <h4>{{title}}</h4>
-  <div class="rack" style="min-height: {{rack_size}}px">
+  <div class="rack" style="min-height: {{rack_size}}px; {% if rack_direction_top %} flex-direction: column{% endif %}">
     {% for item in racked_equipment %}
       {% if item.spacer %}
         <div class="equipment spacer" style="height: {{item.height}}"></div>

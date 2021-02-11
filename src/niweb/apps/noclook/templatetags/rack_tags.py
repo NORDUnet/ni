@@ -85,6 +85,7 @@ def noclook_rack(rack, equipment):
             unracked_equipment.append(item)
     return {
         'rack_size': _rack_unit_to_height(rack.data.get('rack_units', 42)),
+        'rack_direction_top': rack.data.get('rack_direction_top', False),
         'racked_equipment': racked_equipment,
         'racked_equipment_back': racked_equipment_back,
         'unracked_equipment': unracked_equipment,
