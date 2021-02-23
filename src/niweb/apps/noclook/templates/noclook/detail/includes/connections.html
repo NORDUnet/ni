@@ -24,24 +24,64 @@
               Hide internal connections</label>
             </div>
             {% endif %}
+	    <div>
+              <script type="text/javascript">
+                $(function(){
+
+
+                  var $table = $('#connections');
+
+
+                  var rowSpanMap = {};
+                  $table.find('tr').each(function(){
+                    var valueOfTheSpannableCell = $($(this).children('td')[0]).text();
+                    $($(this).children('td')[0]).attr('data-original-value', valueOfTheSpannableCell);
+                    $($(this).children('td')[1]).attr('data-original-value_1', valueOfTheSpannableCell);
+                    rowSpanMap[valueOfTheSpannableCell] = true;
+                  });
+
+                  for(var rowGroup in rowSpanMap){
+                    var $cellsToSpan = $('td[data-original-value="'+rowGroup+'"]');
+                    var numberOfRowsToSpan = $cellsToSpan.length;
+                    $cellsToSpan.each(function(index){
+                      if(index==0){
+                        $(this).attr('rowspan', numberOfRowsToSpan);
+                      }else{
+                        $(this).hide();
+                      }
+                    });
+	            var $cellsToSpan = $('td[data-original-value_1="'+rowGroup+'"]');
+                    var numberOfRowsToSpan = $cellsToSpan.length;
+                    $cellsToSpan.each(function(index){
+                      if(index==0){
+                        $(this).attr('rowspan', numberOfRowsToSpan);
+                      }else{
+                        $(this).hide();
+                      }
+                    });
+                  }
+
+                })();
+	      </script>
+            </div>
+
             {% table_search "connections" %}
         </div>
     <h3>Connections</h3>
         {% blockvar th %}
-            <th>Port</th>
-            {% if user.is_staff %}
-              <th>Connect</th>
-            {% endif %}
-            <th>Description</th><th>Cable</th><th>End site</th><th>End location</th><th>End equipment</th><th>End port</th><th>Description</th>
+            <th>Port</th><th>Description</th>
+            <th>Cable</th><th>End site</th><th>End location</th><th>End equipment</th><th>End port</th><th>Description</th>
         {% endblockvar %}
         {% blockvar tbody %}
             {% for item in connections %}
                 <tr>
-                    <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a>
                     {% if user.is_staff %}
-                      <td><a href="/port/{{ item.porta.handle_id }}/edit_connect" class="btn btn-link"><i class="icon-edit icon-black"></i> Connect</a></td>
+		      <br><a href="/port/{{ item.porta.handle_id }}/edit_connect" <i class="icon-edit icon-black"></td>
+		    {% else %}
+		      </td>
                     {% endif %}
-                    <td>{{ item.porta.description }}</td>
+		    <td>{{ item.porta.description }}<br>
                     <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td>
                     <td>
                       {% if not item.site and item.location %}
