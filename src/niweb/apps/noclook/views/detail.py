@@ -713,7 +713,7 @@ def site_detail(request, handle_id):
     # rooms
     q = """
         MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(room:Room)
-        RETURN room order by toLower(room.name)
+        RETURN room order by toLower(toString(room.name))
         """
     rooms_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
