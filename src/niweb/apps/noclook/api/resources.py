@@ -1121,10 +1121,12 @@ class SwitchResource(NodeHandleResource):
 
             #create ports if switch is defined
             node = bundle.obj.get_node()
-            switch_type = SwitchType.objects.get(name=bundle.data['node'].get('model', None))
-            if switch_type.ports:
-                for port in switch_type.ports.split(","):
-                    helpers.create_port(node, port.strip(), bundle.request.user)
+            try:
+                switch_type = SwitchType.objects.get(name=bundle.data['node'].get('model', None))
+                if switch_type.ports:
+                    for port in switch_type.ports.split(","):
+                        helpers.create_port(node, port.strip(), bundle.request.user)
+            except: SwitchType.DoesNotExist
 
             return self.hydrate_node(bundle)
 
