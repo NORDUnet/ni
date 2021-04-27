@@ -118,7 +118,6 @@ class Floorplan():
         if not node:
             return
         # if node has floorplan_x + floorplan_y
-        print(node.data.get('floorplan_x'), node.data.get('floorplan_y'))
         if node.data.get('floorplan_x') and node.data.get('floorplan_y'):
             x = node.data.get('floorplan_x')
             y = node.data.get('floorplan_y')

@@ -122,7 +122,6 @@ def external_equipment_detail(request, handle_id):
     relations = external_equipment.get_relations()
     # Get dependents
     dependent = external_equipment.get_dependent_as_types()
-    print(dependent)
 
     return render(
         request,
