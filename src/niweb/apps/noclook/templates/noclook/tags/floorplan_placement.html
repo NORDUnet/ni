@@ -15,7 +15,7 @@
     <tr>
       <th>{{row}}</th>
       {% for tile in cols %}
-      <td class="{{ tile.css }}" data-x="{{forloop.counter}}" data-y="{{row}}">{{ tile.content }}</td>
+      <td class="{{ tile.css }}" data-x="{{forloop.counter}}" data-y="{{row}}">{{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}</td>
       {% endfor %}
     </tr>
     {% endfor %}

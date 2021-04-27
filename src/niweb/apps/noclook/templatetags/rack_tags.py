@@ -135,6 +135,9 @@ class Floorplan():
 class Tile():
     def __init__(self, content):
         self._content = content
+        self.label = ''
+        if content:
+            self.label = content.data.get('label', '')
 
     def content(self):
         item = self._content

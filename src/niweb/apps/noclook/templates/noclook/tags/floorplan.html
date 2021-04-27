@@ -6,7 +6,7 @@
     {% for row, cols in floorplan.tile_rows.items %}
     <tr>
       {% for tile in cols %}
-      <td class="{{ tile.css }}">{{ tile.content }}</td>
+      <td class="{{ tile.css }}">{{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}</td>
       {% endfor %}
     </tr>
     {% endfor %}

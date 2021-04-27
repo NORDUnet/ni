@@ -6,6 +6,7 @@
 {{ block.super }}
     <div class="well">
         {{ form.name | as_crispy_field}}
+        {{ form.label | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">

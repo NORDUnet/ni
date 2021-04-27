@@ -340,6 +340,7 @@ class NewRackForm(forms.Form):
         self.fields['relationship_location'].choices = get_node_type_tuples('Site')
 
     name = forms.CharField(help_text='Name should be the grid location.')
+    label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
     relationship_location = relationship_field('location', True)
 
 
@@ -354,6 +355,7 @@ class EditRackForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
+    label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
     floorplan_x = forms.IntegerField(required=False)
     floorplan_y = forms.IntegerField(required=False)
 
