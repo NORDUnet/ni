@@ -1,0 +1,23 @@
+{% if floorplan %}
+<h3>Floorplan</h3>
+<table class="floorplan">
+  <tbody>
+    {% load rack_tags %}
+    {% for row, cols in floorplan.tile_rows.items %}
+    <tr>
+      {% for tile in cols %}
+      <td class="{{ tile.css }}">{{ tile.content }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if floorplan.unplaced %}
+  <h4>Unplaced racks</h4>
+  <ul>
+    {% for rack in floorplan.unplaced %}
+      <ul>{{rack}}</ul>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endif %}

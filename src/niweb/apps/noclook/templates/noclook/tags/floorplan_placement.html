@@ -1,0 +1,56 @@
+{% if floorplan %}
+<h3>Floorplan placement</h3>
+<table class="floorplan placement">
+  <thead>
+    <tr>
+      <th><!--corner--></th>
+      {% for col in floorplan.cols %}
+      <th>{{col}}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% load rack_tags %}
+    {% for row, cols in floorplan.tile_rows.items %}
+    <tr>
+      <th>{{row}}</th>
+      {% for tile in cols %}
+      <td class="{{ tile.css }}" data-x="{{forloop.counter}}" data-y="{{row}}">{{ tile.content }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% load crispy_forms_tags %}
+{{ form.floorplan_x | as_crispy_field }}
+{{ form.floorplan_y | as_crispy_field }}
+<script>
+  var $floorplan = document.querySelector(".floorplan");
+  var $floorplan_x = document.querySelector("#{{form.floorplan_x.id_for_label}}");
+  var $floorplan_y = document.querySelector("#{{form.floorplan_y.id_for_label}}");
+  var $current;
+
+  $floorplan.querySelectorAll("td").forEach(function($td) {
+    if ($td.dataset.x == "{{form.floorplan_x.value}}" && $td.dataset.y == "{{form.floorplan_y.value}}") {
+      $td.classList.add("picked");
+      $current = $td;
+    }
+    $td.addEventListener("click", function(e) {
+      e.preventDefault();
+      if (this.className == "occupied") {
+        return
+      }
+      console.log(this.dataset.y, this.dataset.x);
+      $floorplan_x.value = this.dataset.x;
+      $floorplan_y.value = this.dataset.y;
+      if ($current) {
+        $current.className = "";
+      }
+      $current = this;
+      this.className = "picked";
+      //set in relevant inputs
+
+    });
+  });
+</script>
+{% endif %}

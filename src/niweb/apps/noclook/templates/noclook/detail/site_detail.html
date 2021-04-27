@@ -103,6 +103,10 @@
     <a href="import" class="btn btn-warning"><i class="icon-white icon-upload"></i> Import</a>
     <a href="export" class="btn"><i class="icon icon-download"></i> Export</a>
 {% endif %}
+
+{% load rack_tags %}
+{% noclook_floorplan node %}
+
 <div class="section">
     {% if rooms_table.rows %}
       <div class="pull-right">

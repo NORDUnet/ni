@@ -37,6 +37,10 @@ $(document).ready(
         {{ form.longitude | as_crispy_field}}
         {{ form.latitude | as_crispy_field}}
       {% endaccordion %}
+      {% accordion 'Floorplan (optional)' 'floorplan-edit' '#edit-accordion' %}
+        {{ form.floorplan_col | as_crispy_field}}
+        {{ form.floorplan_row | as_crispy_field}}
+      {% endaccordion %}
       {% include "noclook/edit/includes/responsible_for_group.html" %}
       {% accordion 'Other IDs and information (optional)' 'other-edit' '#edit-accordion' %}
         <div class="accordion-inner">

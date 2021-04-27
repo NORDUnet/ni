@@ -718,6 +718,7 @@ def site_detail(request, handle_id):
                    'rooms_table': rooms_table,
                    'history': True,
                    'urls': urls,
+                   'rack_list': rack_list,
                    })
 
 

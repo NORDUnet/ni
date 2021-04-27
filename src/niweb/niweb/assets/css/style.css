@@ -460,3 +460,33 @@ h3.compact {
 .flex-adjust {
   flex: 1 2;
 }
+
+.floorplan th, .floorplan td{
+  width: 60px;
+  height: 60px;
+}
+
+.floorplan td {
+  border: 1px solid #efefef;
+  text-align: center;
+}
+
+.floorplan .occupied {
+  border: 2px solid #ccc;
+}
+
+.floorplan.placement td:hover {
+  background-color: #efefef;
+  outline: 2px dashed #08c;
+  cursor: pointer;
+}
+
+.floorplan.placement td.occupied:hover {
+  background-color: transparent;
+  outline: none;
+}
+
+.floorplan .picked {
+  border: 2px solid #08c;
+  background-color: #efefef;
+}

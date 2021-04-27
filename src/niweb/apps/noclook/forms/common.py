@@ -177,6 +177,8 @@ class NewSiteForm(forms.Form):
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
+    floorplan_col = forms.IntegerField(required=False, help_text='Floorplan x axis cell count')
+    floorplan_row = forms.IntegerField(required=False, help_text='Floorplan y axis')
 
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
@@ -210,6 +212,9 @@ class EditSiteForm(forms.Form):
     owner_site_name = forms.CharField(required=False)
     url = forms.URLField(required=False, help_text='An URL to more information about the site.', label='Information URL')
     relationship_responsible_for = relationship_field('responsible', True)
+
+    floorplan_col = forms.IntegerField(required=False, help_text='Floorplan x axis cell count')
+    floorplan_row = forms.IntegerField(required=False, help_text='Floorplan y axis')
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
@@ -349,6 +354,8 @@ class EditRackForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
+    floorplan_x = forms.IntegerField(required=False)
+    floorplan_y = forms.IntegerField(required=False)
 
 class NewRoomForm(forms.Form):
     def __init__(self, *args, **kwargs):

@@ -1,4 +1,7 @@
 from django import template
+import re
+from collections.abc import Iterable
+from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
 
 register = template.Library()
 RACK_SIZE_PX = 20
@@ -92,3 +95,111 @@ def rack_sort(equipment):
     if equipment:
         equipment.sort(key=_rack_sort, reverse=True)
     return equipment
+
+
+
+class Floorplan():
+    def __init__(self, width, height):
+        self.floorplan = {}
+        self.cols = range(1, width + 1)
+        self.rows = range(1, height +1)
+        self.unplaced = []
+
+    def set_tile(self, x, y, value):
+        #TODO: check if inside floor grid
+        if x == -1 or y == -1:
+            self.unplaced += [Tile(value)]
+        self.floorplan[(x,y)] = value
+
+    def get_tile(self, x, y):
+        return self.floorplan.get((x,y))
+
+    def add_node(self, node):
+        if not node:
+            return
+        # if node has floorplan_x + floorplan_y
+        print(node.data.get('floorplan_x'), node.data.get('floorplan_y'))
+        if node.data.get('floorplan_x') and node.data.get('floorplan_y'):
+            x = node.data.get('floorplan_x')
+            y = node.data.get('floorplan_y')
+        else:
+            x, y = parse_xy(node.data.get('name'))
+        self.set_tile(x, y, node)
+
+    def tile_rows(self):
+        tile_set = {}
+        for row in self.rows:
+            tile_set[row] = [ Tile(self.get_tile(col, row)) for col in self.cols]
+        return tile_set
+
+class Tile():
+    def __init__(self, content):
+        self._content = content
+
+    def content(self):
+        item = self._content
+        if not item:
+            result = u''
+        elif isinstance(item, Iterable):
+            if 'handle_id' in item:
+                # item is a node
+                result = noclook_node_to_link({}, item)
+        elif item.data:
+            result = noclook_node_to_link({}, item.data)
+        return result
+
+    def __str__(self):
+        return self.content()
+
+    def css(self):
+        if self._content:
+            return 'occupied'
+        return ''
+
+ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+def parse_xy(s):
+    # A0.03
+    m = re.search(r'(^[a-zA-Z][0-9]?).([0-9][0-9]?)', s)
+    if m:
+        row_raw = m.group(1)
+        col = int(m.group(2))
+        row = ALPHABET.index(row_raw[0].upper()) +1
+        if len(row_raw) == 2 and row_raw[1] != '0':
+            row += 10
+        return col, row
+    return -1, -1
+
+
+@register.inclusion_tag('noclook/tags/floorplan.html')
+def noclook_floorplan(site):
+    if not site:
+        return
+    row = site.data.get('floorplan_row')
+    col = site.data.get('floorplan_col')
+    if not (row, col):
+        return
+
+    floorplan = Floorplan(col, row)
+    for r in site.get_has().get('Has'):
+        floorplan.add_node(r.get('node'))
+    return {
+        'floorplan': floorplan,
+    }
+
+
+@register.inclusion_tag('noclook/tags/floorplan_placement.html')
+def noclook_floorplan_placement(site, form):
+    row = site.data.get('floorplan_row')
+    col = site.data.get('floorplan_col')
+    if not (row, col):
+        return
+    floorplan = Floorplan(col, row)
+
+    for r in site.get_has().get('Has'):
+        floorplan.add_node(r.get('node'))
+
+
+    return {
+        'floorplan': floorplan,
+        'form': form,
+    }

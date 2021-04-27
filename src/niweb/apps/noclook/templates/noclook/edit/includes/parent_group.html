@@ -22,4 +22,11 @@
   <div class="span4">
     {% json_combo form.relationship_parent '/formdata/{id}/,/formdata/{id}/children/' parent_categories %}
   </div>
+  {% if parent.Has %}
+  {% load rack_tags %}
+  <div>
+    yay
+    {% noclook_floorplan_placement parent.Has.0.node form %}
+  </div>
+  {% endif %}
 {% endaccordion %}
