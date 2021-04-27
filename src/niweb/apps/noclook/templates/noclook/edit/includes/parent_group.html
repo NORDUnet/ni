@@ -24,9 +24,9 @@
   </div>
   {% if parent.Has %}
   {% load rack_tags %}
+  <div class="clearfix"></div>
   <div>
-    yay
-    {% noclook_floorplan_placement parent.Has.0.node form %}
+    {% noclook_floorplan_placement parent.Has.0.node form.floorplan_x form.floorplan_y%}
   </div>
   {% endif %}
 {% endaccordion %}

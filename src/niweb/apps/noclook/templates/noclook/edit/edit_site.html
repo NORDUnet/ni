@@ -40,6 +40,10 @@ $(document).ready(
       {% accordion 'Floorplan (optional)' 'floorplan-edit' '#edit-accordion' %}
         {{ form.floorplan_col | as_crispy_field}}
         {{ form.floorplan_row | as_crispy_field}}
+        {% load rack_tags %}
+        <div>
+          {% noclook_floorplan_placement node form.floorplan_door_x form.floorplan_door_y 'Access door placement' %}
+        </div>
       {% endaccordion %}
       {% include "noclook/edit/includes/responsible_for_group.html" %}
       {% accordion 'Other IDs and information (optional)' 'other-edit' '#edit-accordion' %}

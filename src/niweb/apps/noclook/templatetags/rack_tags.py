@@ -105,11 +105,11 @@ class Floorplan():
         self.rows = range(1, height +1)
         self.unplaced = []
 
-    def set_tile(self, x, y, value):
+    def set_tile(self, x, y, tile):
         #TODO: check if inside floor grid
         if x == -1 or y == -1:
-            self.unplaced += [Tile(value)]
-        self.floorplan[(x,y)] = value
+            self.unplaced += [tile]
+        self.floorplan[(x,y)] = tile
 
     def get_tile(self, x, y):
         return self.floorplan.get((x,y))
@@ -123,25 +123,36 @@ class Floorplan():
             y = node.data.get('floorplan_y')
         else:
             x, y = parse_xy(node.data.get('name'))
-        self.set_tile(x, y, node)
+        self.set_tile(x, y, Tile(node))
+
+    def add_door(self, x, y):
+        door = Tile("Access Door")
+        door.css_classes.append("door")
+        self.set_tile(x, y, door)
+
 
     def tile_rows(self):
         tile_set = {}
         for row in self.rows:
-            tile_set[row] = [ Tile(self.get_tile(col, row)) for col in self.cols]
+            tile_set[row] = [ self.get_tile(col, row) for col in self.cols]
         return tile_set
 
 class Tile():
     def __init__(self, content):
         self._content = content
         self.label = ''
-        if content:
+        if hasattr(content, 'data'):
             self.label = content.data.get('label', '')
+        self.css_classes = []
+        if content:
+            self.css_classes.append('occupied')
 
     def content(self):
         item = self._content
         if not item:
             result = u''
+        elif isinstance(item, str):
+            result = item
         elif isinstance(item, Iterable):
             if 'handle_id' in item:
                 # item is a node
@@ -154,9 +165,7 @@ class Tile():
         return self.content()
 
     def css(self):
-        if self._content:
-            return 'occupied'
-        return ''
+        return ' '.join(self.css_classes)
 
 ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 def parse_xy(s):
@@ -184,13 +193,19 @@ def noclook_floorplan(site):
     floorplan = Floorplan(col, row)
     for r in site.get_has().get('Has'):
         floorplan.add_node(r.get('node'))
+
+    door_x = site.data.get('floorplan_door_x')
+    door_y = site.data.get('floorplan_door_y')
+    if door_x and door_y:
+        print("got door")
+        floorplan.add_door(door_x, door_y)
     return {
         'floorplan': floorplan,
     }
 
 
 @register.inclusion_tag('noclook/tags/floorplan_placement.html')
-def noclook_floorplan_placement(site, form):
+def noclook_floorplan_placement(site, field_x, field_y, title="Floorplan placement"):
     row = site.data.get('floorplan_row')
     col = site.data.get('floorplan_col')
     if not (row and col):
@@ -199,9 +214,16 @@ def noclook_floorplan_placement(site, form):
 
     for r in site.get_has().get('Has'):
         floorplan.add_node(r.get('node'))
+    door_x = site.data.get('floorplan_door_x')
+    door_y = site.data.get('floorplan_door_y')
+    if door_x and door_y:
+        print("got door")
+        floorplan.add_door(door_x, door_y)
 
 
     return {
         'floorplan': floorplan,
-        'form': form,
+        'field_x': field_x,
+        'field_y': field_y,
+        'title': title,
     }

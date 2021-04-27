@@ -1,5 +1,5 @@
 {% if floorplan %}
-<h3>Floorplan placement</h3>
+<h3>{{title}}</h3>
 <table class="floorplan placement">
   <thead>
     <tr>
@@ -22,12 +22,12 @@
   </tbody>
 </table>
 {% load crispy_forms_tags %}
-{{ form.floorplan_x | as_crispy_field }}
-{{ form.floorplan_y | as_crispy_field }}
+{{ field_x | as_crispy_field }}
+{{ field_y | as_crispy_field }}
 <script>
   var $floorplan = document.querySelector(".floorplan");
-  var $floorplan_x = document.querySelector("#{{form.floorplan_x.id_for_label}}");
-  var $floorplan_y = document.querySelector("#{{form.floorplan_y.id_for_label}}");
+  var $floorplan_x = document.querySelector("#{{field_x.id_for_label}}");
+  var $floorplan_y = document.querySelector("#{{field_y.id_for_label}}");
   var $current;
 
   $floorplan.querySelectorAll("td").forEach(function($td) {

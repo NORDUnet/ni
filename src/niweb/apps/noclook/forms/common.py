@@ -215,6 +215,8 @@ class EditSiteForm(forms.Form):
 
     floorplan_col = forms.IntegerField(required=False, help_text='Floorplan x axis cell count')
     floorplan_row = forms.IntegerField(required=False, help_text='Floorplan y axis')
+    floorplan_door_x = forms.IntegerField(required=False, help_text='Floorplan column for access door')
+    floorplan_door_y = forms.IntegerField(required=False, help_text='Floorplan row for access door')
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()

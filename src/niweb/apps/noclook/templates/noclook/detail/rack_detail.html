@@ -8,6 +8,11 @@
 <div class="row">
     <div class="span4">
         <table class="table">
+            {% if node.data.label %}
+                <tr>
+                    <th>Label:</th><td>{{ node.data.label }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.height %}
                 <tr>
                     <th>Height:</th><td>{{ node.data.height }} mm</td>
