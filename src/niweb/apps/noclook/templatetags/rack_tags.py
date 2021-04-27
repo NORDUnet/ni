@@ -176,7 +176,7 @@ def noclook_floorplan(site):
         return
     row = site.data.get('floorplan_row')
     col = site.data.get('floorplan_col')
-    if not (row, col):
+    if not (row and col):
         return
 
     floorplan = Floorplan(col, row)
@@ -191,7 +191,7 @@ def noclook_floorplan(site):
 def noclook_floorplan_placement(site, form):
     row = site.data.get('floorplan_row')
     col = site.data.get('floorplan_col')
-    if not (row, col):
+    if not (row and col):
         return
     floorplan = Floorplan(col, row)
 
