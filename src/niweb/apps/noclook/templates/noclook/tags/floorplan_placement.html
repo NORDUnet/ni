@@ -37,7 +37,7 @@
     }
     $td.addEventListener("click", function(e) {
       e.preventDefault();
-      if (this.className == "occupied") {
+      if (this.className.indexOf("occupied") != -1) {
         return
       }
       console.log(this.dataset.y, this.dataset.x);
