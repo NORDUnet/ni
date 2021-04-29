@@ -1,6 +1,7 @@
 from django import template
 import re
 from collections.abc import Iterable
+from collections import defaultdict
 from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
 
 register = template.Library()
@@ -100,16 +101,16 @@ def rack_sort(equipment):
 
 class Floorplan():
     def __init__(self, width, height):
-        self.floorplan = {}
+        self.floorplan = defaultdict(list)
         self.cols = range(1, width + 1)
         self.rows = range(1, height +1)
         self.unplaced = []
 
-    def set_tile(self, x, y, tile):
+    def add_tile(self, x, y, tile):
         #TODO: check if inside floor grid
         if x == -1 or y == -1:
             self.unplaced += [tile]
-        self.floorplan[(x,y)] = tile
+        self.floorplan[(x,y)].append(tile)
 
     def get_tile(self, x, y):
         return self.floorplan.get((x,y))
@@ -123,12 +124,12 @@ class Floorplan():
             y = node.data.get('floorplan_y')
         else:
             x, y = parse_xy(node.data.get('name'))
-        self.set_tile(x, y, Tile(node))
+        self.add_tile(x, y, Tile(node))
 
     def add_door(self, x, y):
         door = Tile("Access Door")
         door.css_classes.append("door")
-        self.set_tile(x, y, door)
+        self.add_tile(x, y, door)
 
 
     def tile_rows(self):
@@ -153,12 +154,12 @@ class Tile():
             result = u''
         elif isinstance(item, str):
             result = item
+        elif hasattr(item, 'data'):
+            result = noclook_node_to_link({}, item.data)
         elif isinstance(item, Iterable):
             if 'handle_id' in item:
                 # item is a node
                 result = noclook_node_to_link({}, item)
-        elif item.data:
-            result = noclook_node_to_link({}, item.data)
         return result
 
     def __str__(self):
@@ -197,7 +198,6 @@ def noclook_floorplan(site):
     door_x = site.data.get('floorplan_door_x')
     door_y = site.data.get('floorplan_door_y')
     if door_x and door_y:
-        print("got door")
         floorplan.add_door(door_x, door_y)
     return {
         'floorplan': floorplan,
@@ -217,7 +217,6 @@ def noclook_floorplan_placement(site, field_x, field_y, title="Floorplan placeme
     door_x = site.data.get('floorplan_door_x')
     door_y = site.data.get('floorplan_door_y')
     if door_x and door_y:
-        print("got door")
         floorplan.add_door(door_x, door_y)
 
 

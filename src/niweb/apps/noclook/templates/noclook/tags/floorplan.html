@@ -5,8 +5,12 @@
     {% load rack_tags %}
     {% for row, cols in floorplan.tile_rows.items %}
     <tr>
-      {% for tile in cols %}
-      <td class="{{ tile.css }}">{{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}</td>
+      {% for tiles in cols %}
+      <td class="{{ tiles.0.css }}">
+        {% for tile in tiles %}
+          {{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}
+        {% endfor %}
+      </td>
       {% endfor %}
     </tr>
     {% endfor %}

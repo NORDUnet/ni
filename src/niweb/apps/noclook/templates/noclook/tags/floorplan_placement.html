@@ -14,13 +14,18 @@
     {% for row, cols in floorplan.tile_rows.items %}
     <tr>
       <th>{{row}}</th>
-      {% for tile in cols %}
-      <td class="{{ tile.css }}" data-x="{{forloop.counter}}" data-y="{{row}}">{{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}</td>
+      {% for tiles in cols %}
+      <td class="{{ tiles.0.css }}" data-x="{{forloop.counter}}" data-y="{{row}}">
+        {% for tile in tiles %}
+          {{ tile.content }}{% if tile.label %}<label>{{tile.label}}</label>{% endif %}
+        {% endfor %}
+      </td>
       {% endfor %}
     </tr>
     {% endfor %}
   </tbody>
 </table>
+<p>Holding shift while clicking will allow you to place racks in the same square</p>
 {% load crispy_forms_tags %}
 {{ field_x | as_crispy_field }}
 {{ field_y | as_crispy_field }}
@@ -29,6 +34,20 @@
   var $floorplan_x = document.querySelector("#{{field_x.id_for_label}}");
   var $floorplan_y = document.querySelector("#{{field_y.id_for_label}}");
   var $current;
+  var shit_down = false;
+
+  document.addEventListener("keydown", function(e) {
+    if(e.keyCode === 16 || e.charCode === 16){
+      shit_down = true;
+    }
+    return true;
+  });
+  document.addEventListener("keyup", function(e) {
+    if (e.keyCode === 16 || e.charCode === 16){
+      shit_down = false;
+    }
+    return true;
+  });
 
   $floorplan.querySelectorAll("td").forEach(function($td) {
     if ($td.dataset.x == "{{form.floorplan_x.value}}" && $td.dataset.y == "{{form.floorplan_y.value}}") {
@@ -37,7 +56,7 @@
     }
     $td.addEventListener("click", function(e) {
       e.preventDefault();
-      if (this.className.indexOf("occupied") != -1) {
+      if (this.className.indexOf("occupied") != -1 && !shit_down) {
         return
       }
       console.log(this.dataset.y, this.dataset.x);
