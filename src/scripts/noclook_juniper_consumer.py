@@ -231,7 +231,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     """
     p = r"""
-        .*\*|\.|all|tap|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|
+        .*\*|\.|all|tap|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|
         pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*
         """
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
