@@ -1,13 +1,57 @@
+{% load static %}
 {% load noclook_tags %}
+<script language="javascript" type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 <script type="text/javascript">
-    function add_port_a() {
-        var parent_id = $('#id_relationship_end_a').val();
-        window.open("/new/port/parent/" + parent_id + "/");
-    }
-    function add_port_b() {
-        var parent_id = $('#id_relationship_end_b').val();
-        window.open("/new/port/parent/" + parent_id + "/");
-    }
+$(document).ready(
+    function(){
+
+        //Typeahed.js
+          var ports = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/search/typeahead/ports?query=%Q',
+                wildcard: '%Q'
+            }
+          });
+          ports.initialize();
+
+        $("[data-typeahead]").typeahead({
+            minLength: 3,
+            highlight: true
+          },{
+          name: 'ports',
+          displayKey: 'name',
+          source: ports.ttAdapter(),
+          limit: 10
+        }).on('click', function (e){
+          e.preventDefault()
+        }).on('typeahead:open', function() {
+            $(this).closest('.accordion-body').css('overflow','visible');
+        }).on('typeahead:close', function() {
+            $(this).closest('.accordion-body').css('overflow','hidden');
+        });
+
+        $("#typeahead_relationship_end_a").on('typeahead:selected', function(event, data){
+          $("#id_relationship_end_a").val(data.handle_id);
+          $("#parent_relationship_end_a").val(data.parent_id);
+        });
+        $("#typeahead_relationship_end_b").on('typeahead:selected', function(event, data){
+          $("#id_relationship_end_b").val(data.handle_id);
+          $("#parent_relationship_end_b").val(data.parent_id);
+        });
+
+
+       $("[data-add-port]").on("click", function(e) {
+          e.preventDefault()
+          var target = $(this).data("target");
+          var parent_id = $("#"+target).val()
+          if (parent_id) {
+            window.open("/new/port/parent/" + parent_id + "/");
+          }
+          ports.clearRemoteCache();
+        });
+    });
 </script>
 
 {% blockvar dependency_title %}
@@ -35,12 +79,18 @@
   <h4>Add depends on relationships</h4>
   <div class="row">
       <div class="span4">
-          {% json_combo form.relationship_end_a '/formdata/site/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' %}
-          <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
+          {{ form.relationship_end_a }}
+          <input type="text" data-typeahead id="typeahead_relationship_end_a" placeholder="uk odf 1+2" />
+          <span class="help-block">Choose end A</span>
+          <input type="hidden" id="parent_relationship_end_a" />
+          <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_a">Add port</button>
       </div>
       <div class="span4">
-          {% json_combo form.relationship_end_b '/formdata/site/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' %}
-          <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
+          {{ form.relationship_end_b }}
+          <input type="text" data-typeahead id="typeahead_relationship_end_b" placeholder="uk odf 1+2" />
+          <span class="help-block">Choose end B</span>
+          <input type="hidden" id="parent_relationship_end_b" />
+          <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_b">Add port</a>
       </div>
-    </div>
+  </div>
 {% endaccordion %}
