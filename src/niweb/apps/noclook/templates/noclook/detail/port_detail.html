@@ -33,4 +33,56 @@
 {% include "noclook/detail/includes/depend_include.html" %}
 {% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
 {% include "noclook/detail/includes/connection_path.html" %}
+{% if units %}
+<section>
+  <h3>Units</h3>
+  <div class="pull-right">
+      <span class="badge badge-important">Expired</span>
+  </div>
+  {% blockvar th %}
+  <th>Name</th><th>Description</th><th>IP addresses</th>
+  {% endblockvar %}
+  {% blockvar tbody %}
+    {% for u in units %}
+    {% noclook_has_expired u.unit as expired %}
+    <tr{% if expired %} class="expired"{% endif %}>
+      <td>{% noclook_node_to_link u.unit %}</td>
+      <td>{{u.unit.description|default:''}}</td>
+      <td>
+        {% if u.unit.ip_addresses %}
+        {{u.unit.ip_addresses | join:", "}}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  {% endblockvar %}
+  {% table th tbody id="units" %}
+  <a href="#delete-expired-units-confirm" class="btn btn-danger" data-toggle="modal"><i class="icon-trash icon-white"></i> Delete expired units</a>
+  <!-- Modal -->
+  <div id="delete-expired-units-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      <h3 id="myModalLabel">Delete {{ node_handle.node_type }} {{ node_handle.node_name }} expired units?</h3>
+    </div>
+    <div class="modal-body">
+      <p><i class="icon-warning-sign"></i> The expired units will be permanently deleted and cannot be recovered. Are you sure?</p>
+      <ul>
+        {% for u in units %}
+          {% noclook_has_expired u.unit as expired %}
+          {% if expired %}
+          <li>{{u.unit.name}}</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <form action="expired-units/delete" method="post">
+         {% csrf_token %}
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      <input type="submit" class="btn btn-primary" value="Confirm">
+      </form>
+    </div>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

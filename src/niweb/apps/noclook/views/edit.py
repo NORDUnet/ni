@@ -65,6 +65,30 @@ def delete_relationship(request, slug, handle_id, rel_id):
     return JsonResponse({'success': success, 'relationship_id': '{}'.format(rel_id)})
 
 
+def is_expired(node):
+    _, expired = helpers.neo4j_data_age(node)
+    return expired
+
+
+@staff_member_required
+def delete_expired_units(request, handle_id):
+    """
+    Removes the all expired units.
+    """
+    redirect_url = '/port/{}/'.format(handle_id)
+    if request.method == 'POST':
+        print("it was a post")
+        nh, node = helpers.get_nh_node(handle_id)
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
+            RETURN unit
+            """
+        expired_units = [u['unit'] for u in nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id) if is_expired(u['unit'])]
+        for unit in expired_units:
+            helpers.delete_node(request.user, unit['handle_id'])
+    return redirect(redirect_url)
+
+
 @staff_member_required
 def update_relationship(request, slug, handle_id, rel_id):
     """

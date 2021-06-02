@@ -57,6 +57,7 @@ urlpatterns = [
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', edit.delete_relationship),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/update$', edit.update_relationship, name='relationship_update'),
     url(r'^rack/(?P<rack_handle_id>\d+)/node/(?P<handle_id>\d+)/position/(?P<position>\d+)$', edit.update_rack_position, name='rack_position'),
+    url(r'^port/(?P<handle_id>\d+)/expired-units/delete$', edit.delete_expired_units, name='delete_expire_units'),
     url(r'^formdata/(?P<slug>[-\w]+)/$', edit.get_node_type),
     url(r'^formdata/unlocated/(?P<slug>[-\w]+)/$', edit.get_unlocated_node_type),
     url(r'^formdata/(?P<handle_id>\d+)/children/$', edit.get_child_form_data),

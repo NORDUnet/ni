@@ -7,6 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2021-06-02
+### Added
+- Rack links can now highlight specific units, linking to `/rack/<rack_id>/#U1,U30-U34` will highlight equipment in unit 1, and 30, 31, 32, 33, 34.
+- Units are now listed on ports details
+- Expired units can be deleted directly from the port details page.
+
+### Changed
+- Switched physical dependency (optical ports connections) to use typeahead search
+- noclook_juniper_consume does not filter out fxp ports any more
+
+## 2021-04-27
+### Added
+- Sites now have a floorplan, where you can place racks.
+
 ## 2020-09-10
 ### Changed
 - Site views had a bug with showing rooms, where if there were no rooms it would still show a filter field. Additionally the ID for the table was wrong.

@@ -542,11 +542,26 @@ def port_detail(request, handle_id):
     connections = port.get_connections()
     dependent = port.get_dependent_as_types()
     connection_path = port.get_connection_path()
-    urls = helpers.get_node_urls(port, connections, dependent, location_path)
-    return render(request, 'noclook/detail/port_detail.html',
-                  {'node': port, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                   'connections': connections, 'dependent': dependent, 'location_path': location_path,
-                   'connection_path': connection_path, 'history': True, 'urls': urls})
+    # Units
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
+        RETURN unit
+        """
+    units = nc.query_to_list(nc.graphdb.manager, q, handle_id=port.handle_id)
+    urls = helpers.get_node_urls(port, connections, dependent, location_path, units)
+    return render(request, 'noclook/detail/port_detail.html', {
+        'node': port,
+        'node_handle': nh,
+        'last_seen': last_seen,
+        'expired': expired,
+        'connections': connections,
+        'dependent': dependent,
+        'location_path': location_path,
+        'connection_path': connection_path,
+        'units': units,
+        'history': True,
+        'urls': urls
+    })
 
 
 @login_required
