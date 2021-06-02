@@ -348,3 +348,13 @@ def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3,
         'min_length': min_length,
         'node_types': node_types,
     }
+
+
+@register.filter
+def attr(item, attr):
+    return getattr(item, attr)
+
+
+@register.filter
+def has_label(item, label):
+    return label in item.labels

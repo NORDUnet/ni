@@ -37,7 +37,11 @@
 {% if location_path.location_path %}
     <h5 class="site">Located in
     {% for loc in location_path.location_path %}
-        <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+    {% if forloop.last and loc|has_label:"Rack" %}
+        <a href="{% noclook_node_to_url loc.handle_id %}{% if node.data.rack_position %}#U{{node.data.rack_position}}{% endif %}"> {{ loc.name }}</a>
+      {% else %}
+          <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+      {% endif %}
     {% endfor %}
     {% if node.data.rack_position %}
     <a href="{% noclook_node_to_url location_path.location_path|last %}#U{{node.data.rack_position}}">U{{node.data.rack_position}}
