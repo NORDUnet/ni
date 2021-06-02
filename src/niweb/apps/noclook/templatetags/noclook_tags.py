@@ -26,9 +26,14 @@ def type_menu():
 
 @register.simple_tag(takes_context=True)
 def noclook_node_to_url(context, handle_id):
-    """G
+    """
     Takes a node id as a string and returns the absolute url for a node.
     """
+    if not isinstance(handle_id, int):
+        if hasattr(handle_id, 'handle_id'):
+            handle_id = handle_id.handle_id
+        if 'handle_id' in handle_id:
+            handle_id = handle_id['handle_id']
     # handle fallback
     urls = context.get('urls')
     if urls and handle_id in urls:

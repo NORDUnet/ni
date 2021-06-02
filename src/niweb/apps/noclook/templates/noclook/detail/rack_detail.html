@@ -45,5 +45,63 @@
 <h3>Cable report</h3>
 <a href="/reports/rack-cables/{{ node.handle_id }}.csv"><i class="icon-download"></i> CSV</a>
 <a href="/reports/rack-cables/{{ node.handle_id }}.xls"><i class="icon-download"></i> Excel</a>
+
+<script>
+  (function() {
+    let $units = document.querySelectorAll(".rack .equipment");
+
+    function parseUnit(u) {
+      if (u.length > 1 && u[0].toUpperCase() == "U") {
+        return parseInt(u.slice(1), 10)
+      }else{
+        return NaN
+      }
+    }
+
+    function parseUnitRange(hash) {
+      let result = []
+      let range = hash.split("-");
+      let start = parseUnit(range[0]);
+      let end = parseUnit(range[range.length -1]);
+      if (!Number.isNaN(start) && !Number.isNaN(end)) {
+        if (start > end) {
+          [start, end] = [end, start];
+        }
+
+        for (let i=start; i <= end; i++) {
+          result.push(i.toString());
+        }
+      }
+      return result;
+    }
+
+
+    function drawHighlights() {
+      let selected = []
+      window.location.hash.replace("#", "").split(",").forEach( (hash) => {
+        if (hash.indexOf("-") > -1) {
+          // got a range
+          selected = selected.concat(parseUnitRange(hash));
+        } else {
+          let pos = parseUnit(hash)
+          if (!Number.isNaN(pos)) {
+            selected.push(pos.toString());
+          }
+        }
+      });
+
+      $units.forEach( ($unit) => {
+        let $position = $unit.querySelector(".position");
+        if ($position && selected.indexOf($position.textContent) > -1) {
+          $unit.classList.add("highlighted");
+        }else {
+          $unit.classList.remove("highlighted");
+        }
+      });
+    }
+    drawHighlights();
+    window.addEventListener("hashchange", drawHighlights);
+  })();
+</script>
 {% endblock %}
 

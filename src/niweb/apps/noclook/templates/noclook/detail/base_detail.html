@@ -40,10 +40,11 @@
         <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
     {% endfor %}
     {% if node.data.rack_position %}
-      U{{node.data.rack_position}}
+    <a href="{% noclook_node_to_url location_path.location_path|last %}#U{{node.data.rack_position}}">U{{node.data.rack_position}}
       {% if node.data.rack_back %}
         Back
       {% endif %}
+    </a>
     {% endif %}
     </h5>
 {% elif node.get_placement_path.placement_path %}

@@ -378,6 +378,10 @@ h3.compact {
   border-right: 2px solid transparent;
 }
 
+.equipment.highlighted {
+  background-color: beige;
+}
+
 .sub-equipment {
   max-width: 200px;
   position: absolute;
