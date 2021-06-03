@@ -234,21 +234,28 @@ def typeahead_slugs(request, slug='Node'):
     if to_find:
         # split for search
         match_q = regex_escape(to_find.split())
-        labels = [helpers.slug_to_node_type(slug).get_label() for s in slug.split('+')]
+        labels = [helpers.slug_to_node_type(s).get_label() for s in slug.split('+')]
         try:
             q = """
                 MATCH (n:Node)
                 WHERE any(label in labels(n) where label in $labels)
                 OPTIONAL MATCH (n)<-[:Has]-(e:Node)
                 WITH n.handle_id as handle_id,
-                     coalesce(e.name, "") + " "+ n.name as name
+                     coalesce(e.name, "") + " "+ n.name as name,
+                     labels(n) as labels
                 WHERE name =~ $name_re
-                RETURN handle_id, trim(name) as name
+                RETURN handle_id, trim(name) as name, labels ORDER BY name
                 """
             name_re = '(?i).*{}.*'.format('.*'.join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q, labels=labels, name_re=name_re)
         except Exception as e:
             raise e
+    if '+' in slug:
+        for r in result:
+            _type = [lab for lab in r['labels'] if lab not in ['Node', 'Physical', 'Logical', 'Relation']]
+            if _type:
+                r['name'] = u'{} [{}]'.format(r['name'], _type[0])
+
     json.dump(result, response)
     return response
 

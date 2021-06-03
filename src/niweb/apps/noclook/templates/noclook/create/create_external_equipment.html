@@ -18,7 +18,7 @@
       </div>
       <div class="accordion" id="create-accordion">
         {% accordion 'Owner (optional)' 'owner' '#create-accordion' %}
-              {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host,provider' %}
+              {% typeahead form.relationship_owner '/search/typeahead/end-user+customer+provider/' placeholder='Ex: NORDUnet' min_length=2 %}
         {% endaccordion %}
         {% accordion 'Location (optional)' 'location' '#create-accordion' %}
               {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
