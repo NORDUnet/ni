@@ -177,12 +177,13 @@ def search_location_typeahead(request):
         try:
             # find all has relations to the top
             q = """
-                MATCH (l:Location) WHERE l.name =~ $name_re
-                MATCH p = () - [:Has * 0..20]->(l)
-                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, l.handle_id as handle_id
-                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths, handle_id as handle_id
+                MATCH p = (:Location) - [:Has * 0..20]-> (l:Location)
+                WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength, l.handle_id as handle_id
+                WITH [path IN paths WHERE size(path) = maxLength | path ] AS longestPaths, handle_id as handle_id
                 UNWIND(longestPaths) AS location_path
-                RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id
+                WITH REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id
+                WHERE name =~ $name_re
+                RETURN name, handle_id
                 """
             name_re = '(?i).*{}.*'.format('.*'.join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
@@ -191,7 +192,6 @@ def search_location_typeahead(request):
     json.dump(result, response)
     return response
 
-# UNWIND(longestPaths) as location_path
 
 @login_required
 def search_non_location_typeahead(request):

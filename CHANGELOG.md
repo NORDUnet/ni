@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+##  2021-06-03
+### Changed
+- New External Equipment now uses typeahead search rather than dropdown lists for location
+- The location search now searches both sites and racks
+
 ## 2021-06-02
 ### Added
 - Rack links can now highlight specific units, linking to `/rack/<rack_id>/#U1,U30-U34` will highlight equipment in unit 1, and 30, 31, 32, 33, 34.
