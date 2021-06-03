@@ -7,6 +7,7 @@
   {{ block.super }}
   <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -49,9 +50,10 @@
           <div class="alert alert-warning">
             If you set a location this host will become a physical host.
           </div>
-            {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+            {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
             {{ form.rack_units | as_crispy_field }}
             {{ form.rack_position | as_crispy_field }}
+            {{ form.rack_back | as_crispy_field }}
         {% endaccordion %}
       </div>
       <input type="submit" value="Save" class="btn btn-primary" />

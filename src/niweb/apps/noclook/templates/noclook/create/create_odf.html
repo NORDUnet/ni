@@ -5,20 +5,22 @@
 
 {% block js %}
   {{ block.super }}
-  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 {% endblock %}
 
 {% block content %}
     <h1>Create new ODF</h1>
     <form action="" method="post" class="form-horizontal">{% csrf_token %}
       <div class="well">
-            {{ form | crispy }}
-            <div class="control-group">
-              <label for="{{form.relationship_location.id_for_label}}_level0" class="control-label">Location</label>
-              <div class="controls">
-                {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' skip_field=True %}
-              </div>
-            </div>
+        {{ form.name | as_crispy_field}}
+        {{ form.description | as_crispy_field}}
+        {{ form.max_number_of_ports | as_crispy_field}}
+        {{ form.operational_state | as_crispy_field }}
+
+        {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
+        {{ form.rack_units | as_crispy_field }}
+        {{ form.rack_position | as_crispy_field }}
+        {{ form.rack_back | as_crispy_field }}
       </div>
       <div class="accordion" id="create-accordion">
           {% accordion 'Ports' 'ports' '#create-accordion' %}

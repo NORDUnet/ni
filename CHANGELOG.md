@@ -9,8 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ##  2021-06-03
 ### Changed
-- New External Equipment now uses typeahead search rather than dropdown lists for location
+- Use typeahead search instead of dropdowns for location:
+  - New External Equipment
+  - New Hosts
+  - New ODFs
+  - New Optical node
+- Fix new ODF form
 - The location search now searches both sites and racks
+
 
 ## 2021-06-02
 ### Added

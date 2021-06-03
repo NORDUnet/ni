@@ -5,6 +5,7 @@
 
 {% block js %}
   {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 {% endblock %}
 
@@ -21,7 +22,7 @@
         {% endaccordion %}
         {% accordion 'Location (optional)' 'location' '#create-accordion' %}
               {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
-              {{ form.rack_units | as_crispy_field }}
+              {{ form.rack_units | as_crispy_field }}
               {{ form.rack_position | as_crispy_field }}
         {% endaccordion %}
       </div>
