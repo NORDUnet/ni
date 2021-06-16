@@ -118,6 +118,13 @@ class DatePickerField(forms.DateField):
         self.widget = forms.TextInput(attrs=attrs)
 
 
+class IndifferentFloatField(forms.FloatField):
+    def to_python(self, value):
+        if value and not isinstance(value, float):
+            value = value.replace(',', '.')
+        return super().to_python(value)
+
+
 def description_field(name):
     return forms.CharField(required=False,
                            widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
@@ -838,7 +845,7 @@ class NewOpticalPathForm(forms.Form):
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
-    wavelength = forms.FloatField(required=False, help_text='Measured in GHz')
+    wavelength = IndifferentFloatField(required=False, help_text='Measured in GHz', localize=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     relationship_provider = relationship_field('provider', True)
@@ -882,7 +889,7 @@ class EditOpticalPathForm(forms.Form):
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
-    wavelength = forms.FloatField(required=False, help_text='Measured in GHz')
+    wavelength = IndifferentFloatField(required=False, help_text='Measured in GHz', localize=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     enrs = JSONField(required=False, widget=JSONInput)
