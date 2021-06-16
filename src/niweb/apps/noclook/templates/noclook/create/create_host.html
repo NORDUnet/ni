@@ -42,7 +42,7 @@
           <div class="alert alert-warning">
             If you set a host owner this host will become a physical host.
           </div>
-          {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host-user,provider' %}
+          {% typeahead form.relationship_owner '/search/typeahead/customer+end-user+host-user+provider/' placeholder='Ex: NORDUnet' min_length=2 %}
 
         {% endaccordion %}
 
