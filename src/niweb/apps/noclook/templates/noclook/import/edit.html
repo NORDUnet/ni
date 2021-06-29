@@ -12,7 +12,11 @@
           There are {{errors|length}} errors please fix them.
         {% endif %}
         {% if errors.global %}
-          {{errors.global}}
+        <ul>
+          {% for error in errors.global %}
+          <li>{{error}}</li>
+          {% endfor %}
+        </ul>
         {% endif %}
       </div>
     {% endif %}

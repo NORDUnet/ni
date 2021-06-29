@@ -168,7 +168,17 @@ class ImportNodesView(View):
         slug = slugify(item['node_type']).replace("_", "-")
         meta_type = META_TYPES.get(item['node_type'], 'Physical')
         nh = None
-        if item['node_type'] in GENERIC_TYPES:
+        if item['node_type'] == 'Rack':
+            try:
+                nh = helpers.get_or_create_site_unique_node_handle(
+                    user,
+                    item['name'],
+                    slug,
+                    meta_type,
+                    parent_nh)
+            except Exception as e:
+                errors.append('Could not get or create a {} named {}, got error: {}'.format(item['node_type'], item['name'], e))
+        elif item['node_type'] in GENERIC_TYPES:
             nh = helpers.get_generic_node_handle(user,
                                                  item['name'],
                                                  slug,
@@ -244,7 +254,6 @@ class ExportNodesView(View):
             # TODO: Skip, should be handled by cypher
             if node['node_type'] not in EXPORT_FILTER:
                 tmp[handle_id] = node
-                depth = len(result['nodes'])
                 if len(result['nodes']) == 1:
                     output.append(node)
                 else:

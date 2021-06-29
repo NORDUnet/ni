@@ -218,6 +218,25 @@ def create_unique_node_handle(user, node_name, slug, node_meta_type):
     return node_handle
 
 
+def get_or_create_site_unique_node_handle(user, node_name, slug, node_meta_type, site):
+    node_type = slug_to_node_type(slug, create=True)
+    # XXX: Not at all transactional
+    q = """
+    MATCH (n:Node)<-[:Has]-(s:Site {handle_id: {handle_id}})
+    RETURN n
+    """
+    result = nc.query_to_list(nc.graphdb.manager, q, handle_id=site.handle_id)
+    if len(result) > 1:
+        raise Exception('Multiple {} named {} exists ({})'.format(node_type, node_name, [n['n'].get('handle_id') for n in result]))
+    if len(result) == 1:
+        node = result[0]['n']
+        node_handle = get_object_or_404(NodeHandle, pk=node.get('handle_id'))
+        return node_handle
+    else:
+        return get_generic_node_handle(user, node_name, slug, node_meta_type)
+
+
+
 def set_noclook_auto_manage(item, auto_manage):
     """
     Sets the node or relationship noclook_auto_manage flag to True or False. 
