@@ -140,6 +140,7 @@ class ImportNodesView(View):
     def file(self, request, parent):
         _file = request.FILES['file']
         data = None
+        errors = None
         try:
             string_data = _file.read().decode(_file.charset or 'utf-8')
             data = json.loads(string_data)
