@@ -139,9 +139,15 @@ class ImportNodesView(View):
 
     def file(self, request, parent):
         _file = request.FILES['file']
-        string_data = _file.read().decode(_file.charset or 'utf-8')
-        data = json.loads(string_data)
-        errors = self.validate(data)
+        data = None
+        try:
+            string_data = _file.read().decode(_file.charset or 'utf-8')
+            data = json.loads(string_data)
+        except Exception as e:
+            errors = {'global': ['Failed parsing json, got error: {}'.format(e)]}
+        if data:
+            errors = self.validate(data)
+
         if 'import' in request.POST and not errors:
             return self.create(request, parent, data)
         else:
