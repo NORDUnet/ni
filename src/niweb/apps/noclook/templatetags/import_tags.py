@@ -16,7 +16,7 @@ def choices(name):
 
 OPTIONS_MAP = {
   'operational_state': choices('operational_states'),
-  'port_type': choices('port_type'),
+  'port_type': choices('port_types'),
   'responsible_group': choices('responsible_groups'),
   'support_group': choices('responsible_groups'),
   'security_class': choices('security_classes'),
