@@ -120,7 +120,7 @@ class DatePickerField(forms.DateField):
 
 class IndifferentFloatField(forms.FloatField):
     def to_python(self, value):
-        if value and not isinstance(value, float):
+        if value and isinstance(value, str):
             value = value.replace(',', '.')
         return super().to_python(value)
 
