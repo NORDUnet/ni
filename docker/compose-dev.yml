@@ -24,6 +24,8 @@ services:
     image: neo4j:3.5
     volumes:
       - ./data/neo4j-test:/data
+    environment:
+      - NEO4J_AUTH=neo4j/docker
     ports:
       - '127.0.0.1:6464:7474'
       - '127.0.0.1:6686:7687'
