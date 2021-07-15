@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls import include, url
+from django.urls import include, path
 from tastypie.api import Api
 import apps.noclook.api.resources as niapi
 from django.contrib.auth import views as auth_views
@@ -11,7 +11,7 @@ admin.autodiscover()
 
 
 def if_installed(appname, *args, **kwargs):
-    ret = url(*args, **kwargs)
+    ret = path(*args, **kwargs)
     if appname not in settings.INSTALLED_APPS:
         ret.resolve = lambda *args: None
     return ret
@@ -64,40 +64,40 @@ if "apps.nerds" in settings.INSTALLED_APPS:
 
 urlpatterns = [
     # Uncomment the next line to enable the admin:
-    url(r'^admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
 ]
 
 if not settings.DJANGO_LOGIN_DISABLED:
     urlpatterns += [
-        url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
+        path('accounts/login/', auth_views.LoginView.as_view(), name='django_login'),
     ]
 
 # Federated login
 if settings.SAML_ENABLED:
     urlpatterns += [
-        url(r'^saml2/', include('djangosaml2.urls')),
+        path('saml2/', include('djangosaml2.urls')),
     ]
 
 urlpatterns += [
     # Tastypie URLs
-    url(r'^api/', include(v1_api.urls)),
+    path('api/', include(v1_api.urls)),
 
     # Django Generic Comments
-    url(r'^comments/', include('django_comments.urls')),
+    path('comments/', include('django_comments.urls')),
 
     # Activity Streams
-    url('^activity/', include('actstream.urls')),
+    path('activity/', include('actstream.urls')),
 
     # User Profiles
-    url('^userprofile/', include('apps.userprofile.urls')),
+    path('userprofile/', include('apps.userprofile.urls')),
 
     # Scan
-    if_installed('apps.scan', r'^scan/', include('apps.scan.urls', namespace="scan")),
+    if_installed('apps.scan', 'scan/', include('apps.scan.urls', namespace="scan")),
 
-    url(r'^attachments/', include('attachments.urls', namespace='attachments')),
-    url(r'^userprofile/', include('apps.userprofile.urls')),
+    path('attachments/', include('attachments.urls', namespace='attachments')),
+    path('userprofile/', include('apps.userprofile.urls')),
     # NOCLook URLs
-    url(r'', include('apps.noclook.urls')),
+    path('', include('apps.noclook.urls')),
 ]
 
 if settings.DEBUG:
