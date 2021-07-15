@@ -28,7 +28,7 @@ def noclook_node_to_url(context, handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    if not isinstance(handle_id, int):
+    if handle_id and not isinstance(handle_id, int):
         if hasattr(handle_id, 'handle_id'):
             handle_id = handle_id.handle_id
         if 'handle_id' in handle_id:
