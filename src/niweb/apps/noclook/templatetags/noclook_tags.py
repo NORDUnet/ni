@@ -7,7 +7,6 @@ import json
 import re
 from django.utils.html import escape, format_html
 from dynamic_preferences.registries import global_preferences_registry
-from django.utils import six
 
 
 register = template.Library()
@@ -318,7 +317,7 @@ def json_combo(form_field, urls, initial=None, skip_field=False):
     first_url = None
 
     if initial:
-        if isinstance(initial, six.text_type) or isinstance(initial, str):
+        if isinstance(initial, str):
             initial = initial.split(',')
         choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial]
         initial = u",\n".join(choices)

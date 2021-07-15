@@ -5,7 +5,6 @@ from django import template
 from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
 from django.utils.safestring import mark_safe
 from django.utils.html import format_html, format_html_join
-from django.utils import six
 
 register = template.Library()
 
@@ -17,7 +16,7 @@ def table_column(context, item):
     elif type(item) is list:
         result = format_html_join(mark_safe(u'\n<br>'),
                                   u'{}', ([table_column(context, i)] for i in item))
-    elif isinstance(item, six.text_type):
+    elif isinstance(item, str):
         result = item
     elif isinstance(item, Iterable):
         if "handle_id" in item:

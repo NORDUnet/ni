@@ -1,6 +1,6 @@
 from datetime import datetime
 from django import forms
-from django.forms.utils import ErrorDict, ErrorList, ValidationError
+from django.forms.utils import ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
@@ -9,7 +9,6 @@ from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, Nord
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
-from django.utils import six
 from io import StringIO
 import ipaddress
 
@@ -44,9 +43,10 @@ def get_node_type_tuples(node_type):
         RETURN n.handle_id as handle_id, n.name as name
         ORDER BY n.name
         """.format(node_type=node_type.replace(' ', '_'))
-    l = nc.query_to_list(nc.graphdb.manager, q)
-    choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
+    names = nc.query_to_list(nc.graphdb.manager, q)
+    choices.extend([tuple([item['handle_id'], item['name']]) for item in names])
     return choices
+
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -59,7 +59,7 @@ class IPAddrField(forms.CharField):
         errors = []
         result = []
         for line in StringIO(value):
-            ip = line.replace('\n','').strip()
+            ip = line.replace('\n', '').strip()
             if ip:
                 try:
                     ipaddress.ip_address(ip)
@@ -74,7 +74,6 @@ class IPAddrField(forms.CharField):
         if isinstance(value, list):
             value = u'\n'.join(value)
         return super(IPAddrField, self).prepare_value(value)
-
 
     def to_python(self, value):
         if isinstance(value, list):
@@ -230,8 +229,8 @@ class EditSiteForm(forms.Form):
         cleaned_data['name'] = cleaned_data['name']
         cleaned_data['country_code'] = country_code_map(cleaned_data['country'])
         return cleaned_data
-                              
-                              
+
+
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     description = description_field('site owner')
@@ -280,7 +279,6 @@ class ConnectPortForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(ConnectPortForm, self).__init__(*args, **kwargs)
         self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
-        #self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(label='Cable label',
                            help_text="Leave blank for next available cable ID.",
@@ -368,6 +366,7 @@ class EditRackForm(forms.Form):
     floorplan_x = forms.IntegerField(required=False)
     floorplan_y = forms.IntegerField(required=False)
 
+
 class NewRoomForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewRoomForm, self).__init__(*args, **kwargs)
@@ -377,11 +376,11 @@ class NewRoomForm(forms.Form):
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_location = relationship_field('location', True)
 
+
 class EditRoomForm(forms.Form):
     name = forms.CharField(help_text='Name need to be uniq to the building')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_parent = relationship_field('parent')
-    #relationship_located_in = relationship_field('located in')
 
 
 class NewHostForm(RackableForm):
@@ -694,7 +693,7 @@ class EditServiceForm(forms.Form):
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
         self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
-        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
+        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name', 'name')
         self.fields['service_type'].choices = [t.as_choice() for t in service_types]
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
@@ -722,7 +721,7 @@ class EditServiceForm(forms.Form):
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
         # Set service_class depending on service_type.
-        #TODO: Handle when service type does not exist?
+        # TODO: Handle when service type does not exist?
         service_type_ = ServiceType.objects.get(name=cleaned_data.get('service_type'))
         cleaned_data['service_class'] = service_type_.service_class.name
         # Check that project_end_date is filled in for Project service type
@@ -909,7 +908,7 @@ class CsvForm(forms.Form):
 
     csv_data = forms.CharField(required=False,
                                widget=forms.Textarea(
-                                   attrs={'rows': '5', 
+                                   attrs={'rows': '5',
                                           'class': 'input-xxlarge'}))
     reviewed = forms.BooleanField(required=False)
 
@@ -917,13 +916,8 @@ class CsvForm(forms.Form):
         # Make sure cleaned_data is populated
         self.is_valid()
         lines = self.cleaned_data['csv_data'].splitlines()
-        if six.PY3:
-            # Py3 csv uses unicode
-            reader = csv.DictReader(lines, fieldnames=self.csv_headers)
-        else:
-            # Py2.7 uses utf8 byte strings
-            reader = csv.DictReader(self._utf8_enc(lines), fieldnames=self.csv_headers)
-            reader = self._unicode(reader)
+        # Py3 csv uses unicode
+        reader = csv.DictReader(lines, fieldnames=self.csv_headers)
         return (func(line) for line in reader)
 
     def csv_parse_list(self, func, validate=False):
@@ -931,10 +925,6 @@ class CsvForm(forms.Form):
 
     def _utf8_enc(self, csv_lines):
         return (line.encode('utf-8') for line in csv_lines)
-
-    def _unicode(self, dict_reader):
-        for row in dict_reader:
-            yield {key: (row[key] or '').decode('utf-8') for key in row.keys()}
 
     def form_to_csv(form, headers):
         cleaned = form.cleaned_data
