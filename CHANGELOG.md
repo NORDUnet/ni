@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed
+- python 2 support (EOL 1. jan 2020, and django 3.x does not support it)
+  - Removed python_2_unicode_compatible
+
+### Changed
+- Migrated to django 3.2 LTS
+
 ##  2021-06-03
 ### Changed
 - Use typeahead search instead of dropdowns for location:

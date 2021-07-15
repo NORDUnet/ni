@@ -5,7 +5,6 @@ from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
 from django_comments.models import Comment
 from django.urls import reverse
-from django.utils.encoding import python_2_unicode_compatible
 from actstream import action
 try:
     from neo4j.exceptions import CypherError
@@ -28,7 +27,6 @@ logger = logging.getLogger('noclook.models')
 NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
 
 
-@python_2_unicode_compatible
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, help_text='Automatically generated from type. Must be unique.')
@@ -60,7 +58,6 @@ class NodeType(models.Model):
     delete.alters_data = True
 
 
-@python_2_unicode_compatible
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
@@ -122,7 +119,6 @@ class NodeHandle(models.Model):
     delete.alters_data = True
 
 
-@python_2_unicode_compatible
 class UniqueIdGenerator(models.Model):
     """
     Model that provides a base id counter, prefix, suffix and id length. When a new
@@ -191,7 +187,6 @@ class UniqueIdGenerator(models.Model):
     save.alters_data = True
 
 
-@python_2_unicode_compatible
 class UniqueId(models.Model):
     """
     Table for reserving ids and to help ensuring uniqueness across the
@@ -212,7 +207,6 @@ class UniqueId(models.Model):
         return self.unique_id
 
 
-@python_2_unicode_compatible
 class NordunetUniqueId(UniqueId):
     """
     Collection of all NORDUnet IDs to ensure uniqueness.
@@ -223,7 +217,6 @@ class NordunetUniqueId(UniqueId):
 
 
 # Can be deleted, just here to not mess up migrations
-@python_2_unicode_compatible
 class OpticalNodeType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
@@ -231,7 +224,6 @@ class OpticalNodeType(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class ServiceClass(models.Model):
     name = models.CharField(unique=True, max_length=255)
 
@@ -239,7 +231,6 @@ class ServiceClass(models.Model):
         return "{}".format(self.name)
 
 
-@python_2_unicode_compatible
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
     service_class = models.ForeignKey(ServiceClass, on_delete=models.CASCADE)
@@ -266,7 +257,6 @@ class DummyDropdown(object):
         return []
 
 
-@python_2_unicode_compatible
 class Dropdown(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
@@ -295,7 +285,6 @@ class Dropdown(models.Model):
             return DummyDropdown(name)
 
 
-@python_2_unicode_compatible
 class Choice(models.Model):
     dropdown = models.ForeignKey(Dropdown, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -307,7 +296,6 @@ class Choice(models.Model):
     def __str__(self):
         return u"{} ({})".format(self.name, self.dropdown.name)
 
-@python_2_unicode_compatible
 class SwitchType(models.Model):
     name = models.CharField(max_length=255, unique=True)
     ports = models.CharField(max_length=1024, blank=True, help_text="Autogenerate ports. \",\" separator. ex: Et1,Et2,Et3 alt ge-0/0/0,ge-0/0/1")
