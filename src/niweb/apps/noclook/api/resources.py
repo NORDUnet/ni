@@ -18,7 +18,7 @@ from tastypie.utils import trailing_slash
 from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
-from django.conf.urls import url
+from django.urls import re_path
 from django.urls import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
@@ -159,7 +159,7 @@ class NodeTypeResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
+            re_path(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
                 self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
@@ -204,10 +204,10 @@ class NodeHandleResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships/(?P<rel_type>\w[\w]*)%s$" % (
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships/(?P<rel_type>\w[\w]*)%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
         ]
@@ -293,7 +293,7 @@ class NodeHandleResource(ModelResource):
         if getattr(self._meta, 'pk_field', 'pk') != 'pk':
             urls = [x for x in urls if (x.name != "api_get_multiple" and x.name != "api_dispatch_detail")]
             urls += [
-                url(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field,
+                re_path(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field,
                                                                self._meta.pk_field_regex, trailing_slash()),
                     self.wrap_view('dispatch_detail'), name="api_dispatch_detail")
             ]

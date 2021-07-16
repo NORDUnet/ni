@@ -1,6 +1,5 @@
 # This also imports the include function
 from django.conf import settings
-from django.conf.urls import url
 from django.urls import path, re_path
 from django.contrib.auth import views as auth_views
 from .views import other, create, edit, import_nodes, report, detail, redirect, debug, list as _list
