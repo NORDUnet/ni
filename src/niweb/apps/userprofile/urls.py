@@ -5,13 +5,13 @@ Created on 2012-11-22 3:50 PM
 @author: lundberg
 """
 
-from django.conf.urls import url
+from django.urls import path
 from . import views
 
 from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = [
-    url(r'^$', views.list_userprofiles),
-    url(r'^(?P<userprofile_id>\d+)/$', views.userprofile_detail, name='userprofile_detail'),
+    path('', views.list_userprofiles),
+    path('<int:userprofile_id>/', views.userprofile_detail, name='userprofile_detail'),
 ]
