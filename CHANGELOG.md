@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Migrated to django 3.2 LTS
+- Updated dependencies
 
 ##  2021-06-03
 ### Changed
