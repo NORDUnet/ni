@@ -26,7 +26,7 @@ class HandleUnsupportedBinding:
 
 
 class NDNOnlySaml2Backend(Saml2Backend):
-    def is_authorized(self, attributes, attribute_mapping):
+    def is_authorized(self, attributes, attribute_mapping, idp_entityid, assertion_info):
         # check if employee or member
         affiliations = attributes.get('eduPersonScopedAffiliation', [])
         for ok_val in ['employee@nordu.net', 'member@nordu.net']:
