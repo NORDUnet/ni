@@ -215,10 +215,12 @@ if SAML_ENABLED:
         environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     )
     MIDDLEWARE += (
+        'djangosaml2.middleware.SamlSessionMiddleware',
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
     )
     # Needed since django 2+ sets lax per default
-    SESSION_COOKIE_SAMESITE = None
+    # SESSION_COOKIE_SAMESITE = None
+    SESSION_COOKIE_SECURE = True
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 
 ########## URL CONFIGURATION
