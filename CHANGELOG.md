@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2021-10-12
+## Fixed
+- Python 3.10 should now work.
+
 ## 2021-10-07
 
 This release migrates to django 3.2 the newest LTS version of django, therefore be sure to update your virtual enviornments as well as run migrations.
