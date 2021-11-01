@@ -297,6 +297,7 @@
                 <div class="tab-pane" id="servicesTabOut">
                     {% table th tbody id="servicesOut" %}
                     <a id="outServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependencies.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+                    {% ticket_info dependencies.services 'outTicketInfo' %}
                 </div>
             {% endif %}
             {% if dependencies.paths %}

@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## Added
+- Service Ticket Info button containing Service ID, description and affected users for easier ticket creation.
+
 ## 2021-10-12
 ## Fixed
 - Python 3.10 should now work.
