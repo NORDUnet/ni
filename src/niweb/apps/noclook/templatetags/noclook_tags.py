@@ -357,3 +357,25 @@ def attr(item, attr):
 @register.filter
 def has_label(item, label):
     return label in item.labels
+
+
+@register.inclusion_tag('noclook/tags/ticket_info.html')
+def ticket_info(services, tid='inTicketInfo'):
+    """
+    A helpful button for the NOC when they create service tickets
+    """
+    q = """
+    MATCH (n:Node)<-[:Uses]-(u:Node) where n.handle_id in $handle_ids return DISTINCT(u.name) as Uses
+    """
+    d = nc.query_to_list(nc.graphdb.manager, q, handle_ids=[s['handle_id'] for s in services])
+
+    impacted_users = {u['Uses'] for u in d}
+    service_ids = {s.get('name') for s in services}
+    impacts = ["{} - {}".format(s.get('name'), s.get('description')) for s in services]
+
+    return {
+        'impacted_users': impacted_users,
+        'service_ids': service_ids,
+        'impacts': impacts,
+        'tid': tid,
+    }

@@ -119,6 +119,7 @@
                 <div class="tab-pane" id="servicesTabIn">
                     {% table th tbody id="servicesIn" %}
                     <a id="inServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependent.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+                    {% ticket_info dependent.services %}
                 </div>
             {% endif %}
             {% if dependent.paths %}
