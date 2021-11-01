@@ -1,0 +1,44 @@
+<a id="{{tid}}" class="btn btn-mini pull-right" rel="popover" ><i class="icon-share-alt"></i> Ticket info</a>
+<div id="{{tid}}Content" class="popover-big hidden">
+  <h3 class="popover-title">Service Ticket Info</h3>
+  <div class="popover-content">
+    <div class="arrow"></div>
+    <h4>Services</h4>
+    {{service_ids | join:', '}}
+    {% if impacted_users %}
+    <h4>Affected Organizations</h4>
+    {{ impacted_users | join:', ' }}
+    {% endif %}
+    <h4>Impact</h4>
+    {% for item in impacts %}
+      {{item}} <br>
+    {% endfor %}
+  </div>
+</div>
+<script>
+  let $ticketInfo = document.querySelector("#{{tid}}");
+  let $ticketInfoContent = document.querySelector("#{{tid}}Content");
+
+  $ticketInfo.addEventListener("click", function(e) {
+    e.preventDefault();
+    $ticketInfoContent.classList.toggle("hidden");
+    if ($ticketInfoContent.style.top) {
+      return
+    }
+    let contentRect = $ticketInfoContent.getBoundingClientRect();
+    let btnRect = $ticketInfo.getBoundingClientRect();
+    let topOffset = $ticketInfo.offsetTop +25;
+    let bottomOffset = $ticketInfo.offsetTop - contentRect["height"] - 12;
+    let $arrow = $ticketInfoContent.querySelector(".arrow");
+    let arrowOffset = btnRect["left"] + (btnRect["width"]/2) - contentRect["left"];
+
+    if (arrowOffset > contentRect["width"]) {
+      let leftOffset = btnRect["right"] - contentRect["width"];
+      $ticketInfoContent.style.left = "" + leftOffset +"px";
+      arrowOffset = contentRect["width"] - btnRect["width"]/2;
+    }
+
+    $arrow.style.left =  arrowOffset + "px"
+    $ticketInfoContent.style.top = "" + bottomOffset +"px";
+  });
+</script>
