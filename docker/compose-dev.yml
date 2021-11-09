@@ -13,6 +13,7 @@ services:
       - dev
   neo4j:
     image: neo4j:3.5
+    platform: linux/amd64
     volumes:
       - ./data/neo4j:/data
     environment:
