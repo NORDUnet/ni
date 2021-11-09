@@ -16,7 +16,7 @@ $ docker-compose -f docker/compose-dev.yml up
 Create super user
 
 ```
-$ docker-compose -f docker/compose-dev.yml run --rm manage createsuperuser
+$ docker-compose -f docker/compose-dev.yml run --rm norduni manage createsuperuser
 ```
 
 # Customisation
