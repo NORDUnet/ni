@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2022-01-21
+### Added
+- The full site list now also shows the site owner ids.
+
 ## 2021-11-01
 ## Added
 - Service Ticket Info button containing Service ID, description and affected users for easier ticket creation.
