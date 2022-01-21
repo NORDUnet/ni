@@ -660,7 +660,8 @@ def _site_table(site, owner):
         'name': u'{}'.format(site.get('country', '')),
     }
     area = site.get('area') or site.get('postarea')
-    row = TableRow(country_link, site, area, owner)
+    owner_id = site.get('owner_id')
+    row = TableRow(country_link, site, area, owner, owner_id)
     return row
 
 
@@ -676,7 +677,7 @@ def list_sites(request):
     site_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(site_list)
 
-    table = Table('Country', 'Site name', 'Area', 'Responsible')
+    table = Table('Country', 'Site name', 'Area', 'Responsible', 'Site owner ID')
     table.rows = [_site_table(item['site'], item['owner']) for item in site_list]
     table.no_badges = True
 
