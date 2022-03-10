@@ -210,6 +210,9 @@ class NodeHandleResource(ModelResource):
             re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/ticketinfo%s$" % (
+                self._meta.resource_name, utils.trailing_slash()),
+                self.wrap_view('dispatch_ticketinfo'), name="api_get_ticketinfo")
         ]
 
     def get_relationships(self, request, **kwargs):
@@ -235,6 +238,58 @@ class NodeHandleResource(ModelResource):
             kwargs['rel_type'] = rel_type
         child_resource = RelationshipResource()
         return child_resource.get_list(request, **kwargs)
+
+    def dispatch_ticketinfo(self, request, **kwargs):
+        allowed_methods = ['get']
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            request.method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+
+        self.method_check(request, allowed=allowed_methods)
+
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        # All clear. Process the request.
+        response = self.get_ticketinfo(request, **kwargs)
+
+        # Add the throttled request.
+        self.log_throttled_access(request)
+
+        return response
+
+    def get_ticketinfo(self, request, **kwargs):
+        nh = None
+        try:
+            data = {'pk': kwargs['pk']}
+            if getattr(self._meta, 'pk_field', 'pk') != 'pk':
+                kwargs[self._meta.pk_field] = kwargs['pk']
+                data = {self._meta.pk_field: kwargs['pk']}
+                kwargs.pop('pk', None)
+            bundle = self.build_bundle(data, request=request)
+            nh = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return HttpGone()
+        except MultipleObjectsReturned:
+            return HttpMultipleChoices("More than one resource is found at this URI.")
+        if not nh:
+            return HttpGone()
+
+        dependent = nh.get_node().get_dependent_as_types()
+        if 'services' not in dependent:
+            return HttpGone()
+
+        services = dependent['services']
+        q = """
+        MATCH (n:Node)<-[:Uses]-(u:Node) where n.handle_id in $handle_ids return DISTINCT(u.name) as Uses
+        """
+        d = nc.query_to_list(nc.graphdb.manager, q, handle_ids=[s['handle_id'] for s in services])
+
+        data = {
+            'impacted_users': list({u['Uses'] for u in d}),
+            'service_ids': list({s.get('name') for s in services}),
+            'impacts': ["{} - {}".format(s.get('name'), s.get('description')) for s in services],
+        }
+        return self.create_response(request, data)
 
     def dehydrate_node(self, bundle):
         return bundle.obj.get_node().data
