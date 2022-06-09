@@ -88,7 +88,9 @@
                     <dt>Download: </dt>
                       {% get_attachments_for node_handle as attachments %}
                       {% for attachment in attachments %}
-                      <dd><a href="{{ attachment.attachment_file.url }}">{{ attachment.filename }}</a></dd>
+                        {% if attachment.attachment_file %}
+                        <dd><a href="{{ attachment.attachment_file.url }}">{{ attachment.filename }}</a></dd>
+                      {% endif %}
                     {% endfor %}
                 </dl>
                 <pre>{% for module in  hardware_modules %}

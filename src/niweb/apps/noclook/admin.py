@@ -3,6 +3,7 @@ from tastypie.admin import ApiKeyInline
 from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from attachments.admin import AttachmentInlines
 
 from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice, SwitchType
 
@@ -13,6 +14,7 @@ class NodeHandleAdmin(admin.ModelAdmin):
     list_filter = ('node_type', 'creator')
     search_fields = ['node_name']
     actions = ['delete_object']
+    inlines = (AttachmentInlines,)
     
     # Remove the bulk delete option from the admin interface as it does not
     # run the NodeHandle delete-function.
