@@ -55,5 +55,6 @@
         {% table th tbody id="services" %}
     </div>
     {% endif %}
+    {% include "noclook/detail/includes/equipment.html" with equipment=owned_equipment.Owns title='Owned Equipment' %}
 {% endblock %}
 

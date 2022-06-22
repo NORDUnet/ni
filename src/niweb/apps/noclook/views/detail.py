@@ -574,12 +574,14 @@ def provider_detail(request, handle_id):
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
     provides_relationships = provider.get_provides()
+    owned_equipment = provider.get_owns()
 
     urls = helpers.get_node_urls(provider, same_name_relations, provides_relationships)
     return render(request, 'noclook/detail/provider_detail.html',
                   {'node_handle': nh, 'node': provider, 'last_seen': last_seen, 'expired': expired,
                    'same_name_relations': same_name_relations,
                    'provides_relationships': provides_relationships,
+                   'owned_equipment': owned_equipment,
                    'history': True, 'urls': urls})
 
 
