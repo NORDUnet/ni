@@ -13,6 +13,11 @@
                     <th>Type:</th><td>{{ node.data.site_type|capfirst }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.description %}
+                <tr>
+                    <th>Description:</th><td>{{ node.data.description }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.owner_id %}
                 <tr>
                     <th>Owner Site ID:</th><td>{{ node.data.owner_id }}</td>

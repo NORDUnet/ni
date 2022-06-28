@@ -23,7 +23,7 @@ from django.urls import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
-from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId, Dropdown, SwitchType
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook import helpers
@@ -809,6 +809,42 @@ class RackResource(NodeHandleResource):
         }
 
 
+class RoomResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='room')
+        resource_name = 'room'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class PatchPanelResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='patch-panel')
+        resource_name = 'patch-panel'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class OutletResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='outlet')
+        resource_name = 'outlet'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
 class RouterResource(NodeHandleResource):
 
     class Meta:
@@ -1069,6 +1105,32 @@ class SwitchResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
+
+    node_name = fields.CharField(attribute='node_name')
+    def obj_create(self, bundle, **kwargs):
+        bundle.data.update({
+            'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+            'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+        })
+        try:
+            node_type = helpers.slug_to_node_type(self.Meta.resource_name, create=True)
+            NodeHandle.objects.get(node_name=bundle.data['node_name'], node_type=node_type)
+            raise_conflict_error('Switch Name (%s) is already in use.' % bundle.data['node_name'])
+        except NodeHandle.DoesNotExist:
+            bundle = super(SwitchResource, self).obj_create(bundle, **kwargs)
+
+            #create ports if switch is defined
+            node = bundle.obj.get_node()
+            try:
+                switch_type = SwitchType.objects.get(name=bundle.data['node'].get('model', None))
+                if switch_type.ports:
+                    for port in switch_type.ports.split(","):
+                        helpers.create_port(node, port.strip(), bundle.request.user)
+            except: SwitchType.DoesNotExist
+
+            return self.hydrate_node(bundle)
+
+
 
 
 class UnitResource(NodeHandleResource):

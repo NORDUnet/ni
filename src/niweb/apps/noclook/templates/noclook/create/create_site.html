@@ -13,6 +13,8 @@
         <form action="" method="post">{% csrf_token %}
             <h3>Name</h3>
             {{ form.country_code }} {{ form.name }}
+            <h3>Description</h3>
+            {{ form.description }}
             <br><br>
             <h3>Address (optional)</h3>
             <label>Street</label>

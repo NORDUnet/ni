@@ -178,6 +178,7 @@ class NewSiteForm(forms.Form):
         self.fields['country_code'].choices = country_codes()
 
     name = forms.CharField()
+    description = description_field('Site')
     country_code = forms.ChoiceField(widget=forms.widgets.Select)
     country = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     address = forms.CharField(required=False)
@@ -202,6 +203,7 @@ class EditSiteForm(forms.Form):
         self.fields['relationship_responsible_for'].choices = get_node_type_tuples('Site_Owner')
 
     name = forms.CharField()
+    description = description_field('Site')
     country_code = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     site_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
@@ -342,13 +344,9 @@ class EditPeeringGroupForm(forms.Form):
 
 
 class NewRackForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewRackForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-
     name = forms.CharField(help_text='Name should be the grid location.')
     label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
-    relationship_location = relationship_field('location', True)
+    relationship_location = relationship_field('location')
 
 
 class EditRackForm(forms.Form):
@@ -360,6 +358,8 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_direction_top = forms.BooleanField(required=False, help_text='First rack unit at top of rack?',
+                                   label='Top down counting')
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
     label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
@@ -373,12 +373,14 @@ class NewRoomForm(forms.Form):
         self.fields['relationship_location'].choices = get_node_type_tuples('Site')
 
     name = forms.CharField(help_text='Room need to be uniq to the building')
+    description = description_field('Room')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_location = relationship_field('location', True)
 
 
 class EditRoomForm(forms.Form):
     name = forms.CharField(help_text='Name need to be uniq to the building')
+    description = description_field('Room')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_parent = relationship_field('parent')
 

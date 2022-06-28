@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new rack</h1>
@@ -7,8 +14,9 @@
       <div class="well">
             {{ form.name | as_crispy_field}}
             {{ form.label | as_crispy_field}}
-            {{ form.relationship_location | as_crispy_field}}
+            {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/room/' %}
       </div>
+
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>
     </form>

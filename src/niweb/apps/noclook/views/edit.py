@@ -900,6 +900,13 @@ def edit_port(request, handle_id):
 def connect_port(request, handle_id):
     nh, port = helpers.get_nh_node(handle_id)
     location_path = port.get_location_path()
+    location_str = ''
+    for loc in location_path['location_path']:
+        if 'Site' in loc.labels:
+            location_str += loc['name'] + ' '
+        if 'Room' in loc.labels:
+            location_str += loc['name'] + ' '
+
 
     tmp_connected_to = port.get_connected_to()
 
@@ -950,7 +957,7 @@ def connect_port(request, handle_id):
     return render(request, 'noclook/edit/connect_port.html',
                   {'node_handle': nh, 'form': form, 'node': port, 'redirect_url': redirect_url,
                       'connected_to': connected_to, 'cable_types': cable_types,
-                   'connections_categories': connections_categories, 'location_path': location_path})
+                   'connections_categories': connections_categories, 'location_path': location_path, 'location_str': location_str})
 
 @staff_member_required
 def edit_provider(request, handle_id):
@@ -977,7 +984,7 @@ def edit_rack(request, handle_id):
     nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
     located_in = rack.get_located_in()
-    located_in_categories = ['host', 'odf', 'optical-node', 'router']
+    located_in_categories = ['host', 'odf', 'optical-node', 'router', 'patch-panel']
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():

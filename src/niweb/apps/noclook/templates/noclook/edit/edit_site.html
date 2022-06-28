@@ -21,6 +21,7 @@ $(document).ready(
     <div class="well">
         {{ form.name | as_crispy_field}}
         {{ form.site_type | as_crispy_field}}
+        {{ form.description | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">
