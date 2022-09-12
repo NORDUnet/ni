@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2022-09-12
+### Added
+- API now has a ticketinfo sub resource that shows service IDs, and impacted users for cables.
+
 ## 2022-01-21
 ### Added
 - The full site list now also shows the site owner ids.
