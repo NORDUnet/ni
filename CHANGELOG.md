@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
 ## [Unreleased]
+
+## 2022-11-03
 - API cable resources now has a oms_cables subresource, that returns all other cables that are part of the same OMS as the cable. e.g. `/api/v1/cable/NU-0012065/oms_cables/`
 - docker compose has changed in version 2, so changes has been made to the `docker/db-restore.sh` script.
 
