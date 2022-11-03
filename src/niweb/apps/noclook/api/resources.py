@@ -552,6 +552,13 @@ class CableResource(NodeHandleResource):
         del bundle.data['absolute_url']
         return bundle
 
+    def prepend_urls(self):
+        return super().prepend_urls() + [
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/oms_cables%s$" % (
+                self._meta.resource_name, utils.trailing_slash()),
+                self.wrap_view('dispatch_oms_cables'), name="api_get_oms_cables")
+        ]
+
     def get_end_point_nodes(self, bundle):
         end_point_nodes = []
         for end_point in (bundle.data.get('end_points') or []):
@@ -575,6 +582,57 @@ class CableResource(NodeHandleResource):
         else:
             port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
         return port_node
+
+    def dispatch_oms_cables(self, request, **kwargs):
+        allowed_methods = ['get']
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            request.method = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+
+        self.method_check(request, allowed=allowed_methods)
+
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        # All clear. Process the request.
+        response = self.get_oms_cables(request, **kwargs)
+
+        # Add the throttled request.
+        self.log_throttled_access(request)
+
+        return response
+
+    def get_oms_cables(self, request, **kwargs):
+        nh = None
+        try:
+            data = {'pk': kwargs['pk']}
+            if getattr(self._meta, 'pk_field', 'pk') != 'pk':
+                kwargs[self._meta.pk_field] = kwargs['pk']
+                data = {self._meta.pk_field: kwargs['pk']}
+                kwargs.pop('pk', None)
+            bundle = self.build_bundle(data, request=request)
+            nh = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return HttpGone()
+        except MultipleObjectsReturned:
+            return HttpMultipleChoices("More than one resource is found at this URI.")
+        if not nh:
+            return HttpGone()
+
+        # get optical multiplex section that the cable is a part of
+        # get name of all cables part of the OMS
+        # note: a cable should only be part of one oms
+        q = """
+        MATCH (c:Cable{handle_id: $handle_id})-[:Connected_to*1..20]->(equip)<-[:Depends_on*1..10]-(oms:Optical_Multiplex_Section)
+        MATCH (oms)-[:Depends_on*1..2]->(l:Node)
+        OPTIONAL MATCH (l)<-[:Connected_to]-(c2:Node)
+        RETURN  COLLECT(DISTINCT c2.name) as oms_cables
+        """
+        d = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+        data = {
+            'oms_cables': sorted(list({c for oc in d for c in oc.get('oms_cables')})),
+        }
+        return self.create_response(request, data)
 
 
 class NordunetCableResource(CableResource):
