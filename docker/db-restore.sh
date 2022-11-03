@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
-pushd `dirname $0` > /dev/null
-SCRIPT_DIR="$(pwd)"
-popd > /dev/null
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 usage="Usage: $0 [-h] [-o] [-f <postgres.sql.gz>] [-d <ni_store>] [-c <ni-data-conf>]"
 while getopts ":f:d:c:o" opt; do
@@ -37,14 +35,14 @@ else
   NI_TMP="$SCRIPT_DIR/data/nidata"
   mkdir -p "$NI_TMP"
 
-  if [ ! -f "$NI_TMP/postgres.sql.gz" ] || [ ! -z "$OVERWRITE_NI_DATA" ]; then
+  if [ ! -f "$NI_TMP/postgres.sql.gz" ] || [ -n "$OVERWRITE_NI_DATA" ]; then
     curl -u "$NI_DATA_AUTH" -o "$NI_TMP/postgres.sql.gz" "$NI_DATA_URL/postgres.sql.gz"
   else
     echo "Skipping postgres download"
   fi
   SQL_DUMP="$NI_TMP/postgres.sql.gz"
 
-  if [ ! -f "$NI_TMP/ni_data.tar.gz" ] || [ ! -z "$OVERWRITE_NI_DATA" ]; then
+  if [ ! -f "$NI_TMP/ni_data.tar.gz" ] || [ -n "$OVERWRITE_NI_DATA" ]; then
     curl -u "$NI_DATA_AUTH" -o "$NI_TMP/ni_data.tar.gz" "$NI_DATA_URL/ni_data.tar.gz"
   else
     echo "Skipping ni_data.tar.gz download"
@@ -77,24 +75,24 @@ function duration {
 SECONDS=0
 
 msg "Stopping norduni"
-docker-compose -f $SCRIPT_DIR/compose-dev.yml stop norduni
+docker-compose -f "$SCRIPT_DIR/compose-dev.yml" stop norduni
 
 set +e
 msg "Stopping neo4j"
-docker-compose -f $SCRIPT_DIR/compose-dev.yml stop neo4j
+docker-compose -f "$SCRIPT_DIR/compose-dev.yml" stop neo4j
 
 msg "Removing neo4j data"
-rm -r $SCRIPT_DIR/data/neo4j/databases
+rm -r "$SCRIPT_DIR/data/neo4j/databases"
 
 set -e
 
 msg "Starting neo4j again"
-docker-compose -f  $SCRIPT_DIR/compose-dev.yml start neo4j
+docker-compose -f  "$SCRIPT_DIR/compose-dev.yml" start neo4j
 
 postgres_id=$(docker ps | awk '/postgres/ {print $1}')
 
 msg "Drop, Create DB"
-cat << EOM | docker exec -i $postgres_id psql -q -U ni postgres
+cat << EOM | docker exec -i "$postgres_id" psql -q -U ni postgres
 DROP DATABASE norduni;
 CREATE DATABASE norduni;
 GRANT ALL PRIVILEGES ON DATABASE norduni to ni;
@@ -102,38 +100,20 @@ ALTER USER ni CREATEDB;
 EOM
 
 msg "Copy db-dump to postgres"
-docker cp $SQL_DUMP $postgres_id:/sqldump.sql.gz
+docker cp "$SQL_DUMP" "$postgres_id":/sqldump.sql.gz
 
 msg "Import DB from $SQL_DUMP"
-docker exec -i $postgres_id bash -c "gunzip /sqldump.sql.gz; psql -q -o /dev/null norduni ni -f /sqldump.sql; rm /sqldump.*"
+docker exec -i "$postgres_id" bash -c "gunzip /sqldump.sql.gz; psql -q -o /dev/null norduni ni -f /sqldump.sql; rm /sqldump.*"
 
 msg "Django migrate"
-docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage migrate
+docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage migrate
 
 
 msg "Import neo4j data from json"
-cat << EOM | docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm -v $NI_DUMP:/opt/noclook norduni consume
-# Set after how many days data should be considered old.
-[data_age]
-juniper_conf = 30
-
-# Set if the consumer should check for old data and delete it.
-[delete_data]
-juniper_conf = false
-
-# All producers need to be listed here with a path to their data
-[data]
-juniper_conf =
-nmap_services_py =
-alcatel_isis =
-nagios_checkmk =
-cfengine_report =
-# noclook is used to import a already made backup
-noclook = /opt/noclook
-EOM
+docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm -v "$NI_DUMP":/opt/noclook norduni consume-restore
 
 msg "Reset postgres sequences"
-cat <<EOM | docker exec -i $postgres_id psql -q -o /dev/null norduni ni
+cat <<EOM | docker exec -i "$postgres_id" psql -q -o /dev/null norduni ni
 BEGIN;
 SELECT setval(pg_get_serial_sequence('"noclook_nodetype"','id'), coalesce(max("id"), 1), max("id") IS NOT null) FROM "noclook_nodetype";
 SELECT setval(pg_get_serial_sequence('"noclook_nodehandle"','handle_id'), coalesce(max("handle_id"), 1), max("handle_id") IS NOT null) FROM "noclook_nodehandle";
@@ -143,7 +123,7 @@ COMMIT;
 EOM
 
 msg "Reset last modified"
-cat <<EOM | docker exec -i $postgres_id psql -q -o /dev/null norduni ni
+cat <<EOM | docker exec -i "$postgres_id" psql -q -o /dev/null norduni ni
 BEGIN;
 UPDATE noclook_nodehandle
 SET modified=upd.timestamp
@@ -164,5 +144,5 @@ fi
 
 msg "Create superuser"
 echo -e "\a" # play bell
-docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage createsuperuser
+docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage createsuperuser
 

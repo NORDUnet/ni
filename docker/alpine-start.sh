@@ -32,6 +32,31 @@ case "$*" in
     echo "python $MANAGE_PY $@"
     python $MANAGE_PY "$@"
     ;;
+  consume-restore)
+    if [ ! -f /app/consume.conf ]; then
+      cat <<EOM > /app/consume.conf
+# Set after how many days data should be considered old.
+[data_age]
+juniper_conf = 30
+
+# Set if the consumer should check for old data and delete it.
+[delete_data]
+juniper_conf = false
+
+# All producers need to be listed here with a path to their data
+[data]
+juniper_conf =
+nmap_services_py =
+alcatel_isis =
+nagios_checkmk =
+cfengine_report =
+# noclook is used to import a already made backup
+noclook = /opt/noclook
+EOM
+    fi
+    cd /app/scripts
+    python noclook_consumer.py -C /app/consume.conf -I
+    ;;
   consume)
     if [ ! -f /app/consume.conf ]; then
       cat > /app/consume.conf
