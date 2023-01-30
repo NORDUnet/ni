@@ -121,7 +121,46 @@
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 {% include "noclook/detail/includes/depend_include.html" %}
-{% include "noclook/detail/includes/connections.html" with connections=connections user=user only %}
+<div class="section">
+    {% load noclook_tags %}
+    <div class="pull-right">
+        {% table_search "connections" %}
+    </div>
+    <h3>Interfaces</h3>
+    {% blockvar th %}
+        <th>Port</th><th>Description</th><th>Cable</th><th>End equipment</th><th>End port</th><th>Units</th><th>Depends on port</th>
+    {% endblockvar %}
+    {% blockvar tbody %}
+        {% for con in connections %}
+            <tr>
+                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
+                <td>{{ con.porta.description }}</td>
+                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
+                <td>
+                    {% noclook_get_model con.porta.handle_id as port %}
+                    {% for unit in port.get_units.Part_of|dictsort:"node.data.name" %}
+                        <a href="{% noclook_node_to_url unit.node.handle_id %}">{{ unit.node.data.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for item in port.get_dependents.Depends_on|dictsort:"node.data.name" %}
+                        {% noclook_get_type item.handle_id as node_type %}
+                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ node_type }} {{ item.node.data.name }}</a>{% if item.node.data.service_type %} ({{ item.node.data.service_type }}){% endif %}{% if port.get_units.Part_of %},<br>{% endif %}
+                    {% endfor %}
+                    {% for unit in port.get_units.Part_of|dictsort:"node.data.name" %}
+                        {% for item in unit.node.get_dependents.Depends_on|dictsort:"node.data.name" %}
+                            {% noclook_get_type item.handle_id as node_type %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ node_type }} {{ item.node.data.name }}</a> (Unit {{ unit.node.data.name }}){% if forloop.parentloop.last and forloop.last %}{% else %},<br>{% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+    {% endblockvar %}
+    {% table th tbody id="connections" %}
+</div>
 {% include "noclook/detail/includes/host_services.html" %}
 {% if hardware_modules %}
 <div class="accordion" id="hardware">
