@@ -8,7 +8,7 @@ WORKDIR /app
 
 ADD src /app
 ADD requirements /app/requirements
-RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python3-dev && \
+RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python3-dev git && \
       pip3 install -r requirements/dev.txt && \
       apk del build-dependencies && \
       if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
