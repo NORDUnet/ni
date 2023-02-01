@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-02-01
+### Added
+- EVPN service endpoint at `/api/v1/evpn/` will be used by NCS/NSO for creating evpn services
+
 ## 2023-01-30
 - Switch detail view now use the same table as routers for showing interfaces, which includes units
 
