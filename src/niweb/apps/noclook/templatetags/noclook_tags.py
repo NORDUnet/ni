@@ -379,3 +379,8 @@ def ticket_info(services, tid='inTicketInfo'):
         'impacts': impacts,
         'tid': tid,
     }
+
+
+@register.filter
+def split(item, sep):
+    return item.split(sep)

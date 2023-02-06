@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-02-06
+### Added
+- New consumer for sunet json based host import.
+- Docker images added to host detail if present.
+
 ## 2023-02-01
 ### Added
 - EVPN service endpoint at `/api/v1/evpn/` will be used by NCS/NSO for creating evpn services

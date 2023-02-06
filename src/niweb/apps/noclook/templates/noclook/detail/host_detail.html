@@ -214,4 +214,29 @@
 
 {% include "noclook/detail/includes/host_services.html" %}
 
+{% if node.data.docker_images %}
+<div class="section">
+  <div class="pull-right">
+      {% table_search "docker_images" %}
+  </div>
+  <h3>Docker images</h3>
+  {% blockvar th %}
+  <th>Docker image</th>
+  <th>Tag</th>
+  {% endblockvar %}
+  {% blockvar tbody %}
+    {% for img in node.data.docker_images %}
+      <tr>
+        {% with img|split:":" as p %}
+        <td>{{p.0}}</td>
+        <td>{{p.1}}</td>
+        {% endwith %}
+      </tr>
+    {% endfor %}
+  {% endblockvar %}
+  {% table th tbody id="docker_images" %}
+
+</div>
+{% endif %}
+
 {% endblock %}
