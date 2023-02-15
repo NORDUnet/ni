@@ -468,7 +468,7 @@ def consume_juniper_conf(json_list, is_switches):
         elif 'juniper_conf' in i['host']:
             jconf = i['host']['juniper_conf']
         else:
-            logger.warning('Skipping non juniper device:', i['host'].get('name'))
+            logger.warning('Skipping non juniper device: {}'.format(i['host'].get('name')))
             continue
         name = jconf['name']
         version = jconf.get('version', 'Unknown')
