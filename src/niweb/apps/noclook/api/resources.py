@@ -554,7 +554,7 @@ class CableResource(NodeHandleResource):
 
     def prepend_urls(self):
         return super().prepend_urls() + [
-            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/oms_cables%s$" % (
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[-\w\ \(\)/]*)/oms_cables%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('dispatch_oms_cables'), name="api_get_oms_cables")
         ]
