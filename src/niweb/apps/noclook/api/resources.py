@@ -475,7 +475,7 @@ class CableResource(NodeHandleResource):
         super(CableResource, self).__init__(*args, **kwargs)
         try:
             self.fields['cable_type'].help_text = u'Choices {}'.format(Dropdown.get('cable_types').as_values())
-        except:
+        except Exception:
             # Fails during creatin also will not update when cabletypes are added.
             pass
 
@@ -487,7 +487,7 @@ class CableResource(NodeHandleResource):
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
         pk_field = 'node_name'
-        pk_field_regex = r'[-\w]+'
+        pk_field_regex = r'[-\w\ \(\)/]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         include_absolute_url = True
@@ -1166,6 +1166,9 @@ class ServiceEVPNResource(ServiceResource):
         return initial_data
 
     def obj_create(self, bundle, **kwargs):
+        # check that bundle.data is a dict, or respond with 400 error
+        if not isinstance(bundle.data, dict):
+            raise_not_acceptable_error(f'Expected to recieve a json object, got a {type(bundle.data)}')
         bundle.data.update(self._initial_form_data(bundle))
         try:
             if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
