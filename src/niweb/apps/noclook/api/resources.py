@@ -210,7 +210,7 @@ class NodeHandleResource(ModelResource):
             re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
-            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/ticketinfo%s$" % (
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[-\w\s\(\)/]*)/ticketinfo%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('dispatch_ticketinfo'), name="api_get_ticketinfo")
         ]
