@@ -487,7 +487,7 @@ class CableResource(NodeHandleResource):
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
         pk_field = 'node_name'
-        pk_field_regex = r'[-\w\ \(\)/]+'
+        pk_field_regex = r'[-\w\(\)/\s]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         include_absolute_url = True
@@ -554,7 +554,7 @@ class CableResource(NodeHandleResource):
 
     def prepend_urls(self):
         return super().prepend_urls() + [
-            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[-\w\ \(\)/]*)/oms_cables%s$" % (
+            re_path(r"^(?P<resource_name>%s)/(?P<pk>\w[-\w\s\(\)/]*)/oms_cables%s$" % (
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('dispatch_oms_cables'), name="api_get_oms_cables")
         ]
