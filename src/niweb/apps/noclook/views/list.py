@@ -287,12 +287,14 @@ def _odf_table(item):
 
 @login_required
 def list_odfs(request):
+
+    # TODO: check if size(nodes(p))/size(path) in neo4j>=4.4 is equivalent to length(nodes(p))/length(path) in neo4j==3.5
     q = """
         MATCH (odf:ODF)
         OPTIONAL MATCH (odf)-[:Located_in]->(r)
         OPTIONAL MATCH p=()-[:Has*0..20]->(r)
-        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, odf
-        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, odf AS odf
+        WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength, odf
+        WITH [path IN paths WHERE size(path)=maxLength] AS longestPaths, odf AS odf
         UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN odf, location_path
         ORDER BY odf.name
@@ -321,12 +323,14 @@ def _outlet_table(item):
 
 @login_required
 def list_outlet(request):
+
+    # TODO: check if size(nodes(p))/size(path) in neo4j>=4.4 is equivalent to length(nodes(p))/length(path) in neo4j==3.5
     q = """
         MATCH (outlet:Outlet)
         OPTIONAL MATCH (outlet)-[:Located_in]->(r)
         OPTIONAL MATCH p=()-[:Has*0..20]->(r)
-        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, outlet
-        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, outlet
+        WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength, outlet
+        WITH [path IN paths WHERE size(path)=maxLength] AS longestPaths, outlet
         UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN outlet, location_path
         ORDER BY outlet.name
@@ -356,12 +360,13 @@ def _patch_panel_table(item):
 
 @login_required
 def list_patch_panels(request):
+    # TODO: check if size(nodes(p))/size(path) in neo4j>=4.4 is equivalent to length(nodes(p))/length(path) in neo4j==3.5
     q = """
         MATCH (patch_panel:Patch_Panel)
         OPTIONAL MATCH (patch_panel)-[:Located_in]->(r)
         OPTIONAL MATCH p=()-[:Has*0..20]->(r)
-        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, patch_panel
-        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, patch_panel AS patch_panel
+        WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength, patch_panel
+        WITH [path IN paths WHERE size(path)=maxLength] AS longestPaths, patch_panel AS patch_panel
         UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN patch_panel, location_path
         ORDER BY patch_panel.name
@@ -531,12 +536,13 @@ def list_peering_partners(request):
 
 @login_required
 def list_racks(request):
+    # TODO: check if size(nodes(p))/size(path) in neo4j>=4.4 is equivalent to length(nodes(p))/length(path) in neo4j==3.5
     q = """
         MATCH (rack:Rack)
         OPTIONAL MATCH (rack)<-[:Has]-(loc)
         OPTIONAL MATCH p=(loc)<-[:Has*0..20]-()
-        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, rack AS rack
-        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, rack AS rack
+        WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength, rack AS rack
+        WITH [path IN paths WHERE size(path)=maxLength] AS longestPaths, rack AS rack
         UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN rack, reverse(location_path) as location_path
         ORDER BY rack.name

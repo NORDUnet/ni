@@ -144,14 +144,15 @@ def search_port_typeahead(request):
         # split for search
         match_q = regex_escape(to_find.split())
         try:
+            # TODO: check if size(nodes(p))/size(path) in neo4j>=4.4 is equivalent to length(nodes(p))/length(path) in neo4j==3.5
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
                 OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
                 OPTIONAL MATCH p = () - [:Has * 0..20]->(n2)
-                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength,
+                WITH COLLECT(nodes(p)) as paths, MAX(size(nodes(p))) AS maxLength,
                  port.handle_id AS handle_id, n.handle_id AS parent_id,
                  port.name AS port_name, n.name AS node_name
-                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths,
+                WITH [path IN paths WHERE size(path) = maxLength] AS longestPaths,
                  handle_id AS handle_id, parent_id AS parent_id, port_name AS port_name, node_name AS node_name
                 UNWIND(longestPaths) AS location_path
                 WITH REDUCE(s = "", n IN location_path | s + n.name + " ") + node_name + " " + port_name AS name, handle_id, parent_id
