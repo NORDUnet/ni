@@ -222,7 +222,7 @@ def get_or_create_site_unique_node_handle(user, node_name, slug, node_meta_type,
     node_type = slug_to_node_type(slug, create=True)
     # XXX: Not at all transactional
     q = """
-    MATCH (n:Node {name: {node_name}})<-[:Has]-(s:Site {handle_id: {handle_id}})
+    MATCH (n:Node {name: $node_name})<-[:Has]-(s:Site {handle_id: $handle_id})
     RETURN n
     """
     result = nc.query_to_list(nc.graphdb.manager, q, handle_id=site.handle_id, node_name=node_name)
@@ -767,7 +767,7 @@ def get_host_backup(host):
     backup = host.data.get('backup', 'No')
     if backup == 'No':
         q = """
-            MATCH (:Node {handle_id: {handle_id}})<-[r:Depends_on]-(:Node {name: "vnetd"})
+            MATCH (:Node {handle_id: $handle_id})<-[r:Depends_on]-(:Node {name: "vnetd"})
             WHERE r.state IN ['open', 'open|filtered']
             RETURN r
             """
@@ -799,7 +799,7 @@ def remove_rogue_service_marker(user, handle_id):
     Removed the property rogue_port from all Depends_on relationships.
     """
     q = """
-        MATCH (host:Node {handle_id:{handle_id}})<-[r:Depends_on]-(host_service:Host_Service)
+        MATCH (host:Node {handle_id:$handle_id})<-[r:Depends_on]-(host_service:Host_Service)
         WHERE exists(r.rogue_port)
         RETURN collect(id(r)) as ids
         """

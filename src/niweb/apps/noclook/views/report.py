@@ -30,23 +30,23 @@ def host_users(request, host_user_name=None):
 
     if host_user_id:
         q = '''
-            MATCH (host_user:Host_User {handle_id: {handle_id}})-[:Uses|Owns]->(host:Host)
+            MATCH (host_user:Host_User {handle_id: $handle_id})-[:Uses|Owns]->(host:Host)
             {where}
-            RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
+            RETURN host_user, collect(DISTINCT {data: host, type: [x in labels(host) where not x in ['Node', 'Host']]}) as hosts
             '''.replace("{where}", form.to_where())
         hosts = nc.query_to_list(nc.graphdb.manager, q, handle_id=host_user_id)
     elif host_user_name == 'Missing':
         q = '''
             MATCH (host:Host)
             {where}
-            RETURN collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
+            RETURN collect(DISTINCT {data: host, type: [x in labels(host) where not x in ['Node', 'Host']]}) as hosts
           '''.replace("{where}", form.to_where(additional="NOT (host)<-[:Uses|Owns]-()"))
         hosts = nc.query_to_list(nc.graphdb.manager, q)
     elif host_user_name == 'All' or host_user_name is None:
         q = '''
             MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host) 
             {where}
-            RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
+            RETURN host_user, collect(DISTINCT {data: host, type: [x in labels(host) where not x in ['Node', 'Host']]}) as hosts
             '''.replace("{where}", form.to_where())
         hosts = nc.query_to_list(nc.graphdb.manager, q)
     num_of_hosts = 0

@@ -80,7 +80,7 @@ def delete_expired_units(request, handle_id):
         print("it was a post")
         nh, node = helpers.get_nh_node(handle_id)
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
+            MATCH (n:Node {handle_id: $handle_id})<-[:Part_of]-(unit:Unit)
             RETURN unit
             """
         expired_units = [u['unit'] for u in nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id) if is_expired(u['unit'])]

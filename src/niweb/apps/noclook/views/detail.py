@@ -40,7 +40,7 @@ def cable_detail(request, handle_id):
 
     # TODO: should be fixed in nc.get_connected_equipment
     q = """
-                MATCH (n:Node {handle_id: {handle_id}})-[rel:Connected_to]->(port)
+                MATCH (n:Node {handle_id: $handle_id})-[rel:Connected_to]->(port)
                 OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
                 WITH  rel, port, last(collect(end)) as end
                 OPTIONAL MATCH (end)-[:Located_in]->(location)
@@ -226,7 +226,7 @@ def host_user_detail(request, handle_id):
     result = host_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     q = """
-        MATCH (n:Node {handle_id: {handle_id}})-[r:Uses|:Owns]->(u)
+        MATCH (n:Node {handle_id: $handle_id})-[r:Uses|:Owns]->(u)
         RETURN
         labels(u) as labels,
         u.handle_id as handle_id,
@@ -253,7 +253,7 @@ def odf_detail(request, handle_id):
     # connections = odf.get_connections()
     # TODO: should be fixed in nc.get_connections
     q = """
-              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              MATCH (n:Node {handle_id: $handle_id})-[:Has*1..10]->(porta:Port)
               OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
               OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
               WHERE ID(r1) <> ID(r0)
@@ -284,7 +284,7 @@ def outlet_detail(request, handle_id):
     # connections = patch_panel.get_connections()
     # TODO: should be fixed in nc.get_connections
     q = """
-              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              MATCH (n:Node {handle_id: $handle_id})-[:Has*1..10]->(porta:Port)
               OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
               OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
               WHERE ID(r1) <> ID(r0)
@@ -316,7 +316,7 @@ def patch_panel_detail(request, handle_id):
     # connections = patch_panel.get_connections()
     # TODO: should be fixed in nc.get_connections
     q = """
-              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              MATCH (n:Node {handle_id: $handle_id})-[:Has*1..10]->(porta:Port)
               OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
               OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
               WHERE ID(r1) <> ID(r0)
@@ -544,7 +544,7 @@ def port_detail(request, handle_id):
     connection_path = port.get_connection_path()
     # Units
     q = """
-        MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
+        MATCH (n:Node {handle_id: $handle_id})<-[:Part_of]-(unit:Unit)
         RETURN unit
         """
     units = nc.query_to_list(nc.graphdb.manager, q, handle_id=port.handle_id)
@@ -701,7 +701,7 @@ def site_detail(request, handle_id):
 
     # Racked equipment
     q = """
-    MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(rack:Rack)
+    MATCH (site:Site {handle_id: $handle_id})-[:Has]->(rack:Rack)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
     RETURN rack, item order by toLower(rack.name), toLower(item.name)
@@ -714,7 +714,7 @@ def site_detail(request, handle_id):
 
     # rooms
     q = """
-        MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(room:Room)
+        MATCH (site:Site {handle_id: $handle_id})-[:Has]->(room:Room)
         RETURN room order by toLower(room.name)
         """
     rooms_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
@@ -751,7 +751,7 @@ def room_detail(request, handle_id):
 
     # Racked equipment
     q = """
-    MATCH (room:Room {handle_id: {handle_id}})-[:Has]->(rack:Node)
+    MATCH (room:Room {handle_id: $handle_id})-[:Has]->(rack:Node)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
     RETURN rack, item order by toLower(rack.name), toLower(item.name)

@@ -54,7 +54,7 @@ class Command(BaseCommand):
             result = []
             q = '''
                     MATCH (host_user:Host_User)-[r:Uses|Owns]->(host:Host)
-                    WHERE host.contract_number = {contract_number}
+                    WHERE host.contract_number = $contract_number
                     RETURN host_user.name as host_user_name, host.name, host.handle_id as host_handle_id
                     ORDER BY host_user.name, host.name
                     '''

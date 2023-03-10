@@ -226,7 +226,7 @@ class ExportNodesView(View):
     def get(self, request, slug, handle_id):
         nh = get_object_or_404(NodeHandle, handle_id=handle_id)
         q = """
-            MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x)
+            MATCH p=(n:Node {handle_id: $handle_id})-[r:Has|Located_in*1..3]-(x)
             WHERE (not exists(x.operational_state) or x.operational_state <> 'Decommissioned')
             RETURN tail(nodes(p)) as nodes, labels(x) as labels
         """

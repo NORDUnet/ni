@@ -159,7 +159,7 @@ def noclook_has_rogue_ports(handle_id):
     :return: Boolean
     """
     q = """
-        MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-()
+        MATCH (host:Node {handle_id: $handle_id})<-[r:Depends_on]-()
         RETURN count(r.rogue_port) as count
         """
     d = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id)

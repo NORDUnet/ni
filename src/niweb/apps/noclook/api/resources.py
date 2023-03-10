@@ -1400,7 +1400,7 @@ class HostScanResource(Resource):
     def obj_get(self, bundle, **kwargs):
         handle_id = int(kwargs.get('pk'))
         q = """
-            MATCH (h:Host {handle_id: {handle_id}})<-[r:Depends_on]-(s:Host_Service)
+            MATCH (h:Host {handle_id: $handle_id})<-[r:Depends_on]-(s:Host_Service)
             WHERE h.operational_state <> 'Decommissioned'
                 AND r.state CONTAINS 'open'
                 AND r.noclook_last_seen > {last_seen}
