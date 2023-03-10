@@ -9,6 +9,8 @@ services:
       - POSTGRES_DB=norduni
       - POSTGRES_USER=ni
       - POSTGRES_PASSWORD=docker
+    ports:
+      - '127.0.0.1:5432:5432'
     networks:
       - dev
   neo4j:
@@ -29,6 +31,17 @@ services:
     ports:
       - '127.0.0.1:6464:7474'
       - '127.0.0.1:6686:7687'
+    networks:
+      - dev
+  neo4j-upgrade:
+    image: neo4j:4.4
+    volumes:
+      - ./data/neo4j-upgrade:/data
+    environment:
+      - NEO4J_AUTH=neo4j/docker
+    ports:
+      - '127.0.0.1:8464:7474'
+      - '127.0.0.1:8686:7687'
     networks:
       - dev
   norduni:
