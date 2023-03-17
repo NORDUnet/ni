@@ -144,10 +144,12 @@ def consume_noclook(nodes, relationships):
         rel = i['host']['noclook_producer']
         properties = rel.get('properties')
 
+        propmap = ', '.join([f'{prop}: $props.{prop}' for prop in properties])
+
         q = """
-             MATCH (start:Node { handle_id: {start_id} }),(end:Node {handle_id: {end_id} })
-             CREATE UNIQUE (start)-[r:%s {props} ]->(end)
-             """ % rel.get('type')
+             MATCH (start:Node { handle_id: $start_id }),(end:Node {handle_id: $end_id })
+             MERGE (start)-[r:%s {%s}]->(end)
+             """ % (rel.get('type'), propmap) 
 
         query_data = {
             'props': properties,

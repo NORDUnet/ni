@@ -91,7 +91,7 @@ def address_is_a(addresses, node_types):
         q = '''
             MATCH (n:Node)
             USING SCAN n:Node
-            WHERE any(x IN n.ip_addresses WHERE x =~ {address}) OR n.ip_address =~ {address}
+            WHERE any(x IN n.ip_addresses WHERE x =~ $address) OR n.ip_address =~ $address
             RETURN distinct n
             '''
         address = '{!s}{!s}'.format(address, '.*')  # Match addresses with / network notation

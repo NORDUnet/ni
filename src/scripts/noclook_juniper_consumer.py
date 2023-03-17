@@ -141,7 +141,7 @@ def cleanup_hardware_v1(router_node, user):
     # Cleanup ni hardware info v1...
     # Get all ports that are not directly on router
     q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..3]->(:Node)-[r:Has]->(port:Port)
+        MATCH (n:Router {handle_id: $handle_id})-[:Has*1..3]->(:Node)-[r:Has]->(port:Port)
         RETURN port.handle_id as handle_id, port.name as name, id(r) as rel_id
         """
     ports = nc.query_to_list(nc.graphdb.manager, q, handle_id=router_node.handle_id)
@@ -157,7 +157,7 @@ def cleanup_hardware_v1(router_node, user):
             # Scrub interface properties..?
     # Remove hardware info
     q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[:Has*]->(hw:Node)
+        MATCH (n:Router {handle_id: $handle_id})-[:Has*]->(hw:Node)
         WHERE NOT hw:Port
         return hw.handle_id as handle_id, hw.name as name
         """
@@ -213,8 +213,8 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
             logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
     # check if "other services are dependent"
     q = """
-        MATCH (n:Node {handle_id: {handle_id}})<-[:Depends_on]-(s:Service)
-        WHERE s.operational_state <> 'Decommissioned' and  NOT(s.name in [{desc_services}])
+        MATCH (n:Node {handle_id: $handle_id})<-[:Depends_on]-(s:Service)
+        WHERE s.operational_state <> 'Decommissioned' and  NOT(s.name in [$desc_services])
         RETURN collect(s) as unregistered
         """
     result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
@@ -359,7 +359,7 @@ def match_remote_ip_address(remote_address):
         q = '''
             MATCH (n:Unit)
             USING SCAN n:Unit
-            WHERE any(x IN n.ip_addresses WHERE x =~ {mask})
+            WHERE any(x IN n.ip_addresses WHERE x =~ $mask)
             RETURN distinct n
             '''
         for hit in nc.query_to_list(nc.graphdb.manager, q, mask=mask):

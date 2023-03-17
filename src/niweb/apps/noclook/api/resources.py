@@ -1388,7 +1388,7 @@ class HostScanResource(Resource):
             MATCH (h:Host)<-[r:Depends_on]-(s:Host_Service)
             WHERE h.operational_state <> 'Decommissioned'
                 AND r.state CONTAINS 'open'
-                AND r.noclook_last_seen > {last_seen}
+                AND r.noclook_last_seen > $last_seen
             RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(distinct r.protocol + r.port) as ports
             """
         host_list = nc.query_to_list(nc.graphdb.manager, q, last_seen=self.last_seen())
@@ -1403,7 +1403,7 @@ class HostScanResource(Resource):
             MATCH (h:Host {handle_id: $handle_id})<-[r:Depends_on]-(s:Host_Service)
             WHERE h.operational_state <> 'Decommissioned'
                 AND r.state CONTAINS 'open'
-                AND r.noclook_last_seen > {last_seen}
+                AND r.noclook_last_seen > $last_seen
             RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(distinct r.protocol + r.port) as ports
             """
         host_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=handle_id, last_seen=self.last_seen())

@@ -85,7 +85,7 @@ def get_host(ip_address):
     q = '''
         MATCH (n:Host)
         USING SCAN n:Host
-        WHERE any(x IN n.ip_addresses WHERE x =~ {address})
+        WHERE any(x IN n.ip_addresses WHERE x =~ $address)
         RETURN distinct n
         '''
     for hit in nc.query_to_list(nc.graphdb.manager, q, address=ip_address):

@@ -87,7 +87,7 @@ def search(request, value='', form=None):
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
-            match (n:Node) where any(prop in keys(n) where n[prop] =~ {search}) return n
+            match (n:Node) where any(prop in keys(n) where n[prop] =~ $search) return n
             """
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
         if form == 'csv':

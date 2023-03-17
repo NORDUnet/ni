@@ -95,7 +95,7 @@ def set_not_public(host):
     :return: None
     """
     q = '''
-        MATCH (host {handle_id:{handle_id}})<-[r:Depends_on]-(host_service)
+        MATCH (host {handle_id:$handle_id})<-[r:Depends_on]-(host_service)
         WHERE exists(r.public)
         SET r.public = false
         '''
