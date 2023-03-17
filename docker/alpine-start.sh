@@ -10,7 +10,7 @@ case "$*" in
     # check if the dbs are up
     for i in $(seq 1 60)
     do
-      if nc -z postgres 5432 && nc -z neo4j 7474; then
+      if nc -z postgres 5432 && nc -z neo4j 7687; then
         break
       fi
       sleep 1
@@ -33,8 +33,8 @@ case "$*" in
     python $MANAGE_PY "$@"
     ;;
   consume-restore)
-    if [ ! -f /app/consume.conf ]; then
-      cat <<EOM > /app/consume.conf
+    if [ ! -f /app/scripts/restore.conf ]; then
+      cat <<EOM > /app/scripts/restore.conf
 # Set after how many days data should be considered old.
 [data_age]
 juniper_conf = 30
@@ -55,13 +55,13 @@ noclook = /opt/noclook
 EOM
     fi
     cd /app/scripts
-    python noclook_consumer.py -C /app/consume.conf -I
+    python noclook_consumer.py -C restore.conf -I
     ;;
   consume)
-    if [ ! -f /app/consume.conf ]; then
-      cat > /app/consume.conf
+    if [ ! -f /app/scripts/consume.conf ]; then
+      cat > /app/scripts/consume.conf
     fi
     cd /app/scripts
-    python noclook_consumer.py -C /app/consume.conf -I
+    python noclook_consumer.py -C consume.conf -I
     ;;
 esac
