@@ -82,7 +82,8 @@ msg "Stopping neo4j"
 docker-compose -f "$SCRIPT_DIR/compose-dev.yml" stop neo4j
 
 msg "Removing neo4j data"
-rm -r "$SCRIPT_DIR/data/neo4j/databases"
+rm -r "$SCRIPT_DIR/data/neo4j-upgrade/databases"
+rm -r "$SCRIPT_DIR/data/neo4j-upgrade/transactions"
 
 set -e
 
