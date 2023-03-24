@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-03-24
+### Changed
+- Now suppors neo4j 4.4
+
 ## 2023-03-02
 ### Changed
 - Cable API endpoint now supports, spaces, parenthesis and slashes, due to vendor naming schemes.
