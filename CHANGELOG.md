@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-03-27
+### Added
+- New script `noclook_bulk_service.py` allows bulk creation of services, which at times is useful.
+
 ## 2023-03-24
 ### Changed
 - Now suppors neo4j 4.4
