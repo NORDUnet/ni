@@ -73,9 +73,14 @@ curl -s -u "$BACKUPUSER" -o "ni_data.tar.gz" "$BACKUPURL/ni_data.tar.gz"
 tar xf ni_data.tar.gz 
 
 
+# check if neo4j is running in docker...
+CYPHER_PREFIX=""
+neo4jdocker=$(docker ps | grep neo4j | awk '{print $1}')
+if [ -n "$neo4jdocker" ]; then
+    CYPHER_PREFIX="docker exec $neo4jdocker"
+fi
 msg "Removing neo4j data"
-cypher-shell -u neo4j -p "$NEO4J_PASSWORD" "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
-
+$CYPHER_PREFIX cypher-shell -u neo4j -p "$NEO4J_PASSWORD" "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
 
 msg "Drop DB"
 dropdb $DB_NAME
