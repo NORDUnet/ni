@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
 ## [Unreleased]
+
+## 2023-05-12
+### Changed
+- Update clone script to use external script if present
+
 ## 2023-05-02
 ### Changed
 - Update djangosaml2 dependency to get rid of XSS
