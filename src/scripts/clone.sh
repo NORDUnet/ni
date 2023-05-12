@@ -74,13 +74,18 @@ tar xf ni_data.tar.gz
 
 
 # check if neo4j is running in docker...
-CYPHER_PREFIX=""
-neo4jdocker=$(docker ps | grep neo4j | awk '{print $1}')
-if [ -n "$neo4jdocker" ]; then
-    CYPHER_PREFIX="docker exec $neo4jdocker"
+if [ -f /opt/neo4j-drop.sh ]; then
+  msg "Removing neo4j data"
+  sudo /opt/neo4j-drop.sh
+else
+  CYPHER_PREFIX=""
+  neo4jdocker=$(docker ps | grep neo4j | awk '{print $1}')
+  if [ -n "$neo4jdocker" ]; then
+      CYPHER_PREFIX="docker exec $neo4jdocker"
+  fi
+  msg "Removing neo4j data"
+  $CYPHER_PREFIX cypher-shell -u neo4j -p "$NEO4J_PASSWORD" "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
 fi
-msg "Removing neo4j data"
-$CYPHER_PREFIX cypher-shell -u neo4j -p "$NEO4J_PASSWORD" "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
 
 msg "Drop DB"
 dropdb $DB_NAME
