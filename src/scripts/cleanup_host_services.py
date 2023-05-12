@@ -17,7 +17,7 @@ def cli():
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     parser.add_argument('--dry-run', '-N', action='store_true', default=False)
 
-    parser.add_argument('--max-age', '-t', type=int, default=365, help='Number of days to use as cut off')
+    parser.add_argument('--max-age', '-t', type=int, default=-1, help='Number of days to use as cut off')
     parser.add_argument('--purge', '-p', action='store_true', default=False, help='Purge mode will also delete the node handle for the host service')
 
     return parser.parse_args()
