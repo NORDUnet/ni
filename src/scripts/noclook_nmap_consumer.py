@@ -235,7 +235,7 @@ def insert_nmap(json_list, external_check=False):
         # Set Node attributes
         node = node_handle.get_node()
         helpers.update_noclook_auto_manage(node)
-
+    
         # dont replace if addesses are already in current addresses
         if set(addresses).issubset(set(node.data.get('ip_addresses', []))):
             addresses = []
@@ -245,7 +245,7 @@ def insert_nmap(json_list, external_check=False):
             'ip_addresses': addresses
         }
 
-        insert_services(i['host']['nmap_services_py']['services'], node, external_check)
+        #insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         # Check if the host has backup
         properties['backup'] = helpers.get_host_backup(node)
         # Set operational state if it is missing
