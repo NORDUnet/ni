@@ -106,7 +106,7 @@ def nodes_to_json():
 def relationships_to_json():
     json_list = []
     q = """
-        START r=relationship(*)
+        MATCH ()-[r]->()
         RETURN r, startNode(r).handle_id as start, endNode(r).handle_id as end
         """
 
