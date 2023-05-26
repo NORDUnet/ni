@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-05-26
+### Changed
+- Add script for setting customer on all backbon ip services
+
+## 2023-05-17
+### Changed
+- Fix problem with noclook_producer script that is used for backing up ni
+
+## 2023-05-12
+### Changed
+- Update clone script to use external script if present
+
+## 2023-05-02
+### Changed
+- Update djangosaml2 dependency to get rid of XSS
+
 ## 2023-04-25
 ### Changed
 - the clone script has been updated to support neo4j running in docker
