@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2023-05-26
+### Changed
+- Add script for setting customer on all backbon ip services
+
 ## 2023-05-17
 ### Changed
 - Fix problem with noclook_producer script that is used for backing up ni
