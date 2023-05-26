@@ -33,7 +33,6 @@
         {% accordion 'Bulk ports' 'bulk_ports' '#edit-accordion' %}
           {{ ports_form | crispy }}
         {% endaccordion %}
-        {% include "noclook/edit/includes/host_service_group.html" %}
         {% include "noclook/edit/includes/disable_noclook_auto_manage.html" %}
     </div>
 {% endblock %}

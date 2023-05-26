@@ -212,8 +212,6 @@
     {% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
 {% endif %}
 
-{% include "noclook/detail/includes/host_services.html" %}
-
 {% if node.data.docker_images %}
 <div class="section">
   <div class="pull-right">

@@ -64,22 +64,6 @@ def get_relationship_model(relationship_id):
     return nc.get_relationship_model(nc.graphdb.manager, relationship_id)
 
 
-def set_all_services_to_not_public(host):
-    """
-    Set the hosts relationships to host services public property to false.
-
-    :param host: neo4j node
-    :return: None
-    """
-    q = '''
-        MATCH (host {handle_id:$handle_id})<-[r:Depends_on]-(host_service)
-        WHERE exists(r.public)
-        SET r.public = false
-        '''
-    with nc.graphdb.manager.session as s:
-        s.run(q, {'handle_id': host.handle_id})
-
-
 def address_is_a(addresses, node_types):
     """
     :param addresses: List of IP addresses
