@@ -22,7 +22,7 @@ before_script:
   - pip install -q -r requirements/testing.txt
   - pip freeze
   - apt-get update
-  - apt-get install -y -qq netcat
+  - apt-get install -y -qq netcat-traditional
 
 
 test:
