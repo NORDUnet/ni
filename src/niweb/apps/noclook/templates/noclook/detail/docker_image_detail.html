@@ -118,10 +118,23 @@
 
 {% include "noclook/detail/includes/depend_include.html" %}
 
-{% if node.meta_type == 'Physical' %}
-    {% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
-{% endif %}
-
-{% include "noclook/detail/includes/host_services.html" %}
-
+<div class="section">
+    <h3>Packages</h3>
+    <div class="pull-right">
+      {% table_search "packages" %}
+    </div>
+        {% blockvar th %}
+            <th>Package</th>
+            <th>Version</th>
+        {% endblockvar %}
+        {% blockvar tbody %}
+            {% for package, version in packages %}
+                <tr>
+                  <td>{{package}}</td>
+                  <td>{{version}}</td>
+                </tr>
+            {% endfor %}
+        {% endblockvar %}
+        {% table th tbody id="packages" %}
+</div>
 {% endblock %}

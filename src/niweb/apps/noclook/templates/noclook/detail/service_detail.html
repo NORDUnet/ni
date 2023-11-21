@@ -65,6 +65,14 @@
         <div class="span3">
             <table class="table">
                 {% info_row 'NetApp storage use:' node.data.netapp_storage_sum postfix=" GB" %}
+                {% if node.data.url %}
+                  <tr>
+                      <th>More information:</th>
+                      <td>
+                        <a href="{{ node.data.url }}" target="_blank">Link</a>
+                      </td>
+                  </tr>
+                {% endif %}
                 {% include "noclook/detail/includes/last_changed.html" with inline=True %}
             </table>
         </div>

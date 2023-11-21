@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Docker Image node type
+### Fixed
+- Cypher error on host user detail page
 
 ## 2023-05-26
 ### Changed

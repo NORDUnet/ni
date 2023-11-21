@@ -636,6 +636,7 @@ class NewServiceForm(forms.Form):
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -704,6 +705,7 @@ class EditServiceForm(forms.Form):
     decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -974,12 +976,11 @@ class JSONList(forms.CharField):
         raise ValidationError("Unsupported value", code="invalid", params={"value": value})
 
 
-
 class NewDockerImageForm(forms.Form):
     name = forms.CharField()
     description = description_field('docker image')
     tags = JSONList(required=False,
-                          help_text=u'JSON formatted list of tags')
+                    help_text=u'JSON formatted list of tags')
     os = forms.CharField(required=False,
                          label='Operating system',
                          help_text='What operating system is running on the host?')

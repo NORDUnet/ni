@@ -85,6 +85,7 @@
         </div>
         {{ form.description | as_crispy_field}}
         {{ form.contract_number | as_crispy_field}}
+        {{ form.url | as_crispy_field}}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/dependency_group.html" %}

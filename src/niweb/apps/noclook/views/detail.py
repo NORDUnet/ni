@@ -840,8 +840,10 @@ def docker_image_detail(request, handle_id):
 
     dependent = docker_image.get_dependent_as_types()
     dependencies = docker_image.get_dependencies_as_types()
+    packages = [p.split() for p in docker_image.data.get('packages', [])]
     urls = helpers.get_node_urls(docker_image, dependent, dependencies)
     return render(request, 'noclook/detail/docker_image_detail.html',
                   {'node_handle': nh, 'node': docker_image, 'last_seen': last_seen, 'expired': expired,
                    'dependent': dependent, 'dependencies': dependencies,
+                   'packages': packages,
                    'history': True, 'urls': urls, })

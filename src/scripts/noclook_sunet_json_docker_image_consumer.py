@@ -26,7 +26,7 @@ def insert_docker_image(img_name, img_data):
     docker_image_nh = utils.get_unique_node_handle(name, node_type, default_meta_type)
 
     docker_data = {
-        # 'packages': img_data['pkg_list'],
+        'packages': [f"{p['package']} {p['version']}" for p in img_data['pkg_list']],
     }
 
     if img_data.get('os_hash', {}).get('PRETTY_NAME'):
