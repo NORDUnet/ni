@@ -227,7 +227,7 @@ def host_user_detail(request, handle_id):
     result = host_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     q = """
-        MATCH (n:Node {handle_id: $handle_id})-[r:Uses|:Owns]->(u)
+        MATCH (n:Node {handle_id: $handle_id})-[:Uses|:Owns]->(u)
         RETURN
         labels(u) as labels,
         u.handle_id as handle_id,
