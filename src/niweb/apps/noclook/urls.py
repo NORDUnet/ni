@@ -109,6 +109,7 @@ urlpatterns = [
     path('port/', _list.list_ports),
     path('pdu/', _list.list_pdu),
     path('external-equipment/', _list.list_external_equipment),
+    path('docker-image/', _list.list_docker_images),
     # Generic list
     path('<slug>/', _list.list_by_type, name='generic_list'),
 

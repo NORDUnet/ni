@@ -742,3 +742,26 @@ def list_external_equipment(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'External Equipment', 'urls': urls})
+
+
+def _docker_image_table(image):
+    row = TableRow(image, image.get('tags'), image.get('description'))
+    return row
+
+
+@login_required
+def list_docker_images(request):
+    q = """
+        MATCH (image:Docker_Image)
+        RETURN image
+        ORDER BY image.name
+        """
+
+    docker_image_list = nc.query_to_list(nc.graphdb.manager, q)
+    urls = get_node_urls(docker_image_list)
+
+    table = Table('Docker Image', 'Tags', 'Description')
+    table.rows = [_docker_image_table(item['image']) for item in docker_image_list]
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'name': 'Docker Images', 'table': table, 'urls': urls})
