@@ -27,6 +27,11 @@
             var depsTabOutLink = depTabsOut.find('a:first');
             depsTabOutLink.tab('show');
 
+            // Incoming dependencies table
+            var dockerImagesTab = $('#dockerImagesTab');
+            var dockerImagesTabLink = dockerImagesTab.find('a:first');
+            dockerImagesTabLink.tab('show');
+
             // Incomming search
             var $depTablesOut = depTabsOut.find("a").map(getTable);
             $("#dependsOnSearch").on('keyup', search($depTablesOut));
@@ -238,6 +243,9 @@
             {% if dependencies.cables %}
                 <li><a href="#cablesTabOut" data-toggle="tab">Cables</a></li>
             {% endif %}
+            {% if dependencies.docker_images %}
+              <li><a href="#dockerImagesTab" data-toggle="tab">Docker Images</a></li>
+            {% endif %}
         </ul>
 
         <div class="tab-content">
@@ -412,6 +420,23 @@
                 {% endblockvar %}
                 <div class="tab-pane" id="cablesTabOut">
                     {% table th tbody id="cablesOut" %}
+                </div>
+            {% endif %}
+            {% if dependencies.docker_images %}
+                {% blockvar th %}
+                                <th>Name</th><th>Tag</th><th>Description</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
+                        {% for item in dependencies.docker_images %}
+                            <tr>
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{{ item.name | split:":" | last }}</td>
+                                <td>{{ item.description }}</td>
+                            </tr>
+                        {% endfor %}
+                {% endblockvar %}
+                <div class="tab-pane" id="dockerImagesTab">
+                    {% table th tbody id="dockerImagesTab" %}
                 </div>
             {% endif %}
         </div>

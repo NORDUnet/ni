@@ -35,7 +35,9 @@ def insert_docker_image(img_name, img_data):
     # XXX: workaround for current format
     inspect_data = img_data['inspect_data'][0]
     if 'Created' in inspect_data:
-        docker_data['image_created'] = inspect_data['Created']
+        # the neo4j date format we are using is '%Y-%m-%dT%H:%M:%S.%f' per noclook_last_seen_to_dt
+        non_nano, rest = inspect_data['Created'].split('.')
+        docker_data['image_created'] = f'{non_nano}.{rest[:6]}'
 
     if 'RepoTags' in inspect_data:
         docker_data['tags'] = inspect_data['RepoTags']

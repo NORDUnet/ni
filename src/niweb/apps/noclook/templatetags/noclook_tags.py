@@ -384,3 +384,19 @@ def ticket_info(services, tid='inTicketInfo'):
 @register.filter
 def split(item, sep):
     return item.split(sep)
+
+
+@register.filter
+def isots_to_dt(s):
+    """
+    Returns string s iso timestring (ex. 2011-11-01T14:37:13.713434) as a
+    datetime.datetime. If a datetime cant be made None is returned.
+    """
+    try:
+        try:
+            dt = datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
+        except ValueError:
+            dt = datetime.strptime(s, '%Y-%m-%dT%H:%M:%S')     # ex. 2011-11-01T14:37:13
+    except (TypeError, AttributeError):
+        return None
+    return dt

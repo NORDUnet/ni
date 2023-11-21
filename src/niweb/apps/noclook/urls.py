@@ -118,6 +118,7 @@ urlpatterns = [
     path('peering-group/<int:handle_id>/', detail.peering_group_detail, name='peering_group_detail'),
     path('optical-node/<int:handle_id>/', detail.optical_node_detail),
     path('cable/<int:handle_id>/', detail.cable_detail),
+    path('docker-image/<int:handle_id>/', detail.docker_image_detail),
     path('host/<int:handle_id>/', detail.host_detail, name='detail_host'),
     path('host-service/<int:handle_id>/', detail.host_service_detail),
     path('host-provider/<int:handle_id>/', detail.host_provider_detail),

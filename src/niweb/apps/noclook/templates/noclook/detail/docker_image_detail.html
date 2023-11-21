@@ -5,68 +5,20 @@
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
-{% noclook_has_rogue_ports node.handle_id as has_rogue_ports %}
-{% if has_rogue_ports %}
-    <div class="alert alert-error">
-        <i class="icon-exclamation-sign"></i> Unauthorized open ports found.
-    </div>
-{% endif %}
 <div class="row">
     <div class="span4">
         <table class="table">
             <tr>
-                <th>Type:</th><td>{{ node_handle.node_meta_type|capfirst }} host</td>
+                <th>Tag:</th><td>{{ node_handle.node_name|split:":"|last }}</td>
             </tr>
             {% if node.data.operational_state %}
                 <tr>
                     <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
-            {% if node.data.backup %}
-                <tr>
-                    <th>Backup:</th><td>{{ node.data.backup }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.syslog %}
-                <tr>
-                    <th>Syslog:</th><td>{{ node.data.syslog|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.nagios_checks %}
-                <tr>
-                    <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.managed_by %}
-                <tr>
-                    <th>Managed by:</th><td>{{ node.data.managed_by }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.hostnames %}
-                <tr>
-                    <th>Hostnames:</th>
-                    <td>
-                        {% for item in node.data.hostnames %}
-                            {{ item }}{% if not forloop.last %},<br>{% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-            {% endif %}
-            {% if node.data.ip_addresses %}
-                <tr>
-                    <th>Addresses:</th>
-                    <td>
-                        {% for item in node.data.ip_addresses %}
-                            {{ item }}{% if not forloop.last %},<br>{% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-            {% endif %}
-            {% if node.data.sunet_iaas %}
-                <tr>
-                    <th>SUNET IAAS:</th><td>{{ node.data.sunet_iaas|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
+            <tr>
+              <th>Image Created:</th><td>{{ node.data.image_created | isots_to_dt }}</td>
+            </tr>
             {% if relations.Uses %}
                 <tr>
                     <th>Users:</th>
@@ -97,57 +49,10 @@
                     </td>
                 </tr>
             {% endif %}
-            {% if node.data.contract_number %}
-                <tr>
-                    <th>Contract number:</th><td>{{ node.data.contract_number }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.service_tag %}
-                <tr>
-                    <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.end_support %}
-                <tr>
-                    <th>Support ends:</th><td>{{ node.data.end_support }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.lastboot %}
-                <tr>
-                    <th>Last boot:</th><td>{{node.data.lastboot}}<br>({% if node.data.uptime %}{% timestamp_to_td node.data.uptime as uptime %}{{ uptime.days }} days ago{% endif %})</td>
-                </tr>
-            {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.data.vendor or node.data.model or node.data.cpu or node.data.ram or node.data.hdd %}
-                {% if node.data.vendor %}
-                    <tr>
-                        <th>Vendor:</th><td>{{node.data.vendor}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.model %}
-                    <tr>
-                        <th>Model:</th><td>{{node.data.model}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.cpu %}
-                    <tr>
-                        <th>CPU:</th><td>{{node.data.cpu}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.ram %}
-                    <tr>
-                        <th>RAM:</th><td>{{node.data.ram}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.hdd %}
-                    <tr>
-                        <th>HDD:</th><td>{{node.data.hdd}}</td>
-                    </tr>
-                {% endif %}
-            {% endif %}
             {% if node.data.os %}
                 <tr>
                     <th>OS:</th><td>{{node.data.os}} {% if node.data.os_version %}{{node.data.os_version}}{% endif %}</td>

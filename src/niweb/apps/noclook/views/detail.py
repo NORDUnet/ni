@@ -175,6 +175,7 @@ def host_detail(request, handle_id):
     if not any(dependent.values()):
         dependent = None
     dependencies = host.get_dependencies_as_types()
+    dependencies['docker_images'] = [dep for dep in dependencies.get('direct', [])]
 
     urls = helpers.get_node_urls(relations, host_services, dependent, dependencies)
     scan_enabled = helpers.app_enabled("apps.scan")
@@ -828,3 +829,19 @@ def switch_detail(request, handle_id):
                    'host_services': host_services, 'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'urls': urls, 'scan_enabled': scan_enabled, 'hardware_modules': hardware_modules})
+
+
+@login_required
+def docker_image_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    docker_image = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(docker_image.data)
+
+    dependent = docker_image.get_dependent_as_types()
+    dependencies = docker_image.get_dependencies_as_types()
+    urls = helpers.get_node_urls(docker_image, dependent, dependencies)
+    return render(request, 'noclook/detail/docker_image_detail.html',
+                  {'node_handle': nh, 'node': docker_image, 'last_seen': last_seen, 'expired': expired,
+                   'dependent': dependent, 'dependencies': dependencies,
+                   'history': True, 'urls': urls, })
