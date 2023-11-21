@@ -9,7 +9,12 @@
     <div class="span4">
         <table class="table">
             <tr>
-                <th>Tag:</th><td>{{ node_handle.node_name|split:":"|last }}</td>
+              <th>Tags:</th>
+              <td>
+                <ul style="margin: 0; padding: 0;">
+                  {{ node.data.tags|unordered_list }}
+                </ul>
+              </td>
             </tr>
             {% if node.data.operational_state %}
                 <tr>

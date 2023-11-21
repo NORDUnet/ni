@@ -152,6 +152,7 @@ urlpatterns = [
     # wins only because of no /
     path(r'nodes/<int:handle_id>', redirect.node_redirect, name='node_redirect'),
     path('slow-nodes/<int:handle_id>', redirect.node_slow_redirect),
+    path('docker-image/tag/<tag>', redirect.docker_image_by_tag_redirect),
 
     # -- debug view
     path('nodes/<int:handle_id>/debug', debug.generic_debug, name='debug'),

@@ -1,4 +1,4 @@
-from apps.noclook.models import NodeType
+from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
 import norduniclient as nc
 from datetime import datetime, timedelta
@@ -43,8 +43,10 @@ def noclook_node_to_url(context, handle_id):
 
 @register.simple_tag(takes_context=True)
 def noclook_node_to_link(context, node):
-
-    if node and "handle_id" in node:
+    if isinstance(node, NodeHandle):
+        url = noclook_node_to_url(context, node.handle_id)
+        result = format_html(u'<a class="handle" href="{}" title="{}">{}</a>', url, node.node_name, node.node_name)
+    elif node and "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
         result = format_html(u'<a class="handle" href="{}" title="{}">{}</a>', url, node.get("name"), node.get("name"))
     else:
@@ -392,11 +394,13 @@ def isots_to_dt(s):
     Returns string s iso timestring (ex. 2011-11-01T14:37:13.713434) as a
     datetime.datetime. If a datetime cant be made None is returned.
     """
+    if not s:
+        return None
     try:
         try:
             dt = datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
         except ValueError:
             dt = datetime.strptime(s, '%Y-%m-%dT%H:%M:%S')     # ex. 2011-11-01T14:37:13
-    except (TypeError, AttributeError):
+    except (ValueError, TypeError, AttributeError):
         return None
     return dt

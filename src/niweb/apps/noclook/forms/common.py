@@ -943,3 +943,47 @@ class TrunkCableForm(forms.Form):
     trunk_num_ports = forms.IntegerField(required=False, min_value=0, initial=0, label='Number of ports', help_text='Also number of cables that is in the trunk cable')
     trunk_prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0', label='Port prefix')
     trunk_create_missing_ports = forms.BooleanField(required=False, help_text='Force create missing ports', label='Create missing ports')
+
+
+class JSONList(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '3'})
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            return "\n".join(value)
+        return ''
+
+    def to_python(self, value):
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            if '"' not in value:
+                # we got a newline seperated string from input
+                return [line.strip() for line in value.splitlines() if line.strip()]
+            try:
+                converted = json.loads(value)
+                if isinstance(converted, list):
+                    return converted
+                else:
+                    raise ValidationError("Could not convert to list", code="invalid", params={"value": value})
+            except json.JSONDecodeError:
+                raise ValidationError("Could not parse string as json", code="invalid", params={"value": value})
+        raise ValidationError("Unsupported value", code="invalid", params={"value": value})
+
+
+
+class NewDockerImageForm(forms.Form):
+    name = forms.CharField()
+    description = description_field('docker image')
+    tags = JSONList(required=False,
+                          help_text=u'JSON formatted list of tags')
+    os = forms.CharField(required=False,
+                         label='Operating system',
+                         help_text='What operating system is running on the host?')
+
+
+class EditDockerImageForm(NewDockerImageForm):
+    pass

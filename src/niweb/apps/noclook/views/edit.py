@@ -280,6 +280,25 @@ def edit_customer(request, handle_id):
 
 
 @staff_member_required
+def edit_docker_image(request, handle_id):
+    # Get needed data from node
+    nh, docker_image = helpers.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditDockerImageForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, docker_image.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditDockerImageForm(docker_image.data)
+    return render(request, 'noclook/edit/edit_docker_image.html',
+                  {'node_handle': nh, 'form': form, 'node': docker_image})
+
+
+@staff_member_required
 def edit_end_user(request, handle_id):
     # Get needed data from node
     nh, end_user = helpers.get_nh_node(handle_id)
@@ -1223,6 +1242,7 @@ def disable_noclook_auto_manage(request, slug, handle_id):
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
+    'docker-image': edit_docker_image,
     'end-user': edit_end_user,
     'external-equipment': edit_external_equipment,
     'firewall': edit_firewall,

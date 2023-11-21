@@ -919,3 +919,13 @@ def relationship_to_str(relationship):
         b_name=rel.end['name'],
         b_handle_id=rel.end['handle_id'],
     )
+
+
+def docker_images_by_tag(tag):
+    q = """
+    MATCH (n:Docker_Image)
+    WHERE $tag in n.tags
+    RETURN n
+    """
+    result = nc.query_to_list(nc.graphdb.manager, q, tag=tag)
+    return [get_object_or_404(NodeHandle, pk=node.get('n', {}).get('handle_id')) for node in result]

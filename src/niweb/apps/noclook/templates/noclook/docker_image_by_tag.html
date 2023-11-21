@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Docker Images by tag{% endblock %}
+
+{% load noclook_tags %}
+{% block content %}
+    {{ block.super }}
+    <div class="span7">
+      <h1>Multiple docker images has that tag: {{tag}}</h1>
+      <ul>
+        {% for node in nodes %}
+        <li>{% noclook_node_to_link node %}</li>
+        {% endfor %}
+      </ul>
+     </div>
+{% endblock %}
+
