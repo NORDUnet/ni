@@ -72,6 +72,9 @@ def insert_node(node_dict):
     if packages:
         # find docker-ce
         docker_ce = [p['version'] for p in packages if isinstance(p, dict) and p.get('name') == 'docker-ce']
+        # handle double list old format
+        if len(packages) == 1 and isinstance(packages[0], list):
+            docker_ce = [list(p.values())[0] for p in packages[0] if 'docker-ce' in p]
         if docker_ce:
             host_data['docker_version'] = docker_ce[0]
 

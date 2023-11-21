@@ -67,6 +67,16 @@
                     <th>SUNET IAAS:</th><td>{{ node.data.sunet_iaas|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.cosmos_repo_origin_url %}
+                <tr>
+                    <th>Cosmos Repository:</th><td>{{ node.data.cosmos_repo_origin_url }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.docker_version %}
+                <tr>
+                    <th>Docker version:</th><td>{{ node.data.docker_version }}</td>
+                </tr>
+            {% endif %}
             {% if relations.Uses %}
                 <tr>
                     <th>Users:</th>
