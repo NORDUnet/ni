@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2024-01-04
+### Added
+- `noclook_snap_consumer.py` now tries to depend hosts based on ntnx cluster, ignores unknown clusters
+
 
 ## 2023-11-22
 ### Added

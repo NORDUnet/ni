@@ -5,10 +5,17 @@ import utils
 import argparse
 import logging
 from apps.noclook import helpers
+from apps.noclook.models import NodeHandle
 
 logger = logging.getLogger('noclook_consumer.snap')
 
 ALLOWED_NODE_TYPE_SET = {'Host'}
+NTNX_SERVICE = {
+    'dk-ore2-ntnx-4': 'NU-S001347',
+    'dk-bal-ntnx-4': 'NU-S001348',
+    'dk-ore2-ntnx-5': 'NU-S001349',
+    'dk-bal-ntnx-5': 'NU-S001350',
+}
 
 
 def insert_snap(json_list):
@@ -71,6 +78,28 @@ def insert_snap(json_list):
             properties['service_tag'] = d.get('service_tag')
 
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
+
+        # service dependencies
+        cluster = d.get('target', '').split('/')[0]
+        if cluster in NTNX_SERVICE:
+            try:
+                depends_on_nh = NodeHandle.objects.get(node_name=NTNX_SERVICE[cluster])
+                rel, created = helpers.set_depends_on(user, node, depends_on_nh.handle_id)
+                if created:
+                    # clean up old depends e.g. if host is redeployed to new cluster, if not same delete old
+                    # simpler with a cypher maybe?
+                    # match(n:Node {handle_id: $handle_id})-[r:Depends_on]->(n2:Node) WHERE n2.name in $service_names return r
+                    result = node.get_dependencies()
+                    dependencies = result.get('Depends_on') or []
+                    del_candidates = set(NTNX_SERVICE.values()).remove(NTNX_SERVICE[cluster])
+                    for dep in dependencies:
+                        rel = dep.get('relationship')
+                        result = [n for n in rel.nodes if n.get('name') in del_candidates]
+                        if result:
+                            # lets delete this
+                            helpers.delete_relationship(user, rel.id)
+            except Exception:
+                pass
         logger.info('{} has been imported'.format(name))
 
 
