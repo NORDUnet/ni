@@ -32,7 +32,7 @@ def insert_docker_image(img_name, img_data):
     if img_data.get('os_hash', {}).get('PRETTY_NAME'):
         docker_data['os'] = img_data['os_hash']['PRETTY_NAME']
 
-    if isinstance(img_data['inspect_data']):
+    if isinstance(img_data['inspect_data'], list):
         # XXX: workaround for current format
         inspect_data = img_data['inspect_data'][0]
     if 'Created' in inspect_data:
