@@ -32,8 +32,9 @@ def insert_docker_image(img_name, img_data):
     if img_data.get('os_hash', {}).get('PRETTY_NAME'):
         docker_data['os'] = img_data['os_hash']['PRETTY_NAME']
 
-    # XXX: workaround for current format
-    inspect_data = img_data['inspect_data'][0]
+    if isinstance(img_data['inspect_data']):
+        # XXX: workaround for current format
+        inspect_data = img_data['inspect_data'][0]
     if 'Created' in inspect_data:
         # the neo4j date format we are using is '%Y-%m-%dT%H:%M:%S.%f' per noclook_last_seen_to_dt
         non_nano, rest = inspect_data['Created'].split('.')
