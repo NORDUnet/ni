@@ -32,6 +32,7 @@ def insert_docker_image(img_name, img_data):
     if img_data.get('os_hash', {}).get('PRETTY_NAME'):
         docker_data['os'] = img_data['os_hash']['PRETTY_NAME']
 
+    inspect_data = img_data['inspect_data']
     if isinstance(img_data['inspect_data'], list) and len(img_data['inspect_data']) > 0 and isinstance(img_data['inspect_data'][0], list):
         # XXX: workaround for current format
         inspect_data = img_data['inspect_data'][0]
@@ -49,14 +50,17 @@ def insert_docker_image(img_name, img_data):
 
 
 def run_consume(path):
-    data = utils.load_json(path)
-    for item in data:
+    data = utils.load_json(path, with_filename=True)
+    for item, filename in data:
         first_val = list(item.values())[0]
         if 'pkg_list' in first_val and 'inspect_data' in first_val:
-            for img_name, img_data in item.items():
-                insert_docker_image(img_name, img_data)
+            try:
+                for img_name, img_data in item.items():
+                    insert_docker_image(img_name, img_data)
+            except Exception as e:
+                logger.error('Unable to process {}, got error: {}'.format(filename, e))
         else:
-            logger.warning('Unknown json format not supported.')
+            logger.warning('Unknown json format not supported for file: {}'.format(filename))
 
 
 def main():
