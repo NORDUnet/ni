@@ -36,7 +36,8 @@ SAML_CREATE_UNKNOWN_USER = True
 # SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
 # APPEND_SLASH = False
 
-SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
+SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
+# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 SAML_ATTRIBUTE_MAPPING = {
     'eduPersonPrincipalName': ('username', ),
     'mail': ('email', ),

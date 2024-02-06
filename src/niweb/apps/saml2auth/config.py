@@ -47,9 +47,13 @@ SAML_CONFIG = {
     'metadata': {
         #'local': [path.join(BASEDIR, 'remote_metadata.xml')],
         'mdq': [
+            # {
+            #     "url": "https://mds.swamid.se",
+            #     "cert": path.join(BASEDIR, "md-signer2.crt"),
+            # }
             {
-                "url": "https://mds.swamid.se",
-                "cert": path.join(BASEDIR, "md-signer2.crt"),
+                "url": "https://mds.swamid.se/qa/",
+                "cert": path.join(BASEDIR, "swamid-qa.crt"),
             }
         ]
     },

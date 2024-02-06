@@ -195,6 +195,8 @@ TEMPLATES = [
 ### LOGIN conf
 DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', False)
 SAML_ENABLED = environ.get('SAML_ENABLED', False)
+SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
+# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
