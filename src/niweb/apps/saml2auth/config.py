@@ -2,8 +2,8 @@ from os import environ, path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
 
-HOSTNAME =  environ.get("HOSTNAME", "localhost:8000")
-
+# HOSTNAME =  environ.get("HOSTNAME", "localhost:8000")
+HOSTNAME = "localhost:8000"
 BASEDIR = path.dirname(path.abspath(__file__))
 SAML_CONFIG = {
     # full path to the xmlsec1 binary programm
