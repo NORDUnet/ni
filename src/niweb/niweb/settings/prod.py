@@ -31,12 +31,19 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
 
+# SAML_USE_NAME_ID_AS_USERNAME = True
+# SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'username'
+# SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
+# APPEND_SLASH = False
+
+SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 SAML_ATTRIBUTE_MAPPING = {
     'eduPersonPrincipalName': ('username', ),
     'mail': ('email', ),
     'givenName': ('first_name', ),
     'sn': ('last_name', ),
     'displayName': ('display_name', ),
+    'eduPersonEntitlement': ('eduPersonEntitlement', ),
 }
 SAML_CONFIG = config.SAML_CONFIG
 ########## END GENERAL CONFIGURATION

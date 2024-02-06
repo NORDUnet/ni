@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.dispatch.dispatcher import receiver
 from django.db.models.signals import post_save
 from django.urls import reverse
+import logging
 
 
 class UserProfile(models.Model):
@@ -19,9 +20,20 @@ class UserProfile(models.Model):
 
     def url(self):
         return reverse('userprofile_detail', args=[self.pk])
-
+    
+def log_data(data):
+    logger = logging.getLogger(__name__)
+    logger.warning(f"{data}")
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, **kwargs):
     user = kwargs['instance']
+    attr_list = {}
+    for field in user._meta.get_fields():
+        if field.concrete:
+            try:
+                attr_list[field.name] = getattr(user, field.name)
+            except:
+                continue
+    log_data(attr_list)
     UserProfile.objects.get_or_create(user=user)
