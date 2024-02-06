@@ -23,18 +23,10 @@ class UserProfile(models.Model):
         return reverse('userprofile_detail', args=[self.pk])
 
 
-def log_data(data):
-    import requests
-    headers = {
-    'Content-Type': 'application/json',
-    }
-    url = f"http://simple-logger-api:5000/log?data={data}"
-    response = requests.post(url, headers=headers,json=[])
-    return response, response.status_code
-
-
 @receiver(post_save, sender=User)
 def create_user_profile(sender, **kwargs):
+    import logging
+    logger = logging.getLogger(__name__)
     user = kwargs['instance']
     attr_list = {}
     for field in user._meta.get_fields():
@@ -43,10 +35,7 @@ def create_user_profile(sender, **kwargs):
                 attr_list[field.name] = getattr(user, field.name)
             except:
                 continue
-        
-    log_data("-------------- USER **********")
-    log_data(attr_list)
-    log_data("-------------- USER **********")
+    logger.debug(attr_list)
     UserProfile.objects.get_or_create(user=user)
 
 

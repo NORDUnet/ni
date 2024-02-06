@@ -25,21 +25,13 @@ class HandleUnsupportedBinding:
             return None
 
 
-def log_data(data):
-    import requests
-    headers = {
-    'Content-Type': 'application/json',
-    }
-    url = f"http://simple-logger-api:5000/log?data={data}"
-    response = requests.post(url, headers=headers,json=[])
-    return response, response.status_code
-
-
 class ModifiedSaml2Backend(Saml2Backend):
     def _update_user(self, user, attributes: dict, attribute_mapping: dict, force_save: bool = False):
-        log_data("***** SAML ATTRIBUTES *****")
-        log_data(attributes)
-        log_data("***** SAML ATTRIBUTES *****")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug("***** SAML ATTRIBUTES *****")
+        logger.debug(attributes)
+        logger.debug("***** SAML ATTRIBUTES *****")
         if 'eduPersonEntitlement' in attributes:
             if 'some-entitlement' in attributes['eduPersonEntitlement']:
                 user.is_staff = True
