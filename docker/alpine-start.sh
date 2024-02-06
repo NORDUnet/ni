@@ -5,7 +5,7 @@ case "$*" in
   dev)
     export SECRET_KEY=$(python -c "import random; print(''.join([random.SystemRandom().choice('abcdefghijlkmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(50)]))")
     export DEBUG_MODE=True
-    export DJANGO_SETTINGS_MODULE=niweb.settings.dev
+    export DJANGO_SETTINGS_MODULE=niweb.settings.prod
 
     # check if the dbs are up
     for i in $(seq 1 60)
@@ -20,7 +20,7 @@ case "$*" in
     exec python $MANAGE_PY runserver 0.0.0.0:8000
     ;;
   shell)
-    export DJANGO_SETTINGS_MODULE=niweb.settings.dev
+    export DJANGO_SETTINGS_MODULE=niweb.settings.prod
     /bin/sh
     ;;
   neo4j-password)

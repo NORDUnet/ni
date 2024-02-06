@@ -115,9 +115,13 @@ USE_TZ = True
 
 # Login settings
 LOGIN_URL = environ.get('LOGIN_URL', '/login/')
+# LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
 LOGOUT_URL = '/logout/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
+SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"
@@ -195,8 +199,6 @@ TEMPLATES = [
 ### LOGIN conf
 DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', True)
 SAML_ENABLED = environ.get('SAML_ENABLED', True)
-SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
-# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
@@ -217,8 +219,9 @@ AUTHENTICATION_BACKENDS = (
 )
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
-        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
+        environ.get('SAML_BACKEND', 'apps.saml2auth.middleware.ModifiedSaml2Backend'),
     )
+    # environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     MIDDLEWARE += (
         'djangosaml2.middleware.SamlSessionMiddleware',
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
@@ -246,6 +249,7 @@ DJANGO_APPS = (
     'django.contrib.staticfiles',
     # Admin panel and documentation:
     'django.contrib.admin',
+    'django_extensions',
 )
 
 THIRD_PARTY_APPS = (
