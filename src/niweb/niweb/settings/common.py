@@ -193,8 +193,8 @@ TEMPLATES = [
 
 
 ### LOGIN conf
-DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', False)
-SAML_ENABLED = environ.get('SAML_ENABLED', False)
+DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', True)
+SAML_ENABLED = environ.get('SAML_ENABLED', True)
 SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
 # SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 
