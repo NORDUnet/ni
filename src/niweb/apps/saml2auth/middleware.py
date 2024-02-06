@@ -25,36 +25,6 @@ class HandleUnsupportedBinding:
             return None
 
 
-def log_data(data):
-    import requests
-    headers = {
-    'Content-Type': 'application/json',
-    }
-    url = f"http://simple-logger-api:5000/log?data={data}"
-    response = requests.post(url, headers=headers,json=[])
-    return response, response.status_code
-
-
-class ModifiedSaml2Backend(Saml2Backend):
-    def _update_user(self, user, attributes: dict, attribute_mapping: dict, force_save: bool = False):
-        log_data("***** SAML ATTRIBUTES *****")
-        log_data(attributes)
-        log_data("***** SAML ATTRIBUTES *****")
-        if 'eduPersonEntitlement' in attributes:
-            if 'some-entitlement' in attributes['eduPersonEntitlement']:
-                user.is_staff = True
-                force_save = False
-            else:
-                user.is_staff = False
-                force_save = False
-        return super()._update_user(user, attributes, attribute_mapping, force_save)
-
-    # def save_user(self, user, *args, **kwargs):
-    #     user.save()
-    #     # user_group = Group.objects.get(name='Default')
-    #     # user.groups.add(user_group)
-    #     return super().save_user(user, *args, **kwargs)
-
 class NDNOnlySaml2Backend(Saml2Backend):
     def is_authorized(self, attributes, attribute_mapping, idp_entityid, assertion_info):
         # check if employee or member
