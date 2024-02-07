@@ -115,13 +115,6 @@ USE_TZ = True
 
 # Login settings
 LOGIN_URL = environ.get('LOGIN_URL', '/login/')
-# LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
-LOGOUT_URL = '/logout/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
-
-# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
-SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"

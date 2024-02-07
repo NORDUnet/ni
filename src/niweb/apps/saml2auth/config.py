@@ -37,18 +37,18 @@ SAML_CONFIG = {
     },
     # where the remote metadata is stored
     'metadata': {
+        # 'mdq': [
+        #     {
+        #         "url": "https://mds.swamid.se/qa/",
+        #         "cert": path.join(BASEDIR, "certificates/swamid-qa.crt"),
+        #     }
+        # ]
         'mdq': [
-            {
-                "url": "https://mds.swamid.se/qa/",
-                "cert": path.join(BASEDIR, "certificates/swamid-qa.crt"),
+            {"url": "https://mds.swamid.se",
+                "cert": path.join(BASEDIR, "md-signer2.crt"),
             }
         ]
     },
-    
-    # 'mdq': [{"url": "https://mds.swamid.se",
-    #         "cert": path.join(BASEDIR, "md-signer2.crt"),
-    # }]
-
     # set to 1 to output debugging information
     'debug': 1,
     # certificate

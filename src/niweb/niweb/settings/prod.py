@@ -35,9 +35,13 @@ SAML_USE_NAME_ID_AS_USERNAME = True
 SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'username'
 SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
 
+SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
-SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
+SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
+# SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
 
 APPEND_SLASH = False
 LOGIN_URL = '/saml2/login/'
