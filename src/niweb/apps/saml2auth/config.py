@@ -45,7 +45,7 @@ SAML_CONFIG = {
         # ]
         'mdq': [
             {"url": "https://mds.swamid.se",
-                "cert": path.join(BASEDIR, "md-signer2.crt"),
+                "cert": path.join(BASEDIR, "certificates/md-signer2.crt"),
             }
         ]
     },
