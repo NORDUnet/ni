@@ -74,7 +74,11 @@ def resource_uri2id(resource_uri):
     pk = resolve(resource_uri).kwargs.get('pk', None)
     if not pk:
         node_name = resolve(resource_uri).kwargs.get('node_name')
-        nh = NodeHandle.objects.get(node_name=node_name)
+        node_type = resolve(resource_uri).kwargs.get('resource_name')
+        if node_type:
+            nh = NodeHandle.objects.get(node_name=node_name, node_type__slug=node_type)
+        else:
+            nh = NodeHandle.objects.get(node_name=node_name)
         pk = nh.handle_id
     return int(pk)
 
