@@ -242,7 +242,6 @@ DJANGO_APPS = (
     'django.contrib.staticfiles',
     # Admin panel and documentation:
     'django.contrib.admin',
-    'django_extensions',
 )
 
 THIRD_PARTY_APPS = (

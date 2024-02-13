@@ -2,15 +2,15 @@ from os import environ, path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
 
-# HOSTNAME =  environ.get("HOSTNAME", "localhost:8000")
-HOSTNAME = "localhost:8000"
+SERVER_NAME =  environ.get("SERVER_NAME", "localhost:8000")
+
 BASEDIR = path.dirname(path.abspath(__file__))
 SAML_CONFIG = {
     # full path to the xmlsec1 binary programm
     'xmlsec_binary': '/usr/bin/xmlsec1',
 
     # your entity id, usually your subdomain plus the url to the metadata view
-    'entityid': f"https://{HOSTNAME}/saml2/metadata/",
+    'entityid': f"https://{SERVER_NAME}/saml2/metadata/",
 
     # directory with attribute mapping
     'attribute_map_dir': path.join(BASEDIR, 'attribute-maps/'),
@@ -18,14 +18,14 @@ SAML_CONFIG = {
     # this block states what services we provide
     'service': {
         'sp': {
-            'name': f"https://{HOSTNAME}/saml2/metadata/",
+            'name': f"https://{SERVER_NAME}/saml2/metadata/",
             'endpoints': {
                 'assertion_consumer_service': [
-                    (f"https://{HOSTNAME}/saml2/acs/", saml2.BINDING_HTTP_POST),
+                    (f"https://{SERVER_NAME}/saml2/acs/", saml2.BINDING_HTTP_POST),
                 ],
                 'single_logout_service': [
-                    (f"https://{HOSTNAME}/saml2/ls/", saml2.BINDING_HTTP_REDIRECT),
-                    (f"https://{HOSTNAME}/saml2/ls/post/", saml2.BINDING_HTTP_POST),
+                    (f"https://{SERVER_NAME}/saml2/ls/", saml2.BINDING_HTTP_REDIRECT),
+                    (f"https://{SERVER_NAME}/saml2/ls/post/", saml2.BINDING_HTTP_POST),
                 ],
             },
             'name_id_format': [NAMEID_FORMAT_EMAILADDRESS],
