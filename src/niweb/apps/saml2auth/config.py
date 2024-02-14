@@ -2,7 +2,7 @@ from os import environ, path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
 
-SERVER_NAME =  environ.get("SERVER_NAME", "localhost:8000")
+SERVER_NAME =  environ.get("SERVER_NAME", "norpan-ni.cnaas.sunet.se")
 
 BASEDIR = path.dirname(path.abspath(__file__))
 SAML_CONFIG = {
@@ -33,31 +33,35 @@ SAML_CONFIG = {
             'want_response_signed': True,
             'want_assertions_signed': True,
             'allow_unsolicited': True,
+            'idp': {
+                # we do not need a WAYF service since there is
+                # only an IdP defined here. This IdP should be
+                # present in our metadata
+                # the keys of this dictionary are entity ids
+                #'https://idp-test.nordu.net/idp/shibboleth': None,
+                'https://shared-sso-proxy1.cnaas.sunet.se/idp': None,
+            },
         },
     },
     # where the remote metadata is stored
     'metadata': {
+        'local': [path.join(BASEDIR, '/opt/sso/shibboleth/frontend.xml')], # frontend.xml
         # 'mdq': [
-        #     {
-        #         "url": "https://mds.swamid.se/qa/",
-        #         "cert": path.join(BASEDIR, "certificates/swamid-qa.crt"),
+        #     {"url": "https://mds.swamid.se",
+        #         "cert": path.join(BASEDIR, "certificates/md-signer2.crt"),
         #     }
         # ]
-        'mdq': [
-            {"url": "https://mds.swamid.se",
-                "cert": path.join(BASEDIR, "certificates/md-signer2.crt"),
-            }
-        ]
     },
     # set to 1 to output debugging information
     'debug': 1,
     # certificate
-    'key_file': path.join(BASEDIR, 'certificates/private.key'),  # private part
-    'cert_file': path.join(BASEDIR, 'certificates/public.cert'),  # public part
+    # 'key_file': path.join(BASEDIR, 'certificates/private.key'),  # private part
+    'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',  # private part
+    'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',  # public part
     # Encryption
     'encryption_keypairs': [{
-        'key_file': BASEDIR + '/certificates/private.key',
-        'cert_file': BASEDIR + '/certificates/public.cert',
+        'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',
+        'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',
     }],
     # own metadata settings
     'contact_person': [
