@@ -59,10 +59,10 @@ CONFIG = {
     'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',  # private part
     'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',  # public part
     # Encryption
-    'encryption_keypairs': [{
-        'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',
-        'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',
-    }],
+    # 'encryption_keypairs': [{
+    #     'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',
+    #     'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',
+    # }],
     # own metadata settings
     'contact_person': [
         {'given_name': '',
