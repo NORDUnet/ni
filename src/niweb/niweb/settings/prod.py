@@ -40,7 +40,7 @@ SECURE_SSL_REDIRECT = True
 # CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
+# SAML2_DISCO_URL = 'https://service.seamlessaccess.org/ds'
 # SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
 
 APPEND_SLASH = False
