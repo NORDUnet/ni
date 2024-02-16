@@ -5,7 +5,7 @@ from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
 SERVER_NAME =  environ.get("SERVER_NAME", "norpan-ni.cnaas.sunet.se")
 
 BASEDIR = path.dirname(path.abspath(__file__))
-SAML_CONFIG = {
+CONFIG = {
     # full path to the xmlsec1 binary programm
     'xmlsec_binary': '/usr/bin/xmlsec1',
 
