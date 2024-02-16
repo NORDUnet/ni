@@ -30,9 +30,10 @@ CONFIG = {
             },
             'name_id_format': [NAMEID_FORMAT_EMAILADDRESS],
             'authn_requests_signed': True,
-            'want_response_signed': True,
-            'want_assertions_signed': True,
+            'want_response_signed': False,
+            'want_assertions_signed': False,
             'allow_unsolicited': True,
+            # "want_assertions_or_response_signed": True,
             'idp': {
                 # we do not need a WAYF service since there is
                 # only an IdP defined here. This IdP should be
@@ -59,10 +60,10 @@ CONFIG = {
     'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',  # private part
     'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',  # public part
     # Encryption
-    # 'encryption_keypairs': [{
-    #     'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',
-    #     'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',
-    # }],
+    'encryption_keypairs': [{
+        'key_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem',
+        'cert_file': '/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem',
+    }],
     # own metadata settings
     'contact_person': [
         {'given_name': '',
