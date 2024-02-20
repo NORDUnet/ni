@@ -1,6 +1,11 @@
 from django.shortcuts import render
 from saml2.s_utils import UnsupportedBinding
 from djangosaml2.backends import Saml2Backend
+from os import environ
+from .utils import get_authorized_users
+
+AUTH_GROUP_FILE =  environ.get("AUTH_GROUP_FILE", "/opt/ni/src/niweb/auth_groups.ini")
+authorized_users = get_authorized_users(AUTH_GROUP_FILE, allowed_groups = ['*'])
 
 
 class HandleUnsupportedBinding:
@@ -26,14 +31,22 @@ class HandleUnsupportedBinding:
 
 
 class ModifiedSaml2Backend(Saml2Backend):
+    
+    def is_authorized(self, attributes, attribute_mapping, idp_entityid, assertion_info):
+        email = self.get_attribute_value('email', attributes, attribute_mapping)
+        if email in authorized_users:
+            return True
+        return False
+        
     def _update_user(self, user, attributes: dict, attribute_mapping: dict, force_save: bool = False):
         import logging
         logger = logging.getLogger(__name__)
         logger.debug("***** SAML ATTRIBUTES *****")
         logger.debug(attributes)
         logger.debug("***** SAML ATTRIBUTES *****")
-        if 'eduPersonEntitlement' in attributes:
-            if 'some-entitlement' in attributes['eduPersonEntitlement']:
+        email = self.get_attribute_value('email', attributes, attribute_mapping)
+        if email in authorized_users:
+            if authorized_users[email]['is_staff']:
                 user.is_staff = True
                 force_save = False
             else:
@@ -41,11 +54,6 @@ class ModifiedSaml2Backend(Saml2Backend):
                 force_save = False
         return super()._update_user(user, attributes, attribute_mapping, force_save)
 
-    # def save_user(self, user, *args, **kwargs):
-    #     user.save()
-    #     # user_group = Group.objects.get(name='Default')
-    #     # user.groups.add(user_group)
-    #     return super().save_user(user, *args, **kwargs)
 
 class NDNOnlySaml2Backend(Saml2Backend):
     def is_authorized(self, attributes, attribute_mapping, idp_entityid, assertion_info):
