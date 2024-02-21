@@ -28,7 +28,7 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 
 ########## END GENERAL CONFIGURATION
 # djangosaml2 settings
-# ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() == 'false'
+ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() != 'false'
 # DISCOVERY_SERVICE_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
@@ -43,7 +43,7 @@ SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
-if environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() == 'false':
+if ENABLE_DISCOVERY_SERVICE:
     SAML2_DISCO_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 
 APPEND_SLASH = False
