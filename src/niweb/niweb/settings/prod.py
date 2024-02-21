@@ -43,8 +43,8 @@ SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
-# if ENABLE_DISCOVERY_SERVICE:
-#    SAML2_DISCO_URL = DISCOVERY_SERVICE_URL
+if environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() == 'false':
+    SAML2_DISCO_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 
 APPEND_SLASH = False
 LOGIN_URL = '/saml2/login/'
