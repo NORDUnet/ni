@@ -190,8 +190,8 @@ TEMPLATES = [
 
 
 ### LOGIN conf
-DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', True)
-SAML_ENABLED = environ.get('SAML_ENABLED', True)
+DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', 'True').lower() == 'true'
+SAML_ENABLED = environ.get('SAML_ENABLED', 'True').lower() == 'true'
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes

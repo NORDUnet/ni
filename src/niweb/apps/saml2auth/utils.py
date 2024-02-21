@@ -2,7 +2,7 @@ import configparser
 import sys
 
 
-def get_authorized_users(filename, allowed_groups = ['su']):
+def get_authorized_users(filename, allowed_groups = ['*']):
     def get_auth_users(groups, allowed_groups):
         auth_users = []
         groups_keys = list(groups.keys())
@@ -13,8 +13,11 @@ def get_authorized_users(filename, allowed_groups = ['su']):
                 auth_users.extend(groups[key].split(','))
         return [x.strip() for x in auth_users]
     
-    def get_staff_users(staffs, groups, allowed_groups):
+    def get_users_from_identifiers(staffs, groups, allowed_groups):
         groups_keys = list(groups.keys())
+        if not isinstance(staffs, str):
+            return staffs
+        
         if staffs == '*':
             staffs = ', '.join(auth_users)
         else:
@@ -25,21 +28,20 @@ def get_authorized_users(filename, allowed_groups = ['su']):
                     staffs = staffs.replace(str(key), groups[key])
         return staffs
     
-    def get_auth_data_dict(auth_users, staff_users):
+    def get_auth_data_dict(auth_users, staff_users, superusers):
         auth_data = {}
         for user in auth_users:
-            if user in staff_users:
-                auth_data[user] = {
-                    "is_staff": True
-                }
-            else:
-                auth_data[user] = {
-                    "is_staff": False
-                }
+            auth_data[user] = {"is_staff": False, "is_superuser": False }
+            if user in superusers:
+                auth_data[user]['is_staff'] = True
+                auth_data[user]['is_superuser'] = True
+            elif user in staff_users:
+                auth_data[user]['is_staff'] = True
         return auth_data
     
     
     def check_config_file(filename):
+        configparser.SafeConfigParser
         config = configparser.ConfigParser()
         required_sections = ['GROUPS', 'GROUPS.STAFF']
         
@@ -64,10 +66,13 @@ def get_authorized_users(filename, allowed_groups = ['su']):
     
     config = check_config_file(filename)
     groups = config['GROUPS']
-    staffs = config['GROUPS.STAFF']['identifier']
+    staffs = config['GROUPS.STAFF']['identifier'] if config.has_section('GROUPS.STAFF') else []
+    superusers = config['GROUPS.SUPERUSER']['identifier'] if config.has_section('GROUPS.SUPERUSER') else []
+    
     auth_users = get_auth_users(groups, allowed_groups)
-    staff_users = get_staff_users(staffs, groups, allowed_groups)
-    auth_data =  get_auth_data_dict(auth_users, staff_users)
+    staff_users = get_users_from_identifiers(staffs, groups, allowed_groups)
+    superusers = get_users_from_identifiers(superusers, groups, allowed_groups)
+    auth_data =  get_auth_data_dict(auth_users, staff_users, superusers)
     return auth_data
     
 
