@@ -36,6 +36,7 @@ class ModifiedSaml2Backend(Saml2Backend):
     
     def is_authorized(self, attributes, attribute_mapping, idp_entityid, assertion_info):
         email = self.get_attribute_value('email', attributes, attribute_mapping)
+        # email = attributes.get('email', (None, ))[0]
         if not ENABLE_AUTHORIZATION_BY_FILE:
             return True
         if email in authorized_users:
@@ -44,6 +45,7 @@ class ModifiedSaml2Backend(Saml2Backend):
         
     def _update_user(self, user, attributes: dict, attribute_mapping: dict, force_save: bool = False):
         email = self.get_attribute_value('email', attributes, attribute_mapping)
+        # email = attributes.get('email', (None, ))[0]
         if not ENABLE_AUTHORIZATION_BY_FILE:
             return super()._update_user(user, attributes, attribute_mapping, force_save)
         
