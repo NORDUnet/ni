@@ -28,8 +28,8 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 
 ########## END GENERAL CONFIGURATION
 # djangosaml2 settings
-ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() == 'false'
-DISCOVERY_SERVICE_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
+# ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() == 'false'
+# DISCOVERY_SERVICE_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
 
