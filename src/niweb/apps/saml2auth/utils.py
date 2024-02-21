@@ -2,7 +2,7 @@ import configparser
 import sys
 
 
-def read_config_ini_file(filename, allowed_groups = ['su']):
+def get_authorized_users(filename, allowed_groups = ['su']):
     def get_auth_users(groups, allowed_groups):
         if not (isinstance(allowed_groups, list) or allowed_groups == '*'):
             print("Allowed groups should either be a list of group names or a string '*' for all groups")
