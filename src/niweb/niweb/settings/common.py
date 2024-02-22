@@ -190,8 +190,8 @@ TEMPLATES = [
 
 
 ### LOGIN conf
-DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', False)
-SAML_ENABLED = environ.get('SAML_ENABLED', False)
+DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', 'True').lower() == 'true'
+SAML_ENABLED = environ.get('SAML_ENABLED', 'True').lower() == 'true'
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
@@ -212,8 +212,9 @@ AUTHENTICATION_BACKENDS = (
 )
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
-        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
+        environ.get('SAML_BACKEND', 'apps.saml2auth.middleware.ModifiedSaml2Backend'),
     )
+    # environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     MIDDLEWARE += (
         'djangosaml2.middleware.SamlSessionMiddleware',
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
