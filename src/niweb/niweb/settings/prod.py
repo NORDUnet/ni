@@ -53,7 +53,7 @@ LOGOUT_REDIRECT_URL = '/'
 
 SAML_ATTRIBUTE_MAPPING = {
     'eduPersonPrincipalName': ('username', ),
-    'email': ('email', ),
+    'mail': ('email', ),
     'givenName': ('first_name', ),
     'sn': ('last_name', ),
     'displayName': ('display_name', ),

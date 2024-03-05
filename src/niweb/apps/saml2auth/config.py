@@ -1,15 +1,16 @@
 from os import environ, path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
+from niweb.settings import common as settings
 
 
-APP_SERVER_NAME =  environ.get("APP_SERVER_NAME", "norpan-ni.cnaas.sunet.se")
-KEY_FILE =  environ.get("KEY_FILE", "/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem")
-CERT_FILE =  environ.get("CERT_FILE", "/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem")
-SP_IDP =  environ.get("SP_IDP", None)
-LOCAL_METADATA =  environ.get("LOCAL_METADATA", None)
-MDQ_URL= environ.get("MDQ_URL", None)
-MDQ_CERT= environ.get("MDQ_CERT", None)
+APP_SERVER_NAME =  settings.APP_SERVER_NAME
+KEY_FILE =  settings.KEY_FILE
+CERT_FILE = settings.CERT_FILE
+SP_IDP =  settings.SP_IDP
+LOCAL_METADATA = None if isinstance(settings.LOCAL_METADATA, str) and len(settings.LOCAL_METADATA) == 0 else settings.LOCAL_METADATA
+MDQ_URL= settings.MDQ_URL
+MDQ_CERT= settings.MDQ_CERT
 
 BASEDIR = path.dirname(path.abspath(__file__))
 SERVICE_PROVIDER = {
