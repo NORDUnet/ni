@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2024-04-09
+## Added
+- ODFs now has the bulk port edit functionality
+
 ## 2024-02-09
 ### Changed
 - Api when not using pk in resource_uri2id it also uses the resource_name as node_type slug. Should fix the problem SUNET is having with using the API to associate customer, when customernames are overloaded.
