@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from re import escape as re_escape
 import json
-from os import environ
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
 from apps.noclook import helpers
