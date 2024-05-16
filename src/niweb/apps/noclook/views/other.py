@@ -17,8 +17,7 @@ import norduniclient as nc
 
 
 def index(request):
-    APP_NAME_TEST= environ.get("APP_NAME_TEST", "NOT_SET")
-    return render(request, 'noclook/index.html', {'APP_NAME_TEST': APP_NAME_TEST})
+    return render(request, 'noclook/index.html', {})
 
 
 @login_required
