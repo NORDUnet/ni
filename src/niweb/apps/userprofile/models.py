@@ -25,8 +25,6 @@ class UserProfile(models.Model):
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, **kwargs):
-    import logging
-    logger = logging.getLogger(__name__)
     user = kwargs['instance']
     attr_list = {}
     for field in user._meta.get_fields():
@@ -35,7 +33,6 @@ def create_user_profile(sender, **kwargs):
                 attr_list[field.name] = getattr(user, field.name)
             except:
                 continue
-    logger.debug(attr_list)
     UserProfile.objects.get_or_create(user=user)
 
 
