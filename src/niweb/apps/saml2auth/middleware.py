@@ -5,7 +5,7 @@ from os import environ
 from .utils import get_authorized_users
 
 
-ENABLE_AUTHORIZATION_BY_FILE =  environ.get("ENABLE_AUTHORIZATION_BY_FILE", 'True').lower() == 'true'
+ENABLE_AUTHORIZATION_BY_FILE =  environ.get("ENABLE_AUTHORIZATION_BY_FILE", 'False').lower() == 'false'
 AUTH_GROUP_FILE =  environ.get("AUTH_GROUP_FILE", "/opt/ni/src/niweb/auth_groups.ini")
 authorized_users = get_authorized_users(AUTH_GROUP_FILE, allowed_groups = ['*']) if ENABLE_AUTHORIZATION_BY_FILE else {}
 
