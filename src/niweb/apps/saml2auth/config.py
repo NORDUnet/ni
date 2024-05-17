@@ -1,16 +1,16 @@
-from os import environ, path
+from os import path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
 from niweb.settings import common as settings
 
 
-APP_SERVER_NAME =  settings.APP_SERVER_NAME
-KEY_FILE =  settings.KEY_FILE
+APP_SERVER_NAME = settings.APP_SERVER_NAME
+KEY_FILE = settings.KEY_FILE
 CERT_FILE = settings.CERT_FILE
-SP_IDP =  settings.SP_IDP
+SP_IDP = settings.SP_IDP
 LOCAL_METADATA = None if isinstance(settings.LOCAL_METADATA, str) and len(settings.LOCAL_METADATA) == 0 else settings.LOCAL_METADATA
-MDQ_URL= settings.MDQ_URL
-MDQ_CERT= settings.MDQ_CERT
+MDQ_URL = settings.MDQ_URL
+MDQ_CERT = settings.MDQ_CERT
 
 BASEDIR = path.dirname(path.abspath(__file__))
 SERVICE_PROVIDER = {
@@ -36,12 +36,12 @@ SERVICE_PROVIDER = {
 # only an IdP defined here. This IdP should be
 # present in our metadata
 # the keys of this dictionary are entity ids
-#'https://idp-test.nordu.net/idp/shibboleth': None,
+# e.g. 'https://idp-test.nordu.net/idp/shibboleth': None,
 if SP_IDP is not None:
     SERVICE_PROVIDER['idp'] = {
         SP_IDP: None,
     }
-CONFIG_METADATA = None  
+CONFIG_METADATA = None
 if LOCAL_METADATA is not None:
     CONFIG_METADATA = {
         'local': [LOCAL_METADATA],
@@ -50,7 +50,7 @@ elif MDQ_URL is not None and MDQ_CERT is not None:
     CONFIG_METADATA = {
         'mdq': [
             {
-                "url": MDQ_URL, 
+                "url": MDQ_URL,
                 "cert": MDQ_CERT
             }
         ]
@@ -94,6 +94,6 @@ CONFIG = {
          'email_address': '',
          'contact_type': 'technical'},
     ],
-    #'valid_for': 24,  # DO NOT USE
+    # 'valid_for': 24,  # DO NOT USE
 }
 
