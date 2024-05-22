@@ -60,7 +60,7 @@ else:
         'local': [path.join(BASEDIR, '/opt/sso/shibboleth/frontend.xml')],
     }
 
-CONFIG = {
+SAML_CONFIG = {
     # full path to the xmlsec1 binary programm
     'xmlsec_binary': '/usr/bin/xmlsec1',
 
