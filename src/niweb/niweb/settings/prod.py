@@ -28,8 +28,28 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 
 ########## END GENERAL CONFIGURATION
 # djangosaml2 settings
+ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() != 'false'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
+
+SAML_USE_NAME_ID_AS_USERNAME = True
+SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'username'
+SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
+
+SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
+if ENABLE_DISCOVERY_SERVICE:
+    SAML2_DISCO_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
+
+APPEND_SLASH = False
+LOGIN_URL = '/saml2/login/'
+LOGOUT_URL = '/logout/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 
 SAML_ATTRIBUTE_MAPPING = {
     'eduPersonPrincipalName': ('username', ),
@@ -37,7 +57,11 @@ SAML_ATTRIBUTE_MAPPING = {
     'givenName': ('first_name', ),
     'sn': ('last_name', ),
     'displayName': ('display_name', ),
+    'eduPersonEntitlement': ('eduPersonEntitlement', ),
 }
+
+
+
 SAML_CONFIG = config.SAML_CONFIG
 ########## END GENERAL CONFIGURATION
 
