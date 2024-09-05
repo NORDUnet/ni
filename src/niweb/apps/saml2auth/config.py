@@ -96,4 +96,3 @@ SAML_CONFIG = {
     ],
     # 'valid_for': 24,  # DO NOT USE
 }
-
