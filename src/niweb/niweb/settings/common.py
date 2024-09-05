@@ -124,6 +124,9 @@ USE_TZ = True
 
 # Login settings
 LOGIN_URL = environ.get('LOGIN_URL', '/login/')
+LOGOUT_URL = '/logout/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"
@@ -220,6 +223,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 if SAML_ENABLED:
+    # Switch to env or SAML login
+    LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
     AUTHENTICATION_BACKENDS += (
         environ.get('SAML_BACKEND', 'apps.saml2auth.middleware.ModifiedSaml2Backend'),
     )
