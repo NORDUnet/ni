@@ -41,13 +41,28 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 if ENABLE_DISCOVERY_SERVICE:
     SAML2_DISCO_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 
-SAML_ATTRIBUTE_MAPPING = {
-    'eduPersonPrincipalName': ('username', ),
+SAML_ATTRIBUTE_MAPPING= {
+    'uid': ('username', ),
     'mail': ('email', ),
     'givenName': ('first_name', ),
     'sn': ('last_name', ),
-    'displayName': ('display_name', ),
-    'eduPersonEntitlement': ('eduPersonEntitlement', ),
+}
+
+CUSTOM_IDP_SAML_ATTRIBUTE_MAPPINGS = {
+    'https://connect.eduid.se/sunet': {
+        'displayName': ('username', ),
+        'mail': ('email', ),
+        'givenName': ('first_name', ),
+        'sn': ('last_name', ),
+    },
+    'https://idp.sunet.se/idp': {
+        'eduPersonPrincipalName': ('username', ),
+        'mail': ('email', ),
+        'givenName': ('first_name', ),
+        'sn': ('last_name', ),
+        'displayName': ('display_name', ),
+        'eduPersonEntitlement': ('eduPersonEntitlement', ),
+    }
 }
 
 SAML_CONFIG = config.SAML_CONFIG
