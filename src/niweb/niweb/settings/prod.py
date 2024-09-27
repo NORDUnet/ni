@@ -50,10 +50,12 @@ SAML_ATTRIBUTE_MAPPING= {
 
 CUSTOM_IDP_SAML_ATTRIBUTE_MAPPINGS = {
     'https://connect.eduid.se/sunet': {
-        'displayName': ('username', ),
+        'subject-id': ('username', ),
+        'schacHomeOrganization': ('organization', ),
         'mail': ('email', ),
         'givenName': ('first_name', ),
         'sn': ('last_name', ),
+        'displayName': ('username', ),
     },
     'https://idp.sunet.se/idp': {
         'eduPersonPrincipalName': ('username', ),
