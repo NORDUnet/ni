@@ -7,8 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2024-10-01
+### Added
+- Functionality for better handling of multiple IdPs and discovery.
+- A new `ModifiedSaml2Backend` has been added, and is used per default if SAML is enabled. With it you can set the `ENABLE_AUTHORIZATION_BY_FILE` and specify a `AUTH_GROUP_FILE`.
+
 ## 2024-04-09
-## Added
+### Added
 - ODFs now has the bulk port edit functionality
 
 ## 2024-02-09
