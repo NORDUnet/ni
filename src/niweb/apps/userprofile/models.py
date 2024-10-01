@@ -1,8 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch.dispatcher import receiver
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
+import logging
+logger = logging.getLogger(__name__)
 
 
 class UserProfile(models.Model):
@@ -24,4 +26,20 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, **kwargs):
     user = kwargs['instance']
+    attr_list = {}
+    for field in user._meta.get_fields():
+        if field.concrete:
+            try:
+                attr_list[field.name] = getattr(user, field.name)
+            except:
+                continue
     UserProfile.objects.get_or_create(user=user)
+
+
+# This can be used to change the user send to the auth_user by djangosaml2
+@receiver(pre_save, sender=User)
+def custom_update_user(sender, **kwargs):
+    user = kwargs['instance']
+    # setattr(user, 'username', "Dc69_f4384h69hinr8u35u5_66")
+    # TODO: try user.proprety e.g. user.is_staff
+    return True  # I modified the user object

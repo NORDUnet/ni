@@ -27,6 +27,15 @@ dotenv.read_dotenv(config_file)
 # Site name:
 SITE_NAME = basename(DJANGO_ROOT)
 
+# SAML config
+APP_SERVER_NAME =  environ.get("APP_SERVER_NAME", "norpan-ni.cnaas.sunet.se")
+KEY_FILE =  environ.get("KEY_FILE", "/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/privkey.pem")
+CERT_FILE =  environ.get("CERT_FILE", "/etc/letsencrypt/live/norpan-ni.cnaas.sunet.se/cert.pem")
+SP_IDP =  environ.get("SP_IDP", None)
+LOCAL_METADATA =  environ.get("LOCAL_METADATA", None)
+MDQ_URL= environ.get("MDQ_URL", None)
+MDQ_CERT= environ.get("MDQ_CERT", None)
+
 # Add our project to our pythonpath, this way we don't need to type our project
 # name in our dotted import paths:
 path.append(DJANGO_ROOT)
@@ -115,6 +124,9 @@ USE_TZ = True
 
 # Login settings
 LOGIN_URL = environ.get('LOGIN_URL', '/login/')
+LOGOUT_URL = '/logout/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"
@@ -190,8 +202,8 @@ TEMPLATES = [
 
 
 ### LOGIN conf
-DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', False)
-SAML_ENABLED = environ.get('SAML_ENABLED', False)
+DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', 'False').lower() == 'true'
+SAML_ENABLED = environ.get('SAML_ENABLED', 'False').lower() == 'true'
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
@@ -211,9 +223,12 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 if SAML_ENABLED:
+    # Switch to env or SAML login
+    LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
     AUTHENTICATION_BACKENDS += (
-        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
+        environ.get('SAML_BACKEND', 'apps.saml2auth.middleware.ModifiedSaml2Backend'),
     )
+    # environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     MIDDLEWARE += (
         'djangosaml2.middleware.SamlSessionMiddleware',
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
