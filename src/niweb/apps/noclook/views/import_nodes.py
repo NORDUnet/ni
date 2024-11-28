@@ -18,6 +18,7 @@ from norduniclient.exceptions import UniqueNodeError
 
 VALIDATION_FORMS = {
   'Rack': forms.EditRackForm,
+  'Room': forms.EditRoomForm,
   'Firewall': forms.EditFirewallForm,
   'Port': forms.EditPortForm,
   'Host': forms.EditHostForm,
@@ -30,11 +31,13 @@ VALIDATION_FORMS = {
 
 META_TYPES = {
   'Rack': 'Location',
+  'Room': 'Location'
 }
 
 HAS_RELATION = [
   'Port',
   'Rack',
+  'Room',
 ]
 
 GENERIC_TYPES = [
