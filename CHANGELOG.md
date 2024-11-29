@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2024-11-29
+### Added
+- Support for import of Rooms (before they were not created as proper Locations)
+### Changed
+- Major bump, django 4.2 and updated some dependencies, to use you need to update your venv/installtion by reinstalling and updating using `pip install -U -r requirements/prod.txt`
+
 ## 2024-10-01
 ### Added
 - Functionality for better handling of multiple IdPs and discovery.

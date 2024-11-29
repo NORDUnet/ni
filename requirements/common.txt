@@ -1,5 +1,5 @@
-Django<3.3
-django-activity-stream<0.11
+Django<5.0
+django-activity-stream<2.0
 django-tastypie<0.15
 norduniclient<1.5
 psycopg2-binary<3.0
@@ -11,3 +11,4 @@ django-dotenv<1.5
 django-dynamic-preferences<2.0
 django-attachments<2.0
 configparser
+tzdata
