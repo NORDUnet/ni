@@ -25,7 +25,7 @@ SERVICE_PROVIDER = {
         ],
     },
     'name_id_format': [NAMEID_FORMAT_EMAILADDRESS],
-    'authn_requests_signed': True,
+    'authn_requests_signed': settings.AUTHN_REQUESTS_SIGNED,
     'want_response_signed': False,
     'want_assertions_signed': False,
     'allow_unsolicited': True,
@@ -96,3 +96,4 @@ SAML_CONFIG = {
     ],
     # 'valid_for': 24,  # DO NOT USE
 }
+CONFIG = SAML_CONFIG
