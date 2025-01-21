@@ -35,6 +35,7 @@ SP_IDP =  environ.get("SP_IDP", None)
 LOCAL_METADATA =  environ.get("LOCAL_METADATA", None)
 MDQ_URL= environ.get("MDQ_URL", None)
 MDQ_CERT= environ.get("MDQ_CERT", None)
+AUTHN_REQUESTS_SIGNED = environ.get('AUTHN_REQUESTS_SIGNED', 'False').lower() == 'true'
 
 # Add our project to our pythonpath, this way we don't need to type our project
 # name in our dotted import paths:
@@ -58,7 +59,7 @@ except ImportError:
 
 ########## DEBUG CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
-DEBUG = False
+DEBUG = environ.get('DEBUG', 'False').lower() == 'true'
 
 ########## END DEBUG CONFIGURATION
 
