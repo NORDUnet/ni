@@ -705,7 +705,7 @@ def site_detail(request, handle_id):
     MATCH (site:Site {handle_id: $handle_id})-[:Has]->(rack:Rack)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
-    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    RETURN rack, item order by toLower(toString(rack.name)), toLower(toString(item.name))
     """
     rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
@@ -716,7 +716,7 @@ def site_detail(request, handle_id):
     # rooms
     q = """
         MATCH (site:Site {handle_id: $handle_id})-[:Has]->(room:Room)
-        RETURN room order by toLower(room.name)
+        RETURN room order by toLower(toString(room.name))
         """
     rooms_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
@@ -755,7 +755,7 @@ def room_detail(request, handle_id):
     MATCH (room:Room {handle_id: $handle_id})-[:Has]->(rack:Node)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
-    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    RETURN rack, item order by toLower(toString(rack.name)), toLower(toString(item.name))
     """
     rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
