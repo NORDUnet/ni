@@ -156,7 +156,7 @@ def list_ports(request):
     q = """
         MATCH (port:Port)
         OPTIONAL MATCH (port)<-[:Has]-(parent:Node)
-        RETURN port, collect(parent) as parent order by toLower(port.name)
+        RETURN port, collect(parent) as parent order by toLower(toString(port.name))
         """
     port_list = nc.query_to_list(nc.graphdb.manager, q)
     port_list = _filter_expired(port_list, request, select=lambda n: n.get('port'))
