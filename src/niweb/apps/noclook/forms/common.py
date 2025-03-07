@@ -253,6 +253,12 @@ class NewCableForm(forms.Form):
     cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
+    is_raman = forms.ChoiceField(
+        required=False,
+        choices=[('yes', 'Yes'), ('no', 'No'),('unknown', 'Unknown'),],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Raman cable?",
+    )
 
 
 class EditCableForm(NewCableForm):
