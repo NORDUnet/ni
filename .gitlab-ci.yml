@@ -19,6 +19,7 @@ cache:
 
 before_script:
   - python -V
+  - pip install wheel
   - pip install -q -r requirements/testing.txt
   - pip freeze
   - apt-get update
