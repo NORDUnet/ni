@@ -20,6 +20,7 @@ cache:
 before_script:
   - python -V
   - pip install wheel
+  - python setup.py bdist_wheel
   - pip install -q -r requirements/testing.txt
   - pip freeze
   - apt-get update
