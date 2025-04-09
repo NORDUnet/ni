@@ -164,7 +164,7 @@ class NodeTypeResource(ModelResource):
     def prepend_urls(self):
         return [
             re_path(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
-                self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+                    self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
 
     def dehydrate(self, bundle):
@@ -353,8 +353,8 @@ class NodeHandleResource(ModelResource):
             urls = [x for x in urls if (x.name != "api_get_multiple" and x.name != "api_dispatch_detail")]
             urls += [
                 re_path(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field,
-                                                               self._meta.pk_field_regex, trailing_slash()),
-                    self.wrap_view('dispatch_detail'), name="api_dispatch_detail")
+                        self._meta.pk_field_regex, trailing_slash()),
+                        self.wrap_view('dispatch_detail'), name="api_dispatch_detail")
             ]
         return urls
 
@@ -834,7 +834,6 @@ class OpticalFilterResource(NodeHandleResource):
         }
 
 
-
 class OpticalPathResource(NodeHandleResource):
 
     class Meta:
@@ -875,7 +874,7 @@ class PeeringGroupResource(NodeHandleResource):
 
 
 class PeeringPartnerResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='peering-partner')
         resource_name = 'peering-partner'
@@ -1234,6 +1233,154 @@ class ServiceEVPNResource(ServiceResource):
         q = """
             MATCH (node:Service)
             WHERE node.service_type = "EVPN"
+            RETURN collect(node.handle_id) as handle_ids
+            """
+        hits = nc.query_to_dict(nc.graphdb.manager, q)
+        return NodeHandle.objects.filter(pk__in=hits['handle_ids'])
+
+    def obj_get_list(self, request=None, **kwargs):
+        return self.get_object_list(request, **kwargs)
+
+    def get_port(self, bundle, device_name, device_type, port_name):
+        node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
+        parent_node = nc.get_unique_node_by_name(nc.graphdb.manager, device_name, node_type.get_label())
+        if not parent_node:
+            raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
+        result = parent_node.get_port(port_name).get('Has', [])
+        if len(result) > 1:
+            raise_not_acceptable_error('Multiple port objects returned for a unique port name.')
+        if result:
+            port_node = result[0]['node']
+        else:
+            port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
+        return port_node
+
+    def get_unit(self, bundle, port_node, unit_name):
+        result = port_node.get_unit(unit_name).get('Part_of', [])
+        if len(result) > 1:
+            raise_not_acceptable_error('Multiple unit objects returned for a unique unit name.')
+        if result:
+            unit_node = result[0]['node']
+        else:
+            unit_node = helpers.create_unit(port_node, unit_name, bundle.request.user)
+        return unit_node
+
+    def get_vlan(self, bundle):
+        vlan = bundle.data.get('vlan', None)
+        if vlan:
+            if '<->' in str(vlan):  # VLAN rewrite, VLAN needs to be specified on each end point.
+                return None
+            vlan = str(bundle.data.get('vlan')).split('-')[0]  # Use lowest vlan if a range, "5-10" -> "5"
+        return vlan
+
+    def get_end_point_nodes(self, bundle):
+        end_point_nodes = []
+        for end_point in bundle.data.get('end_points', []):
+            try:
+                port_node = self.get_port(bundle, end_point['device'], 'Switch', end_point['port'])
+                if end_point.get('unit', None):
+                    unit_node = self.get_unit(bundle, port_node, end_point.get('unit'))
+                elif end_point.get('vlan', None) or self.get_vlan(bundle):
+                    vlan = end_point.get('vlan', None)
+                    if not vlan:
+                        vlan = self.get_vlan(bundle)
+                    unit_node = self.get_unit(bundle, port_node, vlan)
+                    unit_properties = {'vlan': vlan}
+                    helpers.dict_update_node(bundle.request.user, unit_node.handle_id, unit_properties,
+                                             unit_properties.keys())
+                else:
+                    # Use Unit 0 if nothing else is specified
+                    unit_node = self.get_unit(bundle, port_node, '0')
+                end_point_nodes.append(unit_node)
+            except ObjectDoesNotExist:
+                raise_not_acceptable_error('End point %s not found.' % end_point)
+        return end_point_nodes
+
+
+class ServiceIPCLOSResource(ServiceResource):
+
+    node_name = fields.CharField(attribute='node_name')
+    operational_state = fields.CharField(help_text='Choices: In service, Reserved, Decommissioned, Testing')
+    route_distinguisher = fields.CharField()
+    end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
+
+    class Meta(ServiceResource.Meta):
+        resource_name = 'ipclos'
+
+    def _initial_form_data(self, bundle):
+        initial_data = {
+            'node_type': '/api/v1/node_type/service/',
+            'node_meta_type': 'Logical',
+            'service_type': 'IPCLOS',
+            'service_class': 'Ethernet',
+        }
+        return initial_data
+
+    def obj_create(self, bundle, **kwargs):
+        # check that bundle.data is a dict, or respond with 400 error
+        if not isinstance(bundle.data, dict):
+            raise_not_acceptable_error(f'Expected to recieve a json object, got a {type(bundle.data)}')
+        bundle.data.update(self._initial_form_data(bundle))
+        try:
+            if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+                bundle.data['name'] = bundle.data['node_name']
+            else:
+                raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
+        except KeyError as e:
+            raise_not_acceptable_error('%s is missing.' % e)
+        # TODO use seperate service form?
+        form = forms.NewL2vpnServiceForm(bundle.data)
+        if form.is_valid():
+            bundle.data.update({
+                'node_name': form.cleaned_data['name'],
+                'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+                'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk)
+            })
+            node_data = bundle.data.get('node', {})
+            node_data.update({
+                'service_type': form.cleaned_data['service_type'],
+                'service_class': form.cleaned_data['service_class'],
+                'ncs_service_name': form.cleaned_data['ncs_service_name'],
+                'route_distinguisher': form.cleaned_data['route_distinguisher'],
+                'operational_state': form.cleaned_data['operational_state'],
+                'description': form.cleaned_data['description'],
+            })
+            bundle.data['node'] = node_data
+            del bundle.data['name']
+            # Ensure that we have all the data needed to create the EVPN service
+            end_point_nodes = self.get_end_point_nodes(bundle)
+            # Create the new service
+            bundle = super(ServiceEVPNResource, self).obj_create(bundle, **kwargs)
+            unique_ids.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
+            # Depend the created service on provided end points
+            node = bundle.obj.get_node()
+            for end_point in end_point_nodes:
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
+            return self.hydrate_node(bundle)
+        else:
+            raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
+
+    def obj_update(self, bundle, **kwargs):
+        bundle = super(ServiceEVPNResource, self).obj_update(bundle, **kwargs)
+        end_point_nodes = self.get_end_point_nodes(bundle)
+        node = bundle.obj.get_node()
+        if end_point_nodes:
+            for item in node.get_dependencies().get('Depends_on', []):
+                helpers.delete_relationship(bundle.request.user, item['relationship_id'])
+            for end_point in end_point_nodes:
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
+        return bundle
+
+    def dehydrate(self, bundle):
+        bundle = super(ServiceEVPNResource, self).dehydrate(bundle)
+        bundle.data['route_distinguisher'] = bundle.data['node'].get('route_distinguisher', '')
+        del bundle.data['end_points']
+        return bundle
+
+    def get_object_list(self, request, **kwargs):
+        q = """
+            MATCH (node:Service)
+            WHERE node.service_type = "IPCLOS"
             RETURN collect(node.handle_id) as handle_ids
             """
         hits = nc.query_to_dict(nc.graphdb.manager, q)
