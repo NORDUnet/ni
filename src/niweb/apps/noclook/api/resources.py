@@ -1347,10 +1347,10 @@ class ServiceIPCLOSResource(ServiceResource):
             })
             bundle.data['node'] = node_data
             del bundle.data['name']
-            # Ensure that we have all the data needed to create the EVPN service
+            # Ensure that we have all the data needed to create the IPCLOS service
             end_point_nodes = self.get_end_point_nodes(bundle)
             # Create the new service
-            bundle = super(ServiceEVPNResource, self).obj_create(bundle, **kwargs)
+            bundle = super(ServiceIPCLOSResource, self).obj_create(bundle, **kwargs)
             unique_ids.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
@@ -1361,7 +1361,7 @@ class ServiceIPCLOSResource(ServiceResource):
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
 
     def obj_update(self, bundle, **kwargs):
-        bundle = super(ServiceEVPNResource, self).obj_update(bundle, **kwargs)
+        bundle = super(ServiceIPCLOSResource, self).obj_update(bundle, **kwargs)
         end_point_nodes = self.get_end_point_nodes(bundle)
         node = bundle.obj.get_node()
         if end_point_nodes:
@@ -1372,7 +1372,7 @@ class ServiceIPCLOSResource(ServiceResource):
         return bundle
 
     def dehydrate(self, bundle):
-        bundle = super(ServiceEVPNResource, self).dehydrate(bundle)
+        bundle = super(ServiceIPCLOSResource, self).dehydrate(bundle)
         bundle.data['route_distinguisher'] = bundle.data['node'].get('route_distinguisher', '')
         del bundle.data['end_points']
         return bundle
