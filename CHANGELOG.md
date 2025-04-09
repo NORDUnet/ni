@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2025-04-09
+### Added
+- IPCLOS service endpoint in the API
+
 ## 2024-11-29
 ### Added
 - Support for import of Rooms (before they were not created as proper Locations)
