@@ -79,6 +79,12 @@
         {% if node.data.description or node.data.responsible_group or node.data.support_group %}
             <div class="span7">
                 <table class="table">
+                    {% if node.data.long_distance_link == "yes" %}
+                    <tr>
+                        <th>Long Distance Link</th>
+                        <td>{{ node.data.long_distance_link }}</td>
+                    </tr>
+                    {% endif %}
                     {% info_row 'Description:' node.data.description %}
                     {% info_row 'Responsible group:' node.data.responsible_group %}
                     {% info_row 'Support group:' node.data.support_group %}
