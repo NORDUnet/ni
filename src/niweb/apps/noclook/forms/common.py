@@ -255,9 +255,10 @@ class NewCableForm(forms.Form):
     relationship_provider = relationship_field('provider', True)
     is_raman = forms.ChoiceField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('unknown', 'Unknown'),],
+        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label="Raman cable?",
+        initial='',
     )
 
 
@@ -644,10 +645,10 @@ class NewServiceForm(forms.Form):
     description = description_field('service')
     long_distance_link = forms.ChoiceField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('unknown', 'Unknown'),],
+        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label="Is it a long-distance link?",
-        initial='unknown',
+        initial='',
     )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -720,9 +721,10 @@ class EditServiceForm(forms.Form):
     description = description_field('service')
     long_distance_link = forms.ChoiceField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('unknown', 'Unknown'),],
+        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label="Is it a long-distance link?",
+        initial='',
     )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
