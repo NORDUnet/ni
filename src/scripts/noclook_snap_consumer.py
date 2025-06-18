@@ -65,9 +65,24 @@ def insert_snap(json_list):
 
         if d.get('network'):
             ipv4 = [n['ip'].split('/')[0] for n in d.get('network', []) if 'ip' in n]
-            ipv4_service = [n['service_ip'].split('/')[0] for n in d.get('network', []) if 'service_ip' in n]
             ipv6 = [n['ipv6'].split('/')[0] for n in d.get('network', []) if 'ipv6' in n]
-            ipv6_service = [n['service_ipv6'].split('/')[0] for n in d.get('network', []) if 'service_ipv6' in n]
+            # might have a list of ips in service ip
+            ipv4_service = []
+            ipv6_service = []
+            for n in d.get('network', []):
+                if 'service_ip' in n:
+                    ips = n['service_ip']
+                    if not isinstance(ips, list):
+                        ips = [ips]
+                    ipv4_service = ipv4_service + ips
+                if 'service_ip6' in n:
+                    ips = n['service_ip6']
+                    if not isinstance(ips, list):
+                        ips = [ips]
+                    ipv6_service = ipv6_service + ips
+
+            ipv4_service = [sip.split('/')[0] for sip in ipv4_service]
+            ipv6_service = [sip.split('/')[0] for sip in ipv6_service]
             properties['ip_addresses'] = ipv4 + ipv4_service + ipv6 + ipv6_service
 
         if d.get('managed'):

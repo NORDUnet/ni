@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
 ## [Unreleased]
+### Fixed
+- noclook_snap_consumer now handles service ip lists
 
 ## 2025-04-09
 ### Added
