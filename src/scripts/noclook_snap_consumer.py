@@ -75,8 +75,8 @@ def insert_snap(json_list):
                     if not isinstance(ips, list):
                         ips = [ips]
                     ipv4_service = ipv4_service + ips
-                if 'service_ip6' in n:
-                    ips = n['service_ip6']
+                if 'service_ipv6' in n:
+                    ips = n['service_ipv6']
                     if not isinstance(ips, list):
                         ips = [ips]
                     ipv6_service = ipv6_service + ips
