@@ -79,12 +79,14 @@
         {% if node.data.description or node.data.responsible_group or node.data.support_group %}
             <div class="span7">
                 <table class="table">
-                    {% if node.data.long_distance_link == "yes" %}
                     <tr>
-                        <th>Long Distance Link</th>
-                        <td>{{ node.data.long_distance_link }}</td>
+                        <th>Service tags:</th>
+                        <td>
+                            {% for tag in node.data.service_tags %}
+                                {% if not forloop.first %}, {% endif %}#{{ tag }}
+                            {% endfor %}
+                        </td>
                     </tr>
-                    {% endif %}
                     {% info_row 'Description:' node.data.description %}
                     {% info_row 'Responsible group:' node.data.responsible_group %}
                     {% info_row 'Support group:' node.data.support_group %}

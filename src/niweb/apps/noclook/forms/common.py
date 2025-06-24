@@ -47,6 +47,49 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in names])
     return choices
 
+class TagListField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '2'})
+        super(TagListField, self).__init__(*args, **kwargs)
+
+    def clean(self, value):
+        """
+        Validate and clean the input, return list of tags.
+        """
+        value = super(TagListField, self).clean(value)
+        result = []
+        errors = []
+
+        # Split by comma
+        for tag in StringIO(value).read().split(','):
+            tag = tag.strip()
+            if tag:
+                # Example validation: no spaces inside a tag
+                if ' ' in tag:
+                    errors.append(f"Tag '{tag}' should not contain spaces.")
+                else:
+                    result.append(tag)
+
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+    def prepare_value(self, value):
+        """
+        Convert list back to comma-separated string for display.
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).prepare_value(value)
+
+    def to_python(self, value):
+        """
+        Convert input into a string (pre-cleaning).
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).to_python(value)
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -253,12 +296,11 @@ class NewCableForm(forms.Form):
     cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
-    is_raman = forms.ChoiceField(
+    cable_tags = TagListField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        label="Raman cable?",
-        initial='',
+        label="Tags",
+        help_text="Enter comma-separated tags related to cables:",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
     )
 
 
@@ -643,12 +685,11 @@ class NewServiceForm(forms.Form):
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
-    long_distance_link = forms.ChoiceField(
+    service_tags = TagListField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        label="Is it a long-distance link?",
-        initial='',
+        label="Tags",
+        help_text="Enter comma-separated tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
     )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -719,12 +760,11 @@ class EditServiceForm(forms.Form):
     decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
-    long_distance_link = forms.ChoiceField(
+    service_tags = TagListField(
         required=False,
-        choices=[('yes', 'Yes'), ('no', 'No'),('', 'Unknown'),],
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        label="Is it a long-distance link?",
-        initial='',
+        label="Tags",
+        help_text="Enter tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
     )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
