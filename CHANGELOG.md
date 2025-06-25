@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2025-06-25
+### Fixed
+- noclook_snap_consumer now checks if a machine is virtual before setting a dependency
+
 ## 2025-06-18
 ### Fixed
 - noclook_snap_consumer now handles service ip lists

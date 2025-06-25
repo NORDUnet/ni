@@ -96,7 +96,9 @@ def insert_snap(json_list):
 
         # service dependencies
         cluster = d.get('target', '').split('/')[0]
-        if cluster in NTNX_SERVICE:
+        # only if target is known, and this is not a physical machine
+        # since depends_on makes the node logical
+        if cluster in NTNX_SERVICE and d.get('virtual'):
             try:
                 depends_on_nh = NodeHandle.objects.get(node_name=NTNX_SERVICE[cluster])
                 rel, created = helpers.set_depends_on(user, node, depends_on_nh.handle_id)
