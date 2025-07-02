@@ -83,7 +83,7 @@
                         <th>Service tags:</th>
                         <td>
                             {% for tag in node.data.service_tags %}
-                                {% if not forloop.first %}, {% endif %}#{{ tag }}
+                                <span class="badge badge-info badge-local">{{ tag }}</span>
                             {% endfor %}
                         </td>
                     </tr>

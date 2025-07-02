@@ -32,7 +32,7 @@
                 <th>Tags:</th>
                 <td>
                     {% for tag in node.data.cable_tags %}
-                        {% if not forloop.first %}, {% endif %}#{{ tag }}
+                        <span class="badge badge-info badge-local">{{ tag }}</span>
                     {% endfor %}
                 </td>
             </tr>
