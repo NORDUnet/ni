@@ -302,7 +302,7 @@ class NewCableForm(forms.Form):
     cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
-    cable_tags = TagListField(
+    tags = TagListField(
         required=False,
         label="Tags",
         help_text="Enter comma-separated tags related to cables:",
@@ -691,7 +691,7 @@ class NewServiceForm(forms.Form):
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
-    service_tags = TagListField(
+    tags = TagListField(
         required=False,
         label="Tags",
         help_text="Enter comma-separated tags related to services",
@@ -766,7 +766,7 @@ class EditServiceForm(forms.Form):
     decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
-    service_tags = TagListField(
+    tags = TagListField(
         required=False,
         label="Tags",
         help_text="Enter tags related to services",
