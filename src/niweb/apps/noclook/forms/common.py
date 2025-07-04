@@ -47,6 +47,12 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in names])
     return choices
 
+def clean_string(s: str) -> str:
+    import re
+    cleaned = s.replace('\r', ' ').replace('\n', ' ')
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
 class TagListField(forms.CharField):
     def __init__(self, *args, **kwargs):
         if 'widget' not in kwargs:
@@ -66,10 +72,10 @@ class TagListField(forms.CharField):
             tag = tag.strip()
             if tag:
                 # Example validation: no spaces inside a tag
-                if ' ' in tag:
-                    errors.append(f"Tag '{tag}' should not contain spaces.")
+                if ('\r\n' in tag or '\n' in tag or '\r' in tag) and ',' not in tag:
+                    errors.append(f"Tag '{tag}' should not contain newlines unless separated by commas.")
                 else:
-                    result.append(tag)
+                    result.append(clean_string(tag))
 
         if errors:
             raise ValidationError(errors)
