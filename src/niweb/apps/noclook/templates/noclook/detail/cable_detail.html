@@ -28,6 +28,14 @@
                     </td>
                 </tr>
             {% endif %}
+            <tr>
+                <th>Tags:</th>
+                <td>
+                    {% for tag in node.data.tags %}
+                        <span class="badge badge-info badge-local">{{ tag }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
             {% info_row 'Tele2 Contract:' node.data.tele2_cable_contract %}
             {% info_row 'Tele2 Alt ID:' node.data.tele2_alternative_circuit_id %}
         </table>

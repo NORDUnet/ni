@@ -47,6 +47,55 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in names])
     return choices
 
+def clean_string(s: str) -> str:
+    import re
+    cleaned = s.replace('\r', ' ').replace('\n', ' ')
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
+class TagListField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '2'})
+        super(TagListField, self).__init__(*args, **kwargs)
+
+    def clean(self, value):
+        """
+        Validate and clean the input, return list of tags.
+        """
+        value = super(TagListField, self).clean(value)
+        result = []
+        errors = []
+
+        # Split by comma
+        for tag in StringIO(value).read().split(','):
+            tag = tag.strip()
+            if tag:
+                # Example validation: no spaces inside a tag
+                if ('\r\n' in tag or '\n' in tag or '\r' in tag) and ',' not in tag:
+                    errors.append(f"Tag '{tag}' should not contain newlines unless separated by commas.")
+                else:
+                    result.append(clean_string(tag))
+
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+    def prepare_value(self, value):
+        """
+        Convert list back to comma-separated string for display.
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).prepare_value(value)
+
+    def to_python(self, value):
+        """
+        Convert input into a string (pre-cleaning).
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).to_python(value)
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -253,6 +302,12 @@ class NewCableForm(forms.Form):
     cable_length = forms.FloatField(required=False)
     description = description_field('cable')
     relationship_provider = relationship_field('provider', True)
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter comma-separated tags related to cables:",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
 
 
 class EditCableForm(NewCableForm):
@@ -636,6 +691,12 @@ class NewServiceForm(forms.Form):
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter comma-separated tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
@@ -705,6 +766,12 @@ class EditServiceForm(forms.Form):
     decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
     url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
