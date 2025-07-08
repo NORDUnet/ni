@@ -208,6 +208,13 @@ def as_json(value):
     return json.dumps(value, indent=4, sort_keys=True)
 
 
+@register.filter
+def get_item(dictionary, key):
+    """Safe dictionary access in templates: dict|get_item:key"""
+    if isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None
+
 @register.simple_tag
 def hardware_module(module, level=0):
     result = ""
