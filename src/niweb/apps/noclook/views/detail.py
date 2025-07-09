@@ -709,8 +709,8 @@ def service_detail(request, handle_id):
         if not handle_id:
             continue  # skip if no handle_id
         try:
-            nh = get_object_or_404(NodeHandle, pk=handle_id)
-            port = nh.get_node()
+            node_handle_ = get_object_or_404(NodeHandle, pk=handle_id)
+            port = node_handle_.get_node()
             location_path = port.get_location_path() if port else None
         except (ObjectDoesNotExist, AttributeError, KeyError, TypeError) as _:
             location_path = None  # fallback in case of errors
