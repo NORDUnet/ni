@@ -251,7 +251,7 @@
         <div class="tab-content">
             {% if dependencies.direct %}
                 {% blockvar th %}
-                                <th>Name</th><th>Type</th><th>Description</th>
+                                <th>Name</th><th>Area</th><th>Type</th><th>Description</th>
                 {% endblockvar %}
                 {% blockvar tbody %}
                         {% for item in dependencies.direct %}
@@ -267,9 +267,18 @@
                                     {% noclook_get_model item.handle_id as model %}
                                     <td>
                                         <a href="{% noclook_node_to_url item.handle_id %}">
-                                            {% for loc in model.get_placement_path.placement_path %}{{ loc.name }} {% endfor %}{{ item.name }}
+                                            {% for loc in model.get_placement_path.placement_path %}
+                                                {{ loc.name }}
+                                            {% endfor %}{{ item.name }}
                                         </a>
                                     </td>
+                                    {% with dependency_location_data|get_item:item.handle_id as dep_entry %}
+                                        <td>
+                                            {% if dep_entry and dep_entry.node_with_area and dep_entry.node_with_area.area %}
+                                                {{ dep_entry.node_with_area.area }}
+                                            {% endif %}
+                                        </td>
+                                    {% endwith %}
                                     {% noclook_get_type item.handle_id as node_type %}
                                     <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
