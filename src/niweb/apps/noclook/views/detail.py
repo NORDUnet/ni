@@ -56,12 +56,13 @@ def cable_detail(request, handle_id):
     dependent = cable.get_dependent_as_types()
     connection_path = cable.get_connection_path()
     urls = helpers.get_node_urls(cable, connections, relations, dependent)
+    show_site_column = any(item["site"] for item in connections)
     if not any(dependent.values()):
         dependent = None
     return render(request, 'noclook/detail/cable_detail.html',
                   {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                    'connections': connections, 'dependent': dependent, 'connection_path': connection_path,
-                   'history': True, 'relations': relations, 'urls': urls})
+                   'show_site_column': show_site_column,'history': True, 'relations': relations, 'urls': urls})
 
 
 @login_required
