@@ -12,6 +12,14 @@ Common settings and globals.
 
 Based on https://github.com/rdegges/django-skel/.
 """
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+DEBUG=True
+CSRF_TRUSTED_ORIGINS = [
+    "https://localhost:8000",
+    "https://127.0.0.1:8000",
+]
+
 
 ########## PATH CONFIGURATION
 # Absolute filesystem path to the Django project directory:

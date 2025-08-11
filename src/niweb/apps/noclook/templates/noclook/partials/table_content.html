@@ -1,0 +1,16 @@
+{% load table_tags %}
+
+{% block table_head %}
+    {% for header in table.headers %}
+      <th>{{ header }}</th>
+    {% endfor %}
+{% endblock %}
+{% block table_body %}
+            {% for row in table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+{% endblock %}
