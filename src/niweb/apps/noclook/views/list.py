@@ -64,13 +64,14 @@ def _filter_expired__(nodes, request, select=lambda n: n):
 
 def _filter_expired(nodes, request, select=lambda n: n):
     def should_include(node):
-        router = node.get('router')
-        if not router:
+        item = select(node)
+        if not item:
             return False
 
-        expired = is_expired(router)
+        expired = is_expired(item)
         show_expired = get_bool(request.GET, 'show_expired', default=False)
         hide_current = get_bool(request.GET, 'hide_current', default=False)
+
         if show_expired and expired:
             return True
         if not hide_current and not expired:
@@ -152,15 +153,21 @@ def list_cables(request):
         RETURN cable, collect({equipment: {name: end.name, handle_id: end.handle_id}, port: {name: port.name, handle_id: port.handle_id}}) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.graphdb.manager, q)
-    cable_list = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
-    urls = get_node_urls(cable_list)
+    
+    cable_list_ = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
+    urls = get_node_urls(cable_list_)
 
     table = Table('Name', 'Cable type', 'End equipment', 'Port')
-    table.rows = [_cable_table(item) for item in cable_list]
+    table.rows = [_cable_table(item) for item in cable_list_]
     _set_filters_expired(table, request)
+    context = {
+        'table': table,
+        'cable_list': cable_list,
+        'name': 'Cables',
+        'urls': urls
+    }
 
-    return render(request, 'noclook/list/list_generic.html',
-                  {'table': table, 'name': 'Cables', 'urls': urls})
+    return render(request, 'noclook/list/list_generic.html', context)
 
 
 def _port_row(wrapped_port):
