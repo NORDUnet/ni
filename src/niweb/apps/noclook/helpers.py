@@ -141,8 +141,14 @@ def form_update_node(user, handle_id, form, property_keys=None):
                 property_keys.append(field)
 
     # Validate prerequisites to avoid runtime errors
-    if not (hasattr(form, 'cleaned_data') and form.cleaned_data and hasattr(node, 'data') and isinstance(node.data, dict)):
-        raise ValueError("Invalid form or node data structure")
+    if not hasattr(form, "cleaned_data"):
+        raise ValueError("The input form is missing attribute 'cleaned_data'")
+    if not form.cleaned_data:
+        raise ValueError("The form cleaned_data attribute is empty or None")
+    if not hasattr(node, "data"):
+        raise ValueError("The node is missing attribute 'data'")
+    if not isinstance(node.data, dict):
+        raise ValueError(f"The node.data is not a dict (got type {type(node.data).__name__} instead of dict)")
 
     # Protected keys that should never be deleted
     PROTECTED_KEYS = {'name'}
