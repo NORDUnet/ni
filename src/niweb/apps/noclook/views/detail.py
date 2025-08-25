@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 import ipaddress
 import json
 import logging
@@ -55,12 +56,13 @@ def cable_detail(request, handle_id):
     dependent = cable.get_dependent_as_types()
     connection_path = cable.get_connection_path()
     urls = helpers.get_node_urls(cable, connections, relations, dependent)
+    show_site_column = any(item["site"] for item in connections)
     if not any(dependent.values()):
         dependent = None
     return render(request, 'noclook/detail/cable_detail.html',
                   {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                    'connections': connections, 'dependent': dependent, 'connection_path': connection_path,
-                   'history': True, 'relations': relations, 'urls': urls})
+                   'show_site_column': show_site_column,'history': True, 'relations': relations, 'urls': urls})
 
 
 @login_required
@@ -672,6 +674,25 @@ def unit_detail(request, handle_id):
                    'history': True, 'urls': urls})
 
 
+def get_node_with_area(nodes):
+    if not isinstance(nodes, dict):
+        return None
+
+    path = nodes.get("location_path")
+    if not isinstance(path, (list, tuple)):
+        return None
+
+    return next(
+        (
+            node for node in path
+            if isinstance(node, object)
+            and callable(getattr(node, "get", None))
+            and node.get("area") is not None
+        ),
+        None
+    )
+
+
 @login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -681,12 +702,29 @@ def service_detail(request, handle_id):
     relations = service.get_relations()
     dependent = service.get_dependent_as_types()
     dependencies = service.get_dependencies_as_types()
+    direct_dependency_nodes = dependencies.get("direct", [])
+    dependency_location_data = {}
+
+    for dnode in direct_dependency_nodes:
+        handle_id = dnode.get("handle_id")
+        if not handle_id:
+            continue  # skip if no handle_id
+        try:
+            node_handle_ = get_object_or_404(NodeHandle, pk=handle_id)
+            port = node_handle_.get_node()
+            location_path = port.get_location_path() if port else None
+        except (ObjectDoesNotExist, AttributeError, KeyError, TypeError) as _:
+            location_path = None  # fallback in case of errors
+        dependency_location_data[handle_id] = {
+            "location_path": location_path.get("location_path", []),
+            "node_with_area": get_node_with_area(location_path)
+        }
 
     urls = helpers.get_node_urls(service, dependent, dependencies, relations)
     return render(request, 'noclook/detail/service_detail.html',
                   {'node': service, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                    'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
-                   'history': True, 'urls': urls})
+                   'history': True, 'urls': urls, 'dependency_location_data': dependency_location_data})
 
 
 @login_required

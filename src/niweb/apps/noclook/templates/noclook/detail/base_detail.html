@@ -40,7 +40,9 @@
     {% if forloop.last and loc|has_label:"Rack" %}
         <a href="{% noclook_node_to_url loc.handle_id %}{% if node.data.rack_position %}#U{{node.data.rack_position}}{% endif %}"> {{ loc.name }}</a>
       {% else %}
-          <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+            <a href="{% noclook_node_to_url loc.handle_id %}">
+                {{ loc.name }}{% if loc.area %} ({{ loc.area }}){% endif %}
+            </a>
       {% endif %}
     {% endfor %}
     {% if node.data.rack_position %}
