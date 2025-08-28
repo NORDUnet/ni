@@ -1,4 +1,16 @@
 <div class="input-prepend">
     <span class="add-on"><i class="icon-search"></i></span>
-    <input {% if field_id %}id="{{field_id}}" {% endif %}data-tablefilter{% if target %}="{{target}}"{% endif %} type="search" class="input-medium" placeholder="Filter">
+    <input 
+        {% if field_id %}id="{{ field_id }}"{% endif %}
+        name="search"
+        type="search"
+        class="input-medium"
+        placeholder="Filter..."
+        hx-get="{{ request.path }}"
+        hx-target="#table-container"
+        hx-trigger="keyup changed delay:300ms"
+        hx-push-url="false"
+        value="{{ request.GET.search|default_if_none:'' }}"
+    >
+    {% comment %} <input {% if field_id %}id="{{field_id}}" {% endif %}data-tablefilter{% if target %}="{{target}}"{% endif %} type="search" class="input-medium" placeholder="Filter"> {% endcomment %}
 </div>

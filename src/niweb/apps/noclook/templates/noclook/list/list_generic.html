@@ -16,24 +16,23 @@
     {% endfor %}
   {% elif table.filters %}
     {% for badge, name, link, active in table.filters %}
-        <a href="{{link}}"><span class="badge {{badge}}">{% if active %}<i class="icon-white icon-ok"></i> {% endif %}{{name}}</span></a>
+        <a
+          href="{{link}}"
+        >
+          <span class="badge {{badge}}">{% if active %}<i class="icon-white icon-ok"></i> {% endif %}{{name}}</span>
+        </a>
+
     {% endfor %}
   {% else %}
     {{block.super}}
   {% endif %}
 {% endblock %}
 
-{% block table_head %}
-    {% for header in table.headers %}
-      <th>{{ header }}</th>
-    {% endfor %}
+
+{% block table_content %}
+    {% include "noclook/partials/table_content_flat.html" with table=table %}
 {% endblock %}
-{% block table_body %}
-            {% for row in table.rows %}
-              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
-                {% for col in row.cols %}
-                  <td>{% table_column col %}</td>
-                {% endfor %}
-              </tr>
-            {% endfor %}
+
+{% block after_table %}
+
 {% endblock %}

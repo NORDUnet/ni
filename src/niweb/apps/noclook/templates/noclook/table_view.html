@@ -66,16 +66,23 @@
             {% table_search %}
         {% endblock %}
     </div>
-    <table id="{% block table_id %}{% endblock %}" data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" class="table table-condensed table-striped table-hover compact" data-tablesort cellspacing="1">
-        <thead> 
-            <tr>
-                {% block table_head %}{% endblock %}
-            </tr>
-        </thead>
-        <tbody>
-            {% block table_body %}{% endblock %}
-        </tbody>
-    </table>
+    <div id="table-container">
+        {% block table_content %}
+            <table id="{% block table_id %}{% endblock %}" 
+                data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" 
+                class="table table-condensed table-striped table-hover compact" 
+                data-tablesort cellspacing="1">
+                <thead> 
+                    <tr>
+                        {% block table_head %}{% endblock %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% block table_body %}{% endblock %}
+                </tbody>
+            </table>
+        {% endblock %}
+    </div>
     {% block after_table %}{% endblock %}
     <!-- Hidden table to post json data to download table as a file -->
     <div class="hidden">

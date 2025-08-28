@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.views.helpers import Table, TableRow
+from apps.noclook.views.helpers import Table, TableRow, get_bool, CustomPaginator
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
 
@@ -33,8 +33,9 @@ def _set_operational_state(row, node):
 
 
 def _set_filters_expired(table, request):
-    table.add_filter('', 'Current', 'hide_current', request.GET.copy())
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    params = request.GET.copy()
+    table.add_filter('', 'Hidde Current', 'hide_current', params)
+    table.add_filter('badge-important', 'Expired', 'show_expired', params)
 
 
 def _set_filters_operational_state(table, request):
@@ -52,13 +53,33 @@ def all_filters(filters, n):
     return all([f(n) for f in filters])
 
 
-def _filter_expired(nodes, request, select=lambda n: n):
+def _filter_expired__(nodes, request, select=lambda n: n):
     filters = []
     if 'show_expired' in request.GET:
         filters.append(lambda n: is_expired(n))
     if 'hide_current' not in request.GET:
         filters.append(lambda n: not is_expired(n))
     return [n for n in nodes if any_filter(filters, select(n))]
+
+
+def _filter_expired(nodes, request, select=lambda n: n):
+    def should_include(node):
+        item = select(node)
+        if not item:
+            return False
+
+        expired = is_expired(item)
+        show_expired = get_bool(request.GET, 'show_expired', default=False)
+        hide_current = get_bool(request.GET, 'hide_current', default=False)
+
+        if show_expired and expired:
+            return True
+        if not hide_current and not expired:
+            return True
+        return False
+
+    return list(filter(should_include, nodes))
+
 
 
 def _filter_operational_state(nodes, request, select=lambda n: n):
@@ -132,15 +153,21 @@ def list_cables(request):
         RETURN cable, collect({equipment: {name: end.name, handle_id: end.handle_id}, port: {name: port.name, handle_id: port.handle_id}}) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.graphdb.manager, q)
-    cable_list = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
-    urls = get_node_urls(cable_list)
+    
+    cable_list_ = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
+    urls = get_node_urls(cable_list_)
 
     table = Table('Name', 'Cable type', 'End equipment', 'Port')
-    table.rows = [_cable_table(item) for item in cable_list]
+    table.rows = [_cable_table(item) for item in cable_list_]
     _set_filters_expired(table, request)
+    context = {
+        'table': table,
+        'cable_list': cable_list,
+        'name': 'Cables',
+        'urls': urls
+    }
 
-    return render(request, 'noclook/list/list_generic.html',
-                  {'table': table, 'name': 'Cables', 'urls': urls})
+    return render(request, 'noclook/list/list_generic.html', context)
 
 
 def _port_row(wrapped_port):
@@ -594,8 +621,31 @@ def _router_table(router):
     return row
 
 
+def _matches_search_query(router_data, search_query):
+    """Check if search_query matches any value in router_data"""
+    search_query = search_query.lower()
+    
+    for key, value in router_data.items():
+        if isinstance(value, str):
+            if search_query in value.lower():
+                return True
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and search_query in str(item).lower():
+                    return True
+        elif isinstance(value, (int, float)):
+            if search_query in str(value).lower():
+                return True
+    
+    return False
+
 @login_required
 def list_routers(request):
+    search_query = request.GET.get('search', '')
+    show_expired = get_bool(request.GET, 'show_expired', default=False)
+    hide_current = get_bool(request.GET, 'hide_current', default=False)
+    page_number = int(request.GET.get('page', 1))
+
     q = """
         MATCH (router:Router)
         RETURN router
@@ -604,14 +654,40 @@ def list_routers(request):
 
     router_list = nc.query_to_list(nc.graphdb.manager, q)
     router_list = _filter_expired(router_list, request, select=lambda n: n.get('router'))
+    if search_query:
+        # router_list = router_list[:10]
+        router_list = [
+            item for item in router_list 
+            if _matches_search_query(item.get('router', {}), search_query)
+        ]
     urls = get_node_urls(router_list)
+    paginator = CustomPaginator(router_list, 10, search_query=search_query)
+    page_obj = paginator.get_page(page_number)
+    router_list = page_obj.object_list
 
     table = Table('Router', 'Model', 'JUNOS version', 'Operational state')
     table.rows = [_router_table(item['router']) for item in router_list]
     _set_filters_expired(table, request)
+    
 
-    return render(request, 'noclook/list/list_generic.html',
-                  {'table': table, 'name': 'Routers', 'urls': urls})
+    context = {
+        'table': table,
+        'name': 'Routers',
+        'urls': urls,
+        'enable_pagination': True,
+        'router_list': [item['router'] for item in router_list],
+        'request': request,
+        'query': search_query,
+        'hide_current': hide_current,
+        'show_expired': show_expired,
+        'page_number': page_number,
+        'page_obj': page_obj
+    }
+    # "example_node": router_list[0]["router"]['name'],
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "noclook/partials/table_content_flat.html", context)
+    
+    return render(request, 'noclook/list/list_generic.html', context)
 
 
 def _service_table(service, customers, end_users):
