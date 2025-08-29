@@ -120,6 +120,9 @@
                                 <li><a href="/new/">Create new</a></li>
                                 <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 <li><a href="/userprofile/">Users</a></li>
+                              {% if user.is_superuser %}
+                                <li><a href="/admin/">Admin panel</a></li>
+                              {% endif %}
                             {% endif %}
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
@@ -167,6 +170,9 @@
                                 <li><a href="/new/">Create new</a></li>
                                 <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 <li><a href="/userprofile/">Users</a></li>
+                              {% if user.is_superuser %}
+                                <li><a href="/admin/">Admin panel</a></li>
+                              {% endif %}
                             {% endif %}
                             <li><a href="/logout/">Log out</a></li>
                         {% endif %}
