@@ -107,6 +107,22 @@ def get_provider_id(provider_name):
     return provider_id
 
 
+def is_empty_value(value):
+    """Check if a value is considered empty."""
+    if value is None:
+        return True
+    if hasattr(value, '__len__'):
+        return len(value) == 0
+    return False
+
+def has_key_in_node_data(node, key):
+    """Safely check if key exists in node.data."""
+    try:
+        return (hasattr(node, 'data') and node.data is not None and isinstance(node.data, dict) and key in node.data)
+    except (AttributeError, TypeError):
+        return False
+
+
 def form_update_node(user, handle_id, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
@@ -123,23 +139,39 @@ def form_update_node(user, handle_id, form, property_keys=None):
         for field in form.base_fields.keys():
             if field not in meta_fields:
                 property_keys.append(field)
-    for key in property_keys:
-        if form.cleaned_data.get(key, None) or form.cleaned_data.get(key, None) == 0:
-            pre_value = node.data.get(key, '')
-            if pre_value != form.cleaned_data[key]:
-                node.data[key] = form.cleaned_data[key]
-                # Handle dates
-                if hasattr(form.cleaned_data[key], 'isoformat'):
-                    node.data[key] = form.cleaned_data[key].isoformat()
 
-                if key == 'name':
-                    nh.node_name = form.cleaned_data[key]
-                activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
-        elif form.cleaned_data.get(key, None) == '' and key in node.data.keys():
-            if key != 'name':  # Never delete name
-                pre_value = node.data.get(key, '')
-                del node.data[key]
-                activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
+    # Validate prerequisites to avoid runtime errors
+    if not hasattr(form, "cleaned_data"):
+        raise ValueError("The input form is missing attribute 'cleaned_data'")
+    if not form.cleaned_data:
+        raise ValueError("The form cleaned_data attribute is empty or None")
+    if not hasattr(node, "data"):
+        raise ValueError("The node is missing attribute 'data'")
+    if not isinstance(node.data, dict):
+        raise ValueError(f"The node.data is not a dict (got type {type(node.data).__name__} instead of dict)")
+
+    # Protected keys that should never be deleted
+    PROTECTED_KEYS = {'name'}
+    for key in property_keys:
+        value = form.cleaned_data.get(key, None)
+        current_form_value = form.cleaned_data.get(key)
+        pre_value = node.data.get(key, '')
+        # Handle non-empty values (including 0, False, empty string-> add "or value == ''" )
+        if value is not None and (value or value == 0):
+            if pre_value != current_form_value:
+                node.data[key] = current_form_value
+                # Handle date serialization - override with ISO format if needed
+                if hasattr(current_form_value, 'isoformat'):
+                    node.data[key] = current_form_value.isoformat()
+
+                # Handle special name field update
+                if key == 'name' and hasattr(nh, 'node_name'):
+                    nh.node_name = current_form_value
+                activitylog.update_node_property(user, nh, key, pre_value, current_form_value)
+        # Handle empty/null values - delete existing keys (except protected ones)
+        elif (is_empty_value(value) and has_key_in_node_data(node, key) and key not in PROTECTED_KEYS):
+            del node.data[key]
+            activitylog.update_node_property(user, nh, key, pre_value, current_form_value)
     nc.set_node_properties(nc.graphdb.manager, node.handle_id, node.data)
     return True
 
