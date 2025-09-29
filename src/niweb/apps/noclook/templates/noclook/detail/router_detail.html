@@ -24,6 +24,11 @@
     </div>
     <div class="span3">
         {% include "noclook/detail/includes/last_changed.html" %}
+        {% if node.data.url %}
+            <tr>
+              <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
+            </tr>
+        {% endif %}
     </div>
 </div>
 

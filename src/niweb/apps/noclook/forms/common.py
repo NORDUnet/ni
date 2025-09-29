@@ -458,6 +458,7 @@ class NewHostForm(RackableForm):
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
+    url = forms.URLField(required=False, help_text='An URL to more information about the host.', label='Information URL')
     backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
     security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
@@ -516,6 +517,7 @@ class EditRouterForm(RackableForm):
     relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     description = description_field('router')
+    url = forms.URLField(required=False, help_text='An URL to more information about the router.', label='Information URL')
 
 
 class NewOdfForm(RackableForm):

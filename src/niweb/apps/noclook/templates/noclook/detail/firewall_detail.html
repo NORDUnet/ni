@@ -59,6 +59,11 @@
                 </tr>
             {% endif %}
             {% include "noclook/detail/includes/last_changed.html" with inline=True %}
+            {% if node.data.url %}
+                <tr>
+                  <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     {% if node.data.description or node.data.responsible_group or node.data.support_group %}

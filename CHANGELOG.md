@@ -7,8 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2025-09-29
+### Added
+- More info link to hosts, firewall, routers and pdus
+
 ## 2025-08-29
-## Added
+### Added
 - Menu link for superusers to admin panel
 ### Fixed
 - Being able to delete ip addresses from nodes

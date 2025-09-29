@@ -6,6 +6,8 @@
 {{ block.super }}
     <div class="well">
         {{ form.operational_state | as_crispy_field }}
+        {{ form.description | as_crispy_field }}
+        {{ form.url | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/location_group.html" %}
