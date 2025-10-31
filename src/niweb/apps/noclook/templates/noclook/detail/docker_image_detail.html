@@ -74,6 +74,12 @@
                         <th>Description:</th><td>{{ node.data.description }}</td>
                     </tr>
                 {% endif %}
+                {% if node.data.internal_description %}
+                    <tr>
+                        <th>Description (internal):</th><td>{{ node.data.internal_description }}</td>
+                    </tr>
+                {% endif %}
+
                 {% if node.data.responsible_group %}
                     <tr>
                         <th>Responsible group:</th>

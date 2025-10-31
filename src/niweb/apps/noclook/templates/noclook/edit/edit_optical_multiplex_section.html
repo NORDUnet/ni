@@ -7,6 +7,7 @@
         {{ form.name | as_crispy_field }}
         {{ form.operational_state | as_crispy_field}}
         {{ form.description | as_crispy_field }}
+        {{ form.internal_description | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/dependency_group.html" %}
