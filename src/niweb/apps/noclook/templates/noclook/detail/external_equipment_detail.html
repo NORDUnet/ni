@@ -44,6 +44,16 @@
             </table>
         </div>
     {% endif %}
+    {% if node.data.internal_description %}
+        <div class="span7">
+            <table class="table">
+                <tr>
+                    <th>Description (internal):</th><td>{{ node.data.internal_description }}</td>
+                </tr>
+            </table>
+        </div>
+    {% endif %}
+
 </div>
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>

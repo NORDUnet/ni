@@ -191,6 +191,7 @@ class NodeHandleResource(ModelResource):
         resource_name = 'node_handle'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
+        excludes = ['internal_description']
         allowed_methods = ['get', 'put', 'post']
         include_absolute_url = True
         always_return_data = True
@@ -322,6 +323,10 @@ class NodeHandleResource(ModelResource):
             for rel in relationships.get(key, []):
                 tmp_obj.id = rel['relationship_id']
                 bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
+        node_data = bundle.data.get("node", {})
+        if "internal_description" in node_data:
+            del node_data["internal_description"]
+            
         return bundle
 
     def resource_uri_kwargs(self, bundle_or_obj=None):

@@ -7,6 +7,7 @@
     <div class="well">
         {{ form.name |as_crispy_field }}
         {{ form.description |as_crispy_field }}
+        {{ form.internal_description | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
       {% accordion 'Information URL (optional)' 'url-edit' '#edit-accordion' %}
