@@ -75,11 +75,11 @@ function duration {
 SECONDS=0
 
 msg "Stopping norduni"
-docker-compose -f "$SCRIPT_DIR/compose-dev.yml" stop norduni
+docker compose -f "$SCRIPT_DIR/compose-dev.yml" stop norduni
 
 set +e
 msg "Stopping neo4j"
-docker-compose -f "$SCRIPT_DIR/compose-dev.yml" stop neo4j
+docker compose -f "$SCRIPT_DIR/compose-dev.yml" stop neo4j
 
 msg "Removing neo4j data"
 rm -r "$SCRIPT_DIR/data/neo4j/databases"
@@ -88,7 +88,7 @@ rm -r "$SCRIPT_DIR/data/neo4j/transactions"
 set -e
 
 msg "Starting neo4j again"
-docker-compose -f  "$SCRIPT_DIR/compose-dev.yml" start neo4j
+docker compose -f  "$SCRIPT_DIR/compose-dev.yml" start neo4j
 
 postgres_id=$(docker ps | awk '/postgres/ {print $1}')
 
@@ -107,11 +107,11 @@ msg "Import DB from $SQL_DUMP"
 docker exec -i "$postgres_id" bash -c "gunzip /sqldump.sql.gz; psql -q -o /dev/null norduni ni -f /sqldump.sql; rm /sqldump.*"
 
 msg "Django migrate"
-docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage migrate
+docker compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage migrate
 
 
 msg "Import neo4j data from json"
-docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm -v "$NI_DUMP":/opt/noclook norduni consume-restore
+docker compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm -v "$NI_DUMP":/opt/noclook norduni consume-restore
 
 msg "Reset postgres sequences"
 cat <<EOM | docker exec -i "$postgres_id" psql -q -o /dev/null norduni ni
@@ -145,5 +145,5 @@ fi
 
 msg "Create superuser"
 echo -e "\a" # play bell
-docker-compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage createsuperuser
+docker compose -f "$SCRIPT_DIR/compose-dev.yml"  run --rm norduni manage createsuperuser
 

@@ -14,7 +14,7 @@ logger = logging.getLogger('noclook_utils')
 django_hack.nop()
 
 
-def load_json(json_dir, starts_with=''):
+def load_json(json_dir, starts_with='', with_filename=False):
     """
     Thinks all files in the supplied dir are text files containing json.
     """
@@ -25,7 +25,10 @@ def load_json(json_dir, starts_with=''):
             for a_file in gen:
                 try:
                     f = open(os.path.join(subdir, a_file), 'r')
-                    yield json.load(f)
+                    if with_filename:
+                        yield json.load(f), a_file
+                    else:
+                        yield json.load(f)
                 except ValueError as e:
                     logger.error('Encountered a problem with {f}.'.format(f=a_file))
                     logger.error(e)

@@ -65,13 +65,30 @@
         <div class="span3">
             <table class="table">
                 {% info_row 'NetApp storage use:' node.data.netapp_storage_sum postfix=" GB" %}
+                {% if node.data.url %}
+                  <tr>
+                      <th>More information:</th>
+                      <td>
+                        <a href="{{ node.data.url }}" target="_blank">Link</a>
+                      </td>
+                  </tr>
+                {% endif %}
                 {% include "noclook/detail/includes/last_changed.html" with inline=True %}
             </table>
         </div>
         {% if node.data.description or node.data.responsible_group or node.data.support_group %}
             <div class="span7">
                 <table class="table">
+                    <tr>
+                        <th>Service tags:</th>
+                        <td>
+                            {% for tag in node.data.tags %}
+                                <span class="badge badge-info badge-local">{{ tag }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
                     {% info_row 'Description:' node.data.description %}
+                    {% info_row 'Description (internal):' node.data.internal_description %}
                     {% info_row 'Responsible group:' node.data.responsible_group %}
                     {% info_row 'Support group:' node.data.support_group %}
                 </table>

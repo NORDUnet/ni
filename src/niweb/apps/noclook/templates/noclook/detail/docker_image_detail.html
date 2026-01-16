@@ -8,37 +8,38 @@
 <div class="row">
     <div class="span4">
         <table class="table">
+            <tr>
+              <th>Tags:</th>
+              <td>
+                <ul style="margin: 0; padding: 0;">
+                  {{ node.data.tags|unordered_list }}
+                </ul>
+              </td>
+            </tr>
             {% if node.data.operational_state %}
                 <tr>
                     <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
-            {% if node.data.type %}
+            <tr>
+              <th>Image Created:</th><td>{{ node.data.image_created | isots_to_dt }}</td>
+            </tr>
+            {% if relations.Uses %}
                 <tr>
-                    <th>Type:</th><td>{{ node.data.type }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.nagios_checks %}
-                <tr>
-                    <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.hostnames %}
-                <tr>
-                    <th>Hostnames:</th>
+                    <th>Users:</th>
                     <td>
-                        {% for item in node.data.hostnames %}
-                            {{ item }}{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Uses %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if node.data.ip_addresses %}
+            {% if relations.Provides %}
                 <tr>
-                    <th>Addresses:</th>
+                    <th>Providers:</th>
                     <td>
-                        {% for item in node.data.ip_addresses %}
-                            {{ item }}{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Provides %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
@@ -53,51 +54,19 @@
                     </td>
                 </tr>
             {% endif %}
-            {% if node.data.service_tag %}
-                <tr>
-                    <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.end_support %}
-                <tr>
-                    <th>Support ends:</th><td>{{ node.data.end_support }}</td>
-                </tr>
-            {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.data.vendor or node.data.model or node.data.max_number_of_ports %}
-                {% if node.data.vendor %}
-                    <tr>
-                        <th>Vendor:</th><td>{{node.data.vendor}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.model %}
-                    <tr>
-                        <th>Model:</th><td>{{node.data.model}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.max_number_of_ports %}
-                    <tr>
-                        <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
-                    </tr>
-                {% endif %}
-            {% endif %}
             {% if node.data.os %}
                 <tr>
-                    <th>OS:</th><td>{{node.data.os}} {% if node.data.os_version %}{{ node.data.os_version }}{% endif %}</td>
+                    <th>OS:</th><td>{{node.data.os}} {% if node.data.os_version %}{{node.data.os_version}}{% endif %}</td>
                 </tr>
             {% endif %}
             {% include "noclook/detail/includes/last_changed.html" with inline=True %}
-            {% if node.data.url %}
-                <tr>
-                  <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
-                </tr>
-            {% endif %}
         </table>
     </div>
-    {% if node.data.description or node.data.responsible_group or node.data.support_group %}
+    {% if node.data.description or node.data.responsible_group or node.data.security_class %}
         <div class="span7">
             <table class="table">
                 {% if node.data.description %}
@@ -127,14 +96,51 @@
                         </td>
                     </tr>
                 {% endif %}
+                {% if node.data.security_class %}
+                    <tr>
+                        <th>Security Class</th>
+                        <td>
+                            <strong>{{ node.data.security_class }}</strong><br>
+                            {{ node.data.security_comment }}
+                        </td>
+                    </tr>
+                {% endif %}
             </table>
         </div>
     {% endif %}
 </div>
 
 {% if user.is_staff %}
+
+    <form method="POST" action="{% url 'scan:host' %}">
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+        {% csrf_token %}
+        <input type="hidden" name="data" value="{% scan_data node %}" />
+        {% if node.data.operational_state|lower != "decommissioned" and scan_enabled %}
+            <button class="btn btn-warning"><i class="icon-refresh icon-white"></i> Scan</button>
+        {% endif %}
+    </form>
 {% endif %}
+
 {% include "noclook/detail/includes/depend_include.html" %}
-{% include "noclook/detail/includes/connections.html" with connections=connections only %}
+
+<div class="section">
+    <h3>Packages</h3>
+    <div class="pull-right">
+      {% table_search "packages" %}
+    </div>
+        {% blockvar th %}
+            <th>Package</th>
+            <th>Version</th>
+        {% endblockvar %}
+        {% blockvar tbody %}
+            {% for package, version in packages %}
+                <tr>
+                  <td>{{package}}</td>
+                  <td>{{version}}</td>
+                </tr>
+            {% endfor %}
+        {% endblockvar %}
+        {% table th tbody id="packages" %}
+</div>
 {% endblock %}

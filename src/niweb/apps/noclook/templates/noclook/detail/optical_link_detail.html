@@ -38,6 +38,16 @@
                     </table>
                 </div>
             {% endif %}
+            {% if node.data.internal_description %}
+                <div>
+                    <table class="table">
+                        <tr>
+                            <th>Description (internal):</th><td>{{ node.data.internal_description }}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% endif %}
+
         </div>
         <div class="span3">
             {% include "noclook/detail/includes/last_changed.html" %}

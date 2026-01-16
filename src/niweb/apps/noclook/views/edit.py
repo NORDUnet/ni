@@ -280,6 +280,25 @@ def edit_customer(request, handle_id):
 
 
 @staff_member_required
+def edit_docker_image(request, handle_id):
+    # Get needed data from node
+    nh, docker_image = helpers.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditDockerImageForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, docker_image.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditDockerImageForm(docker_image.data)
+    return render(request, 'noclook/edit/edit_docker_image.html',
+                  {'node_handle': nh, 'form': form, 'node': docker_image})
+
+
+@staff_member_required
 def edit_end_user(request, handle_id):
     # Get needed data from node
     nh, end_user = helpers.get_nh_node(handle_id)
@@ -448,7 +467,8 @@ def edit_odf(request, handle_id):
     ports = odf.get_ports()
     if request.POST:
         form = forms.EditOdfForm(request.POST)
-        if form.is_valid():
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, odf.handle_id, form)
             # ODF specific updates
@@ -458,14 +478,18 @@ def edit_odf(request, handle_id):
             _handle_ports(odf,
                           form.cleaned_data['relationship_ports'],
                           request.user)
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
                 return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOdfForm(odf.data)
+        ports_form = forms.BulkPortsForm({'port_type': 'LC', 'offset': 1, 'num_ports': '0'})
     return render(request, 'noclook/edit/edit_odf.html',
-                  {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
+                  {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports, 'ports_form': ports_form})
 
 @staff_member_required
 def edit_outlet(request, handle_id):
@@ -1208,6 +1232,7 @@ def disable_noclook_auto_manage(request, slug, handle_id):
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
+    'docker-image': edit_docker_image,
     'end-user': edit_end_user,
     'external-equipment': edit_external_equipment,
     'firewall': edit_firewall,

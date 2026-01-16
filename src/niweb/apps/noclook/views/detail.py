@@ -1,6 +1,7 @@
     # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 import ipaddress
 import json
 import logging
@@ -55,12 +56,13 @@ def cable_detail(request, handle_id):
     dependent = cable.get_dependent_as_types()
     connection_path = cable.get_connection_path()
     urls = helpers.get_node_urls(cable, connections, relations, dependent)
+    show_site_column = any(item["site"] for item in connections)
     if not any(dependent.values()):
         dependent = None
     return render(request, 'noclook/detail/cable_detail.html',
                   {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                    'connections': connections, 'dependent': dependent, 'connection_path': connection_path,
-                   'history': True, 'relations': relations, 'urls': urls})
+                   'show_site_column': show_site_column,'history': True, 'relations': relations, 'urls': urls})
 
 
 @login_required
@@ -173,6 +175,7 @@ def host_detail(request, handle_id):
     if not any(dependent.values()):
         dependent = None
     dependencies = host.get_dependencies_as_types()
+    dependencies['docker_images'] = [dep for dep in dependencies.get('direct', [])]
 
     urls = helpers.get_node_urls(relations, dependent, dependencies)
     scan_enabled = helpers.app_enabled("apps.scan")
@@ -209,7 +212,7 @@ def host_user_detail(request, handle_id):
     result = host_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     q = """
-        MATCH (n:Node {handle_id: $handle_id})-[r:Uses|:Owns]->(u)
+        MATCH (n:Node {handle_id: $handle_id})-[:Uses|:Owns]->(u)
         RETURN
         labels(u) as labels,
         u.handle_id as handle_id,
@@ -653,6 +656,25 @@ def unit_detail(request, handle_id):
                    'history': True, 'urls': urls})
 
 
+def get_node_with_area(nodes):
+    if not isinstance(nodes, dict):
+        return None
+
+    path = nodes.get("location_path")
+    if not isinstance(path, (list, tuple)):
+        return None
+
+    return next(
+        (
+            node for node in path
+            if isinstance(node, object)
+            and callable(getattr(node, "get", None))
+            and node.get("area") is not None
+        ),
+        None
+    )
+
+
 @login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -662,12 +684,29 @@ def service_detail(request, handle_id):
     relations = service.get_relations()
     dependent = service.get_dependent_as_types()
     dependencies = service.get_dependencies_as_types()
+    direct_dependency_nodes = dependencies.get("direct", [])
+    dependency_location_data = {}
+
+    for dnode in direct_dependency_nodes:
+        handle_id = dnode.get("handle_id")
+        if not handle_id:
+            continue  # skip if no handle_id
+        try:
+            node_handle_ = get_object_or_404(NodeHandle, pk=handle_id)
+            port = node_handle_.get_node()
+            location_path = port.get_location_path() if port else None
+        except (ObjectDoesNotExist, AttributeError, KeyError, TypeError) as _:
+            location_path = None  # fallback in case of errors
+        dependency_location_data[handle_id] = {
+            "location_path": location_path.get("location_path", []),
+            "node_with_area": get_node_with_area(location_path)
+        }
 
     urls = helpers.get_node_urls(service, dependent, dependencies, relations)
     return render(request, 'noclook/detail/service_detail.html',
                   {'node': service, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                    'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
-                   'history': True, 'urls': urls})
+                   'history': True, 'urls': urls, 'dependency_location_data': dependency_location_data})
 
 
 @login_required
@@ -686,7 +725,7 @@ def site_detail(request, handle_id):
     MATCH (site:Site {handle_id: $handle_id})-[:Has]->(rack:Rack)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
-    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    RETURN rack, item order by toLower(toString(rack.name)), toLower(toString(item.name))
     """
     rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
@@ -697,7 +736,7 @@ def site_detail(request, handle_id):
     # rooms
     q = """
         MATCH (site:Site {handle_id: $handle_id})-[:Has]->(room:Room)
-        RETURN room order by toLower(room.name)
+        RETURN room order by toLower(toString(room.name))
         """
     rooms_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
@@ -736,7 +775,7 @@ def room_detail(request, handle_id):
     MATCH (room:Room {handle_id: $handle_id})-[:Has]->(rack:Node)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
-    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    RETURN rack, item order by toLower(toString(rack.name)), toLower(toString(item.name))
     """
     rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
 
@@ -809,3 +848,21 @@ def switch_detail(request, handle_id):
                    'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'urls': urls, 'scan_enabled': scan_enabled, 'hardware_modules': hardware_modules})
+
+
+@login_required
+def docker_image_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    docker_image = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(docker_image.data)
+
+    dependent = docker_image.get_dependent_as_types()
+    dependencies = docker_image.get_dependencies_as_types()
+    packages = [p.split() for p in docker_image.data.get('packages', [])]
+    urls = helpers.get_node_urls(docker_image, dependent, dependencies)
+    return render(request, 'noclook/detail/docker_image_detail.html',
+                  {'node_handle': nh, 'node': docker_image, 'last_seen': last_seen, 'expired': expired,
+                   'dependent': dependent, 'dependencies': dependencies,
+                   'packages': packages,
+                   'history': True, 'urls': urls, })

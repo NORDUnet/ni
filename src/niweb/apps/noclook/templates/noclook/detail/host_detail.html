@@ -67,6 +67,16 @@
                     <th>SUNET IAAS:</th><td>{{ node.data.sunet_iaas|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.cosmos_repo_origin_url %}
+                <tr>
+                    <th>Cosmos Repository:</th><td>{{ node.data.cosmos_repo_origin_url }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.docker_version %}
+                <tr>
+                    <th>Docker version:</th><td>{{ node.data.docker_version }}</td>
+                </tr>
+            {% endif %}
             {% if relations.Uses %}
                 <tr>
                     <th>Users:</th>
@@ -154,6 +164,11 @@
                 </tr>
             {% endif %}
             {% include "noclook/detail/includes/last_changed.html" with inline=True %}
+            {% if node.data.url %}
+                <tr>
+                  <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     {% if node.data.description or node.data.responsible_group or node.data.security_class %}
@@ -164,6 +179,12 @@
                         <th>Description:</th><td>{{ node.data.description }}</td>
                     </tr>
                 {% endif %}
+                {% if node.data.internal_description %}
+                    <tr>
+                        <th>Description (internal):</th><td>{{ node.data.internal_description }}</td>
+                    </tr>
+                {% endif %}
+
                 {% if node.data.responsible_group %}
                     <tr>
                         <th>Responsible group:</th>

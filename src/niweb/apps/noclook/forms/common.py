@@ -47,6 +47,55 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in names])
     return choices
 
+def clean_string(s: str) -> str:
+    import re
+    cleaned = s.replace('\r', ' ').replace('\n', ' ')
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
+class TagListField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '2'})
+        super(TagListField, self).__init__(*args, **kwargs)
+
+    def clean(self, value):
+        """
+        Validate and clean the input, return list of tags.
+        """
+        value = super(TagListField, self).clean(value)
+        result = []
+        errors = []
+
+        # Split by comma
+        for tag in StringIO(value).read().split(','):
+            tag = tag.strip()
+            if tag:
+                # Example validation: no spaces inside a tag
+                if ('\r\n' in tag or '\n' in tag or '\r' in tag) and ',' not in tag:
+                    errors.append(f"Tag '{tag}' should not contain newlines unless separated by commas.")
+                else:
+                    result.append(clean_string(tag))
+
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+    def prepare_value(self, value):
+        """
+        Convert list back to comma-separated string for display.
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).prepare_value(value)
+
+    def to_python(self, value):
+        """
+        Convert input into a string (pre-cleaning).
+        """
+        if isinstance(value, list):
+            value = ', '.join(value)
+        return super(TagListField, self).to_python(value)
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -234,6 +283,7 @@ class EditSiteForm(forms.Form):
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     description = description_field('site owner')
+    internal_description = description_field('site owner (internal)')
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
@@ -252,7 +302,14 @@ class NewCableForm(forms.Form):
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
     cable_length = forms.FloatField(required=False)
     description = description_field('cable')
+    internal_description = description_field('cable (internal)')
     relationship_provider = relationship_field('provider', True)
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter comma-separated tags related to cables:",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
 
 
 class EditCableForm(NewCableForm):
@@ -271,6 +328,7 @@ class NewSwitchForm(forms.Form):
     operational_state = forms.ChoiceField(initial='Reserved')
     switch_type = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('switch')
+    internal_description = description_field('switch (internal)')
     relationship_provider = relationship_field('provider', True)
 
 
@@ -326,6 +384,7 @@ class OpticalNodeForm(RackableForm):
     type = forms.ChoiceField()
     operational_state = forms.ChoiceField(initial='In service')
     description = description_field('optical node')
+    internal_description = description_field('optical node (internal)')
     relationship_location = relationship_field('location')
 
 
@@ -395,6 +454,7 @@ class NewHostForm(RackableForm):
     name = forms.CharField(help_text="The hostname")
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     description = description_field('machine and what it is used for')
+    internal_description = description_field('machine and what it is used for (internal)')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
@@ -403,6 +463,7 @@ class NewHostForm(RackableForm):
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
+    url = forms.URLField(required=False, help_text='An URL to more information about the host.', label='Information URL')
     backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
     security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
@@ -458,6 +519,8 @@ class EditRouterForm(RackableForm):
     relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     description = description_field('router')
+    internal_description = description_field('router (internal)')
+    url = forms.URLField(required=False, help_text='An URL to more information about the router.', label='Information URL')
 
 
 class NewOdfForm(RackableForm):
@@ -472,6 +535,7 @@ class NewOdfForm(RackableForm):
 
     name = forms.CharField()
     description = description_field('ODF')
+    internal_description = description_field('ODF (internal)')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
@@ -489,6 +553,7 @@ class NewPatchPannelForm(RackableForm):
 
     name = forms.CharField()
     description = description_field('Patch Panel')
+    internal_description = description_field('Patch Panel (internal)')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
     relationship_location = relationship_field('location')
@@ -503,6 +568,7 @@ class NewOutletForm(forms.Form):
 
     name = forms.CharField()
     description = description_field('Patch Panel')
+    internal_description = description_field('Patch Panel (internal)')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
     relationship_location = relationship_field('location')
 
@@ -527,6 +593,7 @@ class EditOdfForm(RackableForm):
 
     name = forms.CharField()
     description = description_field('ODF')
+    internal_description = description_field('ODF (internal)')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
@@ -540,6 +607,7 @@ class EditPatchPanelForm(RackableForm):
 
     name = forms.CharField()
     description = description_field('Patch Panel')
+    internal_description = description_field('Patch Panel (internal)')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
@@ -553,6 +621,7 @@ class EditOutletForm(forms.Form):
 
     name = forms.CharField()
     description = description_field('Outlet')
+    internal_description = description_field('Outlet (internal)')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
@@ -570,6 +639,8 @@ class NewExternalEquipmentForm(RackableForm):
     name = forms.CharField()
 
     description = description_field('external equipment')
+
+    internal_description = description_field('external equipment (internal)')
     relationship_owner = relationship_field('owner')
     relationship_location = relationship_field('location')
 
@@ -587,6 +658,7 @@ class NewPortForm(forms.Form):
     name = forms.CharField()
     port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     description = description_field('port usage')
+    internal_description = description_field('port usage (internal)')
     relationship_parent = relationship_field('parent')
 
 
@@ -598,6 +670,7 @@ class NewCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
     description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+    internal_description = description_field('customer (internal)')
 
 
 class EditCustomerForm(forms.Form):
@@ -609,6 +682,7 @@ class EditCustomerForm(forms.Form):
 class NewEndUserForm(forms.Form):
     name = forms.CharField()
     description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+    internal_description = description_field('end-user (internal)')
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
@@ -633,6 +707,14 @@ class NewServiceForm(forms.Form):
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    internal_description = description_field('service (internal)')
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter comma-separated tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
+    url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -701,6 +783,14 @@ class EditServiceForm(forms.Form):
     decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
+    internal_description = description_field('service (internal)')
+    tags = TagListField(
+        required=False,
+        label="Tags",
+        help_text="Enter tags related to services",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'cols': '120', 'rows': '2'}),
+    )
+    url = forms.URLField(required=False, help_text='An URL to more information about the service.', label='Information URL')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -756,6 +846,7 @@ class NewOpticalLinkForm(forms.Form):
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical link')
+    internal_description = description_field('optical link (internal)')
     relationship_provider = relationship_field('provider', True)
 
     class Meta:
@@ -799,6 +890,7 @@ class EditOpticalLinkForm(forms.Form):
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical link')
+    internal_description = description_field('optical link (internal)')
     relationship_provider = relationship_field('provider', True)
     relationship_end_a = relationship_field('Choose end A')
     relationship_end_b = relationship_field('Choose end B')
@@ -813,6 +905,7 @@ class NewOpticalMultiplexSectionForm(forms.Form):
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical link')
+    internal_description = description_field('optical link (internal)')
     relationship_provider = relationship_field('provider', True)
 
 
@@ -826,6 +919,7 @@ class EditOpticalMultiplexSectionForm(forms.Form):
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
+    internal_description = description_field('optical path (internal)')
     relationship_provider = relationship_field('provider', True)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput, label='Depends on')
 
@@ -844,6 +938,7 @@ class NewOpticalPathForm(forms.Form):
     wavelength = IndifferentFloatField(required=False, help_text='Measured in GHz', localize=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
+    internal_description = description_field('optical path (internal)')
     relationship_provider = relationship_field('provider', True)
 
     class Meta:
@@ -888,6 +983,7 @@ class EditOpticalPathForm(forms.Form):
     wavelength = IndifferentFloatField(required=False, help_text='Measured in GHz', localize=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
+    internal_description = description_field('optical path (internal)')
     enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = relationship_field('provider', True)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
@@ -940,3 +1036,47 @@ class TrunkCableForm(forms.Form):
     trunk_num_ports = forms.IntegerField(required=False, min_value=0, initial=0, label='Number of ports', help_text='Also number of cables that is in the trunk cable')
     trunk_prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0', label='Port prefix')
     trunk_create_missing_ports = forms.BooleanField(required=False, help_text='Force create missing ports', label='Create missing ports')
+
+
+class JSONList(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '3'})
+        super().__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            return "\n".join(value)
+        return ''
+
+    def to_python(self, value):
+        if isinstance(value, list):
+            return value
+        if isinstance(value, str):
+            if '"' not in value:
+                # we got a newline seperated string from input
+                return [line.strip() for line in value.splitlines() if line.strip()]
+            try:
+                converted = json.loads(value)
+                if isinstance(converted, list):
+                    return converted
+                else:
+                    raise ValidationError("Could not convert to list", code="invalid", params={"value": value})
+            except json.JSONDecodeError:
+                raise ValidationError("Could not parse string as json", code="invalid", params={"value": value})
+        raise ValidationError("Unsupported value", code="invalid", params={"value": value})
+
+
+class NewDockerImageForm(forms.Form):
+    name = forms.CharField()
+    description = description_field('docker image')
+    internal_description = description_field('docker image (internal)')
+    tags = JSONList(required=False,
+                    help_text=u'JSON formatted list of tags')
+    os = forms.CharField(required=False,
+                         label='Operating system',
+                         help_text='What operating system is running on the host?')
+
+
+class EditDockerImageForm(NewDockerImageForm):
+    pass

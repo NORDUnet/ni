@@ -7,6 +7,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2025-09-29
+### Added
+- More info link to hosts, firewall, routers and pdus
+
+## 2025-08-29
+### Added
+- Menu link for superusers to admin panel
+### Fixed
+- Being able to delete ip addresses from nodes
+
+## 2025-07-04
+### Added
+- Cables and Services now support setting tags. Tags can be used to add information such as raman or long_distance for fibres, which is useful information to the NOC.
+
+## 2025-06-25
+### Fixed
+- noclook_snap_consumer now checks if a machine is virtual before setting a dependency
+
+## 2025-06-18
+### Fixed
+- noclook_snap_consumer now handles service ip lists
+
+## 2025-04-09
+### Added
+- IPCLOS service endpoint in the API
+
+## 2024-11-29
+### Added
+- Support for import of Rooms (before they were not created as proper Locations)
+### Changed
+- Major bump, django 4.2 and updated some dependencies, to use you need to update your venv/installtion by reinstalling and updating using `pip install -U -r requirements/prod.txt`
+
+## 2024-10-01
+### Added
+- Functionality for better handling of multiple IdPs and discovery.
+- A new `ModifiedSaml2Backend` has been added, and is used per default if SAML is enabled. With it you can set the `ENABLE_AUTHORIZATION_BY_FILE` and specify a `AUTH_GROUP_FILE`.
+
+## 2024-04-09
+### Added
+- ODFs now has the bulk port edit functionality
+
+## 2024-02-09
+### Changed
+- Api when not using pk in resource_uri2id it also uses the resource_name as node_type slug. Should fix the problem SUNET is having with using the API to associate customer, when customernames are overloaded.
+
+## 2024-01-22
+### Changed
+- sunet_json importer should no longer blow up on the new format
+
+## 2024-01-04
+### Added
+- `noclook_snap_consumer.py` now tries to depend hosts based on ntnx cluster, ignores unknown clusters
+
+
+## 2023-11-22
+### Added
+- Docker Image node type
+### Fixed
+- Cypher error on host user detail page
+
 ## 2023-05-26
 ### Changed
 - Add script for setting customer on all backbon ip services

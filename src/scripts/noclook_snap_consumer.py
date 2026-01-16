@@ -5,10 +5,17 @@ import utils
 import argparse
 import logging
 from apps.noclook import helpers
+from apps.noclook.models import NodeHandle
 
 logger = logging.getLogger('noclook_consumer.snap')
 
 ALLOWED_NODE_TYPE_SET = {'Host'}
+NTNX_SERVICE = {
+    'dk-ore2-ntnx-4': 'NU-S001347',
+    'dk-bal-ntnx-4': 'NU-S001348',
+    'dk-ore2-ntnx-5': 'NU-S001349',
+    'dk-bal-ntnx-5': 'NU-S001350',
+}
 
 
 def insert_snap(json_list):
@@ -58,9 +65,24 @@ def insert_snap(json_list):
 
         if d.get('network'):
             ipv4 = [n['ip'].split('/')[0] for n in d.get('network', []) if 'ip' in n]
-            ipv4_service = [n['service_ip'].split('/')[0] for n in d.get('network', []) if 'service_ip' in n]
             ipv6 = [n['ipv6'].split('/')[0] for n in d.get('network', []) if 'ipv6' in n]
-            ipv6_service = [n['service_ipv6'].split('/')[0] for n in d.get('network', []) if 'service_ipv6' in n]
+            # might have a list of ips in service ip
+            ipv4_service = []
+            ipv6_service = []
+            for n in d.get('network', []):
+                if 'service_ip' in n:
+                    ips = n['service_ip']
+                    if not isinstance(ips, list):
+                        ips = [ips]
+                    ipv4_service = ipv4_service + ips
+                if 'service_ipv6' in n:
+                    ips = n['service_ipv6']
+                    if not isinstance(ips, list):
+                        ips = [ips]
+                    ipv6_service = ipv6_service + ips
+
+            ipv4_service = [sip.split('/')[0] for sip in ipv4_service]
+            ipv6_service = [sip.split('/')[0] for sip in ipv6_service]
             properties['ip_addresses'] = ipv4 + ipv4_service + ipv6 + ipv6_service
 
         if d.get('managed'):
@@ -71,6 +93,30 @@ def insert_snap(json_list):
             properties['service_tag'] = d.get('service_tag')
 
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
+
+        # service dependencies
+        cluster = d.get('target', '').split('/')[0]
+        # only if target is known, and this is not a physical machine
+        # since depends_on makes the node logical
+        if cluster in NTNX_SERVICE and d.get('virtual'):
+            try:
+                depends_on_nh = NodeHandle.objects.get(node_name=NTNX_SERVICE[cluster])
+                rel, created = helpers.set_depends_on(user, node, depends_on_nh.handle_id)
+                if created:
+                    # clean up old depends e.g. if host is redeployed to new cluster, if not same delete old
+                    # simpler with a cypher maybe?
+                    # match(n:Node {handle_id: $handle_id})-[r:Depends_on]->(n2:Node) WHERE n2.name in $service_names return r
+                    result = node.get_dependencies()
+                    dependencies = result.get('Depends_on') or []
+                    del_candidates = set(NTNX_SERVICE.values()).remove(NTNX_SERVICE[cluster])
+                    for dep in dependencies:
+                        rel = dep.get('relationship')
+                        result = [n for n in rel.nodes if n.get('name') in del_candidates]
+                        if result:
+                            # lets delete this
+                            helpers.delete_relationship(user, rel.id)
+            except Exception:
+                pass
         logger.info('{} has been imported'.format(name))
 
 

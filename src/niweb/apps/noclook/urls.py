@@ -107,6 +107,7 @@ urlpatterns = [
     path('port/', _list.list_ports),
     path('pdu/', _list.list_pdu),
     path('external-equipment/', _list.list_external_equipment),
+    path('docker-image/', _list.list_docker_images),
     # Generic list
     path('<slug>/', _list.list_by_type, name='generic_list'),
 
@@ -116,6 +117,7 @@ urlpatterns = [
     path('peering-group/<int:handle_id>/', detail.peering_group_detail, name='peering_group_detail'),
     path('optical-node/<int:handle_id>/', detail.optical_node_detail),
     path('cable/<int:handle_id>/', detail.cable_detail),
+    path('docker-image/<int:handle_id>/', detail.docker_image_detail),
     path('host/<int:handle_id>/', detail.host_detail, name='detail_host'),
     path('host-provider/<int:handle_id>/', detail.host_provider_detail),
     path('host-user/<int:handle_id>/', detail.host_user_detail),
@@ -148,6 +150,7 @@ urlpatterns = [
     # wins only because of no /
     path(r'nodes/<int:handle_id>', redirect.node_redirect, name='node_redirect'),
     path('slow-nodes/<int:handle_id>', redirect.node_slow_redirect),
+    path('docker-image/tag/<tag>', redirect.docker_image_by_tag_redirect),
 
     # -- debug view
     path('nodes/<int:handle_id>/debug', debug.generic_debug, name='debug'),

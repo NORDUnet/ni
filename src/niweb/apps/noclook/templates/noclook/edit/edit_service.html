@@ -83,8 +83,11 @@
                 {{ form.decommissioned_date | as_crispy_field }}
             </div>
         </div>
+        {{ form.tags | as_crispy_field}}
         {{ form.description | as_crispy_field}}
+        {{ form.internal_description | as_crispy_field }}
         {{ form.contract_number | as_crispy_field}}
+        {{ form.url | as_crispy_field}}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/dependency_group.html" %}

@@ -8,11 +8,8 @@
         {{ form.name | as_crispy_field }}
         {{ form.description | as_crispy_field }}
         {{ form.internal_description | as_crispy_field }}
-    </div>
-    <div class="accordion" id="edit-accordion">
-      {% accordion 'Information URL (optional)' 'infourl' '#edit-accordion' %}
-        {{ form.url | as_crispy_field}}
-      {% endaccordion %}
+        {{ form.tags | as_crispy_field}}
+        {{ form.os | as_crispy_field}}
     </div>
 {% endblock %}
 

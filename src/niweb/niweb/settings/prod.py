@@ -28,8 +28,18 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 
 ########## END GENERAL CONFIGURATION
 # djangosaml2 settings
+ENABLE_DISCOVERY_SERVICE = environ.get('ENABLE_DISCOVERY_SERVICE', 'False').lower() != 'false'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
+
+SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
+
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# SAML2_DISCO_URL = 'https://ds.qa.swamid.se/ds'
+if ENABLE_DISCOVERY_SERVICE:
+    SAML2_DISCO_URL = environ.get('DISCOVERY_SERVICE_URL', 'https://service.seamlessaccess.org/ds')
 
 SAML_ATTRIBUTE_MAPPING = {
     'eduPersonPrincipalName': ('username', ),
@@ -38,6 +48,26 @@ SAML_ATTRIBUTE_MAPPING = {
     'sn': ('last_name', ),
     'displayName': ('display_name', ),
 }
+
+CUSTOM_IDP_SAML_ATTRIBUTE_MAPPINGS = {
+    'https://connect.eduid.se/sunet': {
+        'subject-id': ('username', ),
+        'schacHomeOrganization': ('organization', ),
+        'mail': ('email', ),
+        'givenName': ('first_name', ),
+        'sn': ('last_name', ),
+        'displayName': ('username', ),
+    },
+    'https://idp.sunet.se/idp': {
+        'eduPersonPrincipalName': ('username', ),
+        'mail': ('email', ),
+        'givenName': ('first_name', ),
+        'sn': ('last_name', ),
+        'displayName': ('display_name', ),
+        'eduPersonEntitlement': ('eduPersonEntitlement', ),
+    }
+}
+
 SAML_CONFIG = config.SAML_CONFIG
 ########## END GENERAL CONFIGURATION
 
