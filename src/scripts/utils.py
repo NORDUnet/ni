@@ -1,7 +1,12 @@
 import os
 import logging
 import json
-from configparser import SafeConfigParser
+try:
+    from configparser import SafeConfigParser
+except ImportError:
+    # needed for python >=3.11
+    from configparser import ConfigParser as SafeConfigParser
+
 import random
 import django_hack  # Keep
 
