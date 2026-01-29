@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-01-29
+### Changed
+- Updated to django 5.2 LTS
+### Added
+- Missing `internal_description` field to EditCustomrForm
+### Removed
+- Host services data has been removed. To clean up run `src/scripts/cleanup_host_services.py` which cleans up the activity_stream log, then `src/scripts/delete_host_services.py` which deltes the host services objects.
+
 ## 2025-09-29
 ### Added
 - More info link to hosts, firewall, routers and pdus
