@@ -493,9 +493,6 @@ class EditHostForm(NewHostForm):
     relationship_depends_on = relationship_field('depends on')
     relationship_ports = JSONField(required=False, widget=JSONInput)
 
-    services_locked = forms.BooleanField(required=False)
-    services_checked = forms.BooleanField(required=False)
-
 
 class EditSwitchForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
@@ -680,6 +677,7 @@ class EditCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
     description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+    internal_description = description_field('customer (internal)')
 
 
 class NewEndUserForm(forms.Form):

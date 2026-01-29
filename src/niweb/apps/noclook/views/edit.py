@@ -371,7 +371,6 @@ def edit_firewall(request, handle_id):
     nh, firewall = helpers.get_nh_node(handle_id)
     location = firewall.get_location()
     relations = firewall.get_relations()
-    host_services = firewall.get_host_services()
     ports = firewall.get_ports()
     if request.POST:
         form = forms.EditFirewallForm(request.POST)
@@ -388,8 +387,6 @@ def edit_firewall(request, handle_id):
             _handle_location(request.user,
                              firewall,
                              form.cleaned_data['relationship_location'])
-            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
             _handle_ports(firewall,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -401,8 +398,7 @@ def edit_firewall(request, handle_id):
         form = forms.EditFirewallForm(firewall.data)
     return render(request, 'noclook/edit/edit_firewall.html',
                   {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
-                   'relations': relations, 'ports': ports,
-                   'host_services': host_services})
+                   'relations': relations, 'ports': ports})
 
 
 @staff_member_required
@@ -412,7 +408,6 @@ def edit_host(request, handle_id):
     location = host.get_location()
     relations = host.get_relations()
     depends_on = host.get_dependencies()
-    host_services = host.get_host_services()
     ports = host.get_ports()
     dependency_categories = 'service,host'
     user_categories = ['host-user']
@@ -439,8 +434,6 @@ def edit_host(request, handle_id):
                 _handle_location(request.user,
                                  host,
                                  form.cleaned_data['relationship_location'])
-            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                helpers.remove_rogue_service_marker(request.user, host.handle_id)
             _handle_ports(host,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -453,8 +446,7 @@ def edit_host(request, handle_id):
     context = {
         'node_handle': nh, 'node': host, 'form': form, 'location': location,
         'relations': relations, 'depends_on': depends_on, 'ports': ports,
-        'host_services': host_services, 'dependency_categories': dependency_categories,
-        'user_categories': user_categories,
+        'dependency_categories': dependency_categories, 'user_categories': user_categories,
     }
     return render(request, 'noclook/edit/edit_host.html', context)
 
@@ -798,7 +790,6 @@ def edit_pdu(request, handle_id):
     location = pdu.get_location()
     relations = pdu.get_relations()
     depends_on = pdu.get_dependencies()
-    host_services = pdu.get_host_services()
     ports = pdu.get_ports()
     dependency_categories = 'service'
     ports_form = forms.BulkPortsForm(request.POST or None)
@@ -822,8 +813,6 @@ def edit_pdu(request, handle_id):
                 _handle_location(request.user,
                                  pdu,
                                  form.cleaned_data['relationship_location'])
-            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
             if ports_form.is_valid() and not ports_form.cleaned_data['no_ports']:
                 data = ports_form.cleaned_data
                 helpers.bulk_create_ports(pdu, request.user, **data)
@@ -839,8 +828,7 @@ def edit_pdu(request, handle_id):
     return render(request, 'noclook/edit/edit_pdu.html',
                   {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
                    'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                   'host_services': host_services, 'dependency_categories': dependency_categories,
-                   'ports_form': ports_form})
+                   'dependency_categories': dependency_categories, 'ports_form': ports_form})
 
 
 @staff_member_required
@@ -1194,7 +1182,6 @@ def edit_switch(request, handle_id):
     location = switch.get_location()
     relations = switch.get_relations()
     depends_on = switch.get_dependencies()
-    host_services = switch.get_host_services()
     ports = switch.get_ports()
     ports_form = forms.BulkPortsForm(request.POST or None)
     if request.POST:
@@ -1210,8 +1197,6 @@ def edit_switch(request, handle_id):
             _handle_location(request.user,
                              switch,
                              form.cleaned_data['relationship_location'])
-            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                helpers.remove_rogue_service_marker(request.user, switch.handle_id)
             _handle_ports(switch,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -1228,7 +1213,7 @@ def edit_switch(request, handle_id):
     return render(request, 'noclook/edit/edit_switch.html',
                   {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
                    'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                   'host_services': host_services, 'ports_form': ports_form})
+                   'ports_form': ports_form})
 
 
 @staff_member_required

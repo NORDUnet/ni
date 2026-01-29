@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
@@ -149,14 +149,13 @@ def firewall_detail(request, handle_id):
     location_path = firewall.get_location_path()
     # Get ports in firewall
     connections = firewall.get_connections()
-    host_services = firewall.get_host_services()
     dependent = firewall.get_dependent_as_types()
     dependencies = firewall.get_dependencies_as_types()
     relations = firewall.get_relations()
     scan_enabled = helpers.app_enabled("apps.scan")
     return render(request, 'noclook/detail/firewall_detail.html',
                   {'node_handle': nh, 'node': firewall, 'last_seen': last_seen, 'expired': expired,
-                   'host_services': host_services, 'connections': connections, 'dependent': dependent,
+                   'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'scan_enabled': scan_enabled})
 
@@ -169,7 +168,6 @@ def host_detail(request, handle_id):
     last_seen, expired = helpers.neo4j_data_age(host.data)
     location_path = host.get_location_path()
     # Handle relationships
-    host_services = host.get_host_services()
     relations = host.get_relations()
     dependent = host.get_dependent_as_types()
     # Get ports in Host
@@ -179,11 +177,11 @@ def host_detail(request, handle_id):
     dependencies = host.get_dependencies_as_types()
     dependencies['docker_images'] = [dep for dep in dependencies.get('direct', [])]
 
-    urls = helpers.get_node_urls(relations, host_services, dependent, dependencies)
+    urls = helpers.get_node_urls(relations, dependent, dependencies)
     scan_enabled = helpers.app_enabled("apps.scan")
     return render(request, 'noclook/detail/host_detail.html',
                   {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
-                   'relations': relations, 'host_services': host_services, 'dependent': dependent,
+                   'relations': relations, 'dependent': dependent,
                    'dependencies': dependencies, 'location_path': location_path, 'history': True,
                    'urls': urls, 'connections': connections, 'scan_enabled': scan_enabled, })
 
@@ -204,21 +202,6 @@ def host_provider_detail(request, handle_id):
                    'same_name_relations': same_name_relations,
                    'provides_relationships': provides_relationships,
                    'history': True, 'urls': urls})
-
-
-@login_required
-def host_service_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    host_service = nh.get_node()
-    last_seen, expired = helpers.neo4j_data_age(host_service.data)
-    service_relationships = host_service.get_dependencies()
-
-    urls = helpers.get_node_urls(host_service, service_relationships)
-    return render(request, 'noclook/detail/host_service_detail.html',
-                  {'node_handle': nh, 'node': host_service, 'last_seen': last_seen, 'expired': expired,
-                   'service_relationships': service_relationships, 'history': True, 'urls': urls})
-
 
 @login_required
 def host_user_detail(request, handle_id):
@@ -436,16 +419,15 @@ def pdu_detail(request, handle_id):
     location_path = pdu.get_location_path()
     # Get ports in pdu
     connections = pdu.get_connections()
-    host_services = pdu.get_host_services()
     dependent = pdu.get_dependent_as_types()
     dependencies = pdu.get_dependencies_as_types()
     relations = pdu.get_relations()
 
-    urls = helpers.get_node_urls(pdu, host_services, connections, dependent, dependencies, relations, location_path)
+    urls = helpers.get_node_urls(pdu, connections, dependent, dependencies, relations, location_path)
     scan_enabled = helpers.app_enabled("apps.scan")
     return render(request, 'noclook/detail/pdu_detail.html',
                   {'node_handle': nh, 'node': pdu, 'last_seen': last_seen, 'expired': expired,
-                   'host_services': host_services, 'connections': connections, 'dependent': dependent,
+                   'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'urls': urls, 'scan_enabled': scan_enabled})
 
@@ -845,12 +827,11 @@ def switch_detail(request, handle_id):
     location_path = switch.get_location_path()
     # Get ports in switch
     connections = switch.get_connections()
-    host_services = switch.get_host_services()
     dependent = switch.get_dependent_as_types()
     dependencies = switch.get_dependencies_as_types()
     relations = switch.get_relations()
 
-    urls = helpers.get_node_urls(switch, host_services, connections, dependent, dependencies, relations, location_path)
+    urls = helpers.get_node_urls(switch, connections, dependent, dependencies, relations, location_path)
     scan_enabled = helpers.app_enabled("apps.scan")
     hw_name = "{}-hardware.json".format(switch.data.get('name', 'switch'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
@@ -864,7 +845,7 @@ def switch_detail(request, handle_id):
         hardware_modules = []
     return render(request, 'noclook/detail/switch_detail.html',
                   {'node_handle': nh, 'node': switch, 'last_seen': last_seen, 'expired': expired,
-                   'host_services': host_services, 'connections': connections, 'dependent': dependent,
+                   'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'urls': urls, 'scan_enabled': scan_enabled, 'hardware_modules': hardware_modules})
 

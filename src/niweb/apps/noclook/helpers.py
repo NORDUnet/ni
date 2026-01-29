@@ -822,26 +822,6 @@ def get_hostname_from_address(ip_address):
         return 'Request timed out'
 
 
-def remove_rogue_service_marker(user, handle_id):
-    """
-    :param user: Django user
-    :param handle_id:  unique id
-    :return: True
-
-    Removed the property rogue_port from all Depends_on relationships.
-    """
-    q = """
-        MATCH (host:Node {handle_id:$handle_id})<-[r:Depends_on]-(host_service:Host_Service)
-        WHERE exists(r.rogue_port)
-        RETURN collect(id(r)) as ids
-        """
-    result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id)
-    properties = {'rogue_port': ''}
-    for relationship_id in result['ids']:
-        dict_update_relationship(user, relationship_id, properties, properties.keys())
-    return True
-
-
 def find_recursive(key, target):
     if type(target) in (list, tuple):
         for d in target:

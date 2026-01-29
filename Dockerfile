@@ -2,14 +2,14 @@ FROM alpine:latest
 LABEL authors="Markus Krogh <markus@nordu.net>"
 
 RUN apk add --no-cache ca-certificates python3 py3-pip libpq openssl
-RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade pip --break-system-packages
 RUN mkdir /app
 WORKDIR /app
 
 ADD src /app
 ADD requirements /app/requirements
 RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python3-dev git && \
-      pip3 install -r requirements/dev.txt && \
+      pip3 install --break-system-packages -r requirements/dev.txt && \
       apk del build-dependencies && \
       if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
       if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \

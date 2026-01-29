@@ -77,51 +77,6 @@ def host_security_class(request, status=None, form=None):
     return render(request, 'noclook/reports/host_security_class.html',
                               {'status': status, 'hosts': hosts, 'urls': urls})
 
-
-@login_required
-def host_services(request, status=None):
-    hosts = []
-    if status:
-        if status == 'unauthorized-ports':
-            q = """
-                MATCH (host:Host)
-                MATCH (host)<-[r:Depends_on]-()
-                WHERE host.operational_state <> "Decommissioned" and exists(r.rogue_port)
-                RETURN host, collect(r) as ports
-                ORDER BY host.noclook_last_seen DESC
-                """
-            hosts = nc.query_to_list(nc.graphdb.manager, q)
-            return render(request, 'noclook/reports/host_unauthorized_ports.html',
-                                      {'status': status, 'hosts': hosts})
-        elif status == 'public':
-            q = """
-                MATCH (host:Host)
-                MATCH (host)<-[r:Depends_on]-()
-                WHERE host.operational_state <> "Decommissioned" and r.public
-                RETURN host, collect({data: r, id: id(r)}) as ports
-                ORDER BY host.noclook_last_seen DESC
-                """
-            hosts = nc.query_to_list(nc.graphdb.manager, q)
-            return render(request, 'noclook/reports/host_public_ports.html',
-                                      {'status': status, 'hosts': hosts})
-        else:
-            if status == 'locked':
-                where_statement = 'and (exists(host.services_locked) and host.services_locked)'
-            elif status == 'not-locked':
-                where_statement = 'and (not(exists(host.services_locked)) or not host.services_locked)'
-            else:
-                raise Http404()
-            q = """
-                MATCH (host:Host)
-                WHERE host.operational_state <> "Decommissioned" %s
-                RETURN host
-                ORDER BY host.noclook_last_seen DESC
-                """ % where_statement
-        hosts = nc.query_to_list(nc.graphdb.manager, q)
-    return render(request, 'noclook/reports/host_services.html',
-                              {'status': status, 'hosts': hosts})
-
-
 @login_required
 def unique_ids(request):
     id_list = get_id_list(request.GET or None)
