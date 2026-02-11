@@ -1,0 +1,33 @@
+{% load table_tags %}
+
+<table id="my-table"
+       class="table table-condensed table-striped table-hover compact"
+       data-tablesort cellspacing="1">
+    <thead>
+        <tr>
+          {% for header in table.headers %}
+            <th>{{ header }}</th>
+          {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+      {% for row in table.rows %}
+        <tr{% if row.classes %} class="{{ row.classes }}"{% endif %}>
+          {% for col in row.cols %}
+            <td>{% table_column col %}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+</table>
+
+
+<div class="pagination pagination-right">
+    <button hx-get="?page={{ page_obj.previous_page_number }}&search={{ query }}&partial=table-container" hx-target="#table-container" {% if not page_obj.has_previous %}disabled{% endif %}>
+        Previous
+    </button>
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.total_pages }}</span>
+    <button hx-get="?page={{ page_obj.next_page_number }}&search={{ query }}&partial=table-container" hx-target="#table-container" {% if not page_obj.has_next %}disabled{% endif %}>
+        Next
+    </button>
+</div>

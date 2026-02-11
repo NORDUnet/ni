@@ -1,5 +1,66 @@
 $(document).ready(function() {
 
+  // Extract DataTable initialization into a separate function with debugging
+  function initializeDataTables() {
+    console.log('=== initializeDataTables called ===');
+    
+    // Find all tables with data-tablesort
+    var $tables = $("table[data-tablesort]");
+    console.log('Found tables with data-tablesort:', $tables.length);
+    
+    if ($tables.length === 0) {
+      console.log('No tables found with data-tablesort attribute');
+      return;
+    }
+    
+    // Destroy existing DataTables first to avoid conflicts
+    $tables.each(function(index) {
+      console.log('Processing table', index, 'ID:', this.id);
+      
+      if ($.fn.DataTable.isDataTable(this)) {
+        console.log('Destroying existing DataTable for table', index);
+        $(this).DataTable().destroy();
+      }
+      
+      try {
+        console.log('Initializing DataTable for table', index);
+        var $table = $(this).DataTable({
+          "paging": false,
+          "order": [],
+          "dom": "lrti",
+          columnDefs: [
+            { type: 'natural', targets: '_all'}
+          ]
+        });
+        
+        console.log('DataTable initialized successfully for table', index);
+        
+        // Set up table filters
+        var tableId = this.id;
+        if($tables.length > 1) {
+          console.log('Setting up filter for table ID:', tableId);
+          $("input[data-tablefilter="+tableId+"]").off('keyup').on('keyup', 
+            debounce(function(){
+              console.log('Filtering table', tableId, 'with value:', this.value);
+              $table.search(this.value).draw();
+            }));
+        } else {
+          console.log('Setting up general filter for single table');
+          $("input[data-tablefilter]").off('keyup').on('keyup', debounce(function(){
+            console.log('Filtering table with value:', this.value);
+            $table.search(this.value).draw();
+          }));
+        }
+        
+      } catch (error) {
+        console.error('Error initializing DataTable for table', index, ':', error);
+      }
+    });
+    
+    console.log('=== initializeDataTables completed ===');
+  }
+
+
   // Handle async loading (e.g. og history)
   function async_load(url, trigger,target) {
     var $trigger = $(trigger);
@@ -35,28 +96,25 @@ $(document).ready(function() {
 
   // Handle datatables (sorting, searching)
    var $tables = $("table[data-tablesort]")
-   $tables.each(function(){
-        var $table = $(this).DataTable(
-        {
-            "paging": false,
-            "order": [],
-            "dom": "lrti",
-            columnDefs: [
-                   { type: 'natural', targets: '_all'}
-            ]
-        });
-        if($tables.length > 1) {
-            $("input[data-tablefilter="+this.id+"]").on('keyup', 
-              debounce(function(){
-                $table.search(this.value).draw();
-            }));
-        }else{
-            $("input[data-tablefilter]").on('keyup', debounce(function(){
-                $table.search(this.value).draw();
-            }));
-
-        }
-    });
+  // Initialize on page load
+  initializeDataTables();
+  
+  // Reinitialize DataTables after HTMX swaps content
+  $(document).on('htmx:afterSwap', function(event) {    
+    // Check if the swapped content contains tables with data-tablesort
+    var $target = $(event.detail.target);
+    var foundTables = $target.find('table[data-tablesort]');
+    var isTable = $target.is('table[data-tablesort]');
+    
+    if (foundTables.length > 0 || isTable) {      
+      // Add a small delay to ensure DOM is fully updated
+      setTimeout(function() {
+        initializeDataTables();
+      }, 100);
+    } else {
+      console.log('No tables with data-tablesort found in swapped content');
+    }
+  });
 
 
   // Dynamic ports
