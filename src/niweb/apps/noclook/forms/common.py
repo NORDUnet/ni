@@ -523,6 +523,34 @@ class EditRouterForm(RackableForm):
     url = forms.URLField(required=False, help_text='An URL to more information about the router.', label='Information URL')
 
 
+class NewFirewallForm(NewHostForm):
+    """Create form for Firewall nodes. Uses all NewHostForm fields."""
+    pass
+
+
+class NewPDUForm(NewHostForm):
+    """Create form for PDU nodes. Extends NewHostForm with a PDU type selector."""
+    def __init__(self, *args, **kwargs):
+        super(NewPDUForm, self).__init__(*args, **kwargs)
+        self.fields['type'].choices = Dropdown.get('pdu_types').as_choices()
+
+    type = forms.ChoiceField(required=False, label='PDU type')
+
+
+class NewRouterForm(RackableForm):
+    """Create form for Router nodes."""
+    def __init__(self, *args, **kwargs):
+        super(NewRouterForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField(help_text='The router hostname')
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    relationship_location = relationship_field('location')
+    description = description_field('router')
+    internal_description = description_field('router (internal)')
+    url = forms.URLField(required=False, help_text='An URL to more information about the router.', label='Information URL')
+
+
 class NewOdfForm(RackableForm):
 
     def __init__(self, *args, **kwargs):

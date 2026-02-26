@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>Create new router</h1>
+    {% if form.errors %}
+        <div class="alert alert-error">
+            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+            Please resubmit the form after making the following changes:
+            {{ form.errors }}
+        </div>
+    {% endif %}
+    <form action="" method="post">
+        {% csrf_token %}
+        <div class="well">
+            {{ form.name | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.internal_description | as_crispy_field }}
+            {{ form.url | as_crispy_field }}
+        </div>
+
+        <div class="accordion" id="create-accordion">
+            {% accordion 'Location (optional)' 'location' '#create-accordion' %}
+                {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
+                {{ form.rack_units | as_crispy_field }}
+                {{ form.rack_position | as_crispy_field }}
+                {{ form.rack_back | as_crispy_field }}
+            {% endaccordion %}
+
+            {% accordion 'Bulk ports' 'bulk_ports' '#create-accordion' %}
+                {{ ports_form | crispy }}
+            {% endaccordion %}
+        </div>
+
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a href="/new/" class="btn">Cancel</a>
+    </form>
+{% endblock %}

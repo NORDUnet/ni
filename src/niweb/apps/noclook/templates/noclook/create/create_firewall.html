@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>Create new firewall</h1>
+    {% if form.errors %}
+        <div class="alert alert-error">
+            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+            Please resubmit the form after making the following changes:
+            {{ form.errors }}
+        </div>
+    {% endif %}
+    <form action="" method="post">
+        {% csrf_token %}
+        <div id="operation-section">
+            <h3>Operational information</h3>
+            <div class="well">
+                {{ form.name | as_crispy_field }}
+                {{ form.operational_state | as_crispy_field }}
+                {{ form.ip_addresses | as_crispy_field }}
+                {{ form.description | as_crispy_field }}
+                {{ form.internal_description | as_crispy_field }}
+                {{ form.responsible_group | as_crispy_field }}
+                {{ form.support_group | as_crispy_field }}
+                {{ form.url | as_crispy_field }}
+                {{ form.security_class | as_crispy_field }}
+                {{ form.security_comment | as_crispy_field }}
+            </div>
+        </div>
+
+        <div class="accordion" id="create-accordion">
+            {% accordion 'Operational information (optional)' 'operational' '#create-accordion' %}
+                {{ form.os | as_crispy_field }}
+                {{ form.os_version | as_crispy_field }}
+                {{ form.vendor | as_crispy_field }}
+                {{ form.model | as_crispy_field }}
+                {{ form.service_tag | as_crispy_field }}
+                {{ form.end_support | as_crispy_field }}
+                {{ form.contract_number | as_crispy_field }}
+            {% endaccordion %}
+
+            {% accordion 'Location (optional)' 'location' '#create-accordion' %}
+                {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
+                {{ form.rack_units | as_crispy_field }}
+                {{ form.rack_position | as_crispy_field }}
+                {{ form.rack_back | as_crispy_field }}
+            {% endaccordion %}
+
+            {% accordion 'Firewall Owner (optional)' 'owner' '#create-accordion' %}
+                <div class="span4">
+                    {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host-user,provider' %}
+                </div>
+            {% endaccordion %}
+
+            {% accordion 'Bulk ports' 'bulk_ports' '#create-accordion' %}
+                {{ ports_form | crispy }}
+            {% endaccordion %}
+        </div>
+
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a href="/new/" class="btn">Cancel</a>
+    </form>
+{% endblock %}
