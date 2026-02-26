@@ -24,6 +24,7 @@ TYPES = [
     ("end-user", "End User"),
     ("external-cable", "External Cable"),
     ("external-equipment", "External Equipment"),
+    ("firewall", "Firewall"),
     ("host", "Host"),
     ("optical-link", "Optical Link"),
     ("optical-path", "Optical Path"),
@@ -34,10 +35,12 @@ TYPES = [
     ("optical-node", "Optical Node"),
     ("outlet", "Outlet"),
     ("patch-panel", "Patch Panel"),
+    ("pdu", "PDU"),
     ("port", "Port"),
     ("provider", "Provider"),
     ("rack", "Rack"),
     ("room", "Room"),
+    ("router", "Router"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
     ("switch", "Switch"),
@@ -659,6 +662,92 @@ def new_switch(request, **kwargs):
     return render(request, 'noclook/create/create_switch.html', {'form': form })
 
 
+@staff_member_required
+def new_firewall(request, **kwargs):
+    ports_form = forms.BulkPortsForm(request.POST or None)
+    if request.POST:
+        form = forms.NewFirewallForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'firewall', 'Physical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Firewall with that name already exists.')
+                return render(request, 'noclook/create/create_firewall.html', {'form': form, 'ports_form': ports_form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            node = nh.get_node()
+            if data['relationship_owner']:
+                owner_nh = NodeHandle.objects.get(pk=data['relationship_owner'])
+                helpers.set_owner(request.user, node, owner_nh.handle_id)
+            if data['relationship_location']:
+                location_nh = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location_nh.handle_id)
+            if ports_form.is_valid() and not ports_form.cleaned_data['no_ports']:
+                helpers.bulk_create_ports(node, request.user, **ports_form.cleaned_data)
+            return redirect(nh.get_absolute_url())
+    else:
+        name = kwargs.get('name', None)
+        form = forms.NewFirewallForm(initial={'name': name})
+        ports_form = forms.BulkPortsForm({'port_type': '', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_firewall.html', {'form': form, 'ports_form': ports_form})
+
+
+@staff_member_required
+def new_pdu(request, **kwargs):
+    ports_form = forms.BulkPortsForm(request.POST or None)
+    if request.POST:
+        form = forms.NewPDUForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'pdu', 'Physical')
+            except UniqueNodeError:
+                form.add_error('name', 'A PDU with that name already exists.')
+                return render(request, 'noclook/create/create_pdu.html', {'form': form, 'ports_form': ports_form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            node = nh.get_node()
+            if data['relationship_owner']:
+                owner_nh = NodeHandle.objects.get(pk=data['relationship_owner'])
+                helpers.set_owner(request.user, node, owner_nh.handle_id)
+            if data['relationship_location']:
+                location_nh = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location_nh.handle_id)
+            if ports_form.is_valid() and not ports_form.cleaned_data['no_ports']:
+                helpers.bulk_create_ports(node, request.user, **ports_form.cleaned_data)
+            return redirect(nh.get_absolute_url())
+    else:
+        name = kwargs.get('name', None)
+        form = forms.NewPDUForm(initial={'name': name})
+        ports_form = forms.BulkPortsForm({'port_type': '', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_pdu.html', {'form': form, 'ports_form': ports_form})
+
+
+@staff_member_required
+def new_router(request, **kwargs):
+    ports_form = forms.BulkPortsForm(request.POST or None)
+    if request.POST:
+        form = forms.NewRouterForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'router', 'Physical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Router with that name already exists.')
+                return render(request, 'noclook/create/create_router.html', {'form': form, 'ports_form': ports_form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            node = nh.get_node()
+            if form.cleaned_data['relationship_location']:
+                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_location(request.user, node, location_nh.handle_id)
+            if not ports_form.cleaned_data['no_ports']:
+                helpers.bulk_create_ports(node, request.user, **ports_form.cleaned_data)
+            return redirect(nh.get_absolute_url())
+    else:
+        name = kwargs.get('name', None)
+        form = forms.NewRouterForm(initial={'name': name})
+        ports_form = forms.BulkPortsForm({'port_type': '', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_router.html', {'form': form, 'ports_form': ports_form})
+
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
@@ -678,6 +767,9 @@ NEW_FUNC = {
     'provider': new_provider,
     'rack': new_rack,
     'room': new_room,
+    'firewall': new_firewall,
+    'pdu': new_pdu,
+    'router': new_router,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
