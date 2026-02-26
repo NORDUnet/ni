@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-02-26
+### Added
+- You can now create firewalls, routers and PDUs manually
+
 ## 2026-01-29
 ### Changed
 - Updated to django 5.2 LTS
