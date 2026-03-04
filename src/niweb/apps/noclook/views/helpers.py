@@ -36,6 +36,12 @@ class TableRow(object):
     def __init__(self, *args):
         self.cols = args[:]
 
+    def __repr__(self):
+        return u'{!s}'.format(self.cols)
+
+    def __str__(self):
+        return self.__repr__()
+
 
 def create_filter(badge, name, param, params):
     """
@@ -52,9 +58,3 @@ def create_filter(badge, name, param, params):
         params[param] = ''
     link = "?{}".format(params.urlencode())
     return (badge, name, link, active)
-
-    def __repr__(self):
-        return u'{!s}'.format(self.cols)
-
-    def __str__(self):
-        return self.__repr__()
