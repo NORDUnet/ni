@@ -26,7 +26,7 @@
             {% include "noclook/detail/includes/last_changed.html" with inline=True %}
         </table>
     </div>
-    {% if node.data.description %}
+    {% if node.data.description or node.data.internal_description  %}
         <div class="span7">
             <table class="table">
                 {% if node.data.description %}
