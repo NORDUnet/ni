@@ -112,9 +112,9 @@
 
 {% if user.is_staff %}
     {% scan_data node as formdata %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
     {% if formdata %}
     <form method="POST" action="{% url 'scan:host' %}">
-        <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
         {% csrf_token %}
         <input type="hidden" name="data" value="{% scan_data node %}" />
         {% if node.data.operational_state|lower != "decommissioned" and scan_enabled %}
