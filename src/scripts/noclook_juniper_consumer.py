@@ -42,6 +42,55 @@ django_hack.nop()
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
+# This script is used for adding the objects collected with the
+# NERDS producers juniper_config to the NOCLook database viewer.
+#
+# JSON format used:
+# {["host": {
+#   "juniper_conf": {
+#       "bgp_peerings": [
+#            {
+#            "as_number": "",
+#            "group": "",
+#            "description": "",
+#            "remote_address": "",
+#            "local_address": "",
+#            "type": ""
+#            },
+#        ],
+#        "interfaces": [
+#            {
+#            "name": "",
+#            "bundle": "",
+#            "vlantagging": true/false,
+#            "units": [
+#                {
+#                "address": [
+#                "",
+#                ""
+#                ],
+#                "description": "",
+#                "unit": "",
+#                "vlanid": ""
+#                }
+#            ],
+#            "tunnels": [
+#            {
+#            "source": "",
+#            "destination": ""
+#            }
+#            ],
+#            "description": ""
+#            },
+#        ],
+#        "name": ""
+#        },
+#        "version": 1,
+#        "name": ""
+#    }
+# ]}
+
+
 
 def remove_router_conf(user, data_age):
     routerq = """
