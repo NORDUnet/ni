@@ -10,7 +10,7 @@ from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from tastypie.exceptions import BadRequest
 
-from ..nerds import NmapConsumer
+from ..nerds import NmapConsumer, JuniperConsumer
 
 
 class NerdsResource(Resource):
@@ -28,10 +28,12 @@ class NerdsResource(Resource):
         else:
             raise BadRequest('Could not find a nerds consumer that matches supplied data')
     
-    def get_consumer(self,data):
-        consumer = None
-        if "nmap_services_py" in data['host']:
-            consumer = NmapConsumer(data)
-        return consumer
+    def get_consumer(self, data):
+        host = data['host']
+        if 'nmap_services_py' in host:
+            return NmapConsumer(data)
+        if 'juniper_conf' in host:
+            return JuniperConsumer(data)
+        return None
 
 
