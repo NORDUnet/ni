@@ -33,7 +33,14 @@
 </div>
 
 {% if user.is_staff %}
-    <p><a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a></p>
+    
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+    <form action="{% url 'scan:router' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="target" value="{{ node.data.name }}" />
+        <button type="submit" class="btn btn-warning"><i class="icon-refresh icon-white"></i> Scan Router</button>
+    </form>
+    
 {% endif %}
 {% include "noclook/detail/includes/depend_include.html" %}
 <div class="section">

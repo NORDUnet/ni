@@ -13,7 +13,13 @@
     <form action="{% url 'scan:host' %}" method="post" class="form-inline">
         {% csrf_token %}
             <input type="text" placeholder="IP or hostname" name="data" id="id_data" />
-            <input type="submit" class="btn btn-primary" value="Scan" />
+            <input type="submit" class="btn btn-primary" value="Scan host" />
+    </form>
+
+    <form action="{% url 'scan:router' %}" method="post" class="form-inline" style="margin-top: 8px;">
+        {% csrf_token %}
+            <input type="text" placeholder="Router hostname" name="target" id="id_router_target" />
+            <input type="submit" class="btn btn-default" value="Scan router" />
     </form>
 
     <table class="table table-condensed table-striped table-hover compact" data-order="[[3, &quot;desc&quot;]]" data-tablesort>
