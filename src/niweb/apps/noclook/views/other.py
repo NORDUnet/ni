@@ -355,7 +355,7 @@ def gmaps_sites(request):
 @login_required
 def gmaps_optical_nodes(request):
     """
-    Return a json object with dicts of optical node and cables.
+    Return a json object with dicts of optical nodes and optical links.
     {
     nodes: [
         {
@@ -373,19 +373,13 @@ def gmaps_optical_nodes(request):
         }
     ]
     """
-    # Cypher query to get all cables with cable type fiber that are connected
-    # to two optical node.
+    # Cypher query to get all optical links that connect optical nodes
     q = """
-        MATCH (cable:Cable)
-        WHERE cable.cable_type = "Dark Fiber"
-        MATCH (cable)-[Connected_to]->(port)
-        WITH cable, port
-        MATCH (port)<-[:Has*0..]-(equipment)
-        WHERE (equipment:Optical_Node) AND NOT equipment.type =~ "(?i).*tss.*"
-        WITH cable, port, equipment
-        MATCH p2=(equipment)-[:Located_in]->()<-[:Has*0..]-(loc)
+        MATCH (link:Optical_Link)-[:Depends_on]->(port:Port)<-[:Has]-(equipment:Optical_Node)
+        WITH link, equipment
+        MATCH (equipment)-[:Located_in]->()<-[:Has*0..]-(loc)
         WHERE (loc:Site)
-        RETURN cable, equipment, loc
+        RETURN link, equipment, loc
         """
     result = nc.query_to_list(nc.graphdb.manager, q)
     nodes = {}
@@ -402,15 +396,15 @@ def gmaps_optical_nodes(request):
             'lat': float(str(item['loc'].get('latitude', 0)))
         }
         edge = {
-            'name': item['cable']['name'],
-            'url': helpers.get_node_url(item['cable']['handle_id']),
+            'name': item['link']['name'],
+            'url': helpers.get_node_url(item['link']['handle_id']),
             'end_points': [coords]
         }
         nodes[item['equipment']['name']] = node
-        if item['cable']['name'] in edges:
-            edges[item['cable']['name']]['end_points'].append(coords)
+        if item['link']['name'] in edges:
+            edges[item['link']['name']]['end_points'].append(coords)
         else:
-            edges[item['cable']['name']] = edge
+            edges[item['link']['name']] = edge
     response = HttpResponse(content_type='application/json')
     json.dump({'nodes': list(nodes.values()), 'edges': list(edges.values())}, response)
     return response
