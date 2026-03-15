@@ -11,7 +11,7 @@
     <title>NOCLook Google Maps</title>
 {% load noclook_tags %}
 <script type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
-<script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&key={{ maps_api_key }}" type="text/javascript"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&libraries=geometry&key={{ maps_api_key }}" type="text/javascript"></script>
 <script type="text/javascript">
     function initialize() {
         var latlng = new google.maps.LatLng(59, 5);
@@ -24,13 +24,17 @@
         load_content(map)
     }
     function load_content(map) {
+        var allMarkers = [];
+        var allLabels = [];
+        
         $.getJSON('/gmaps/{{ slug }}.json', function(json) {
-            json.nodes.forEach(function(node) {
+            json.nodes.forEach(function(node, index) {
                 addMarker(
                         node.lat,
                         node.lng,
                         node.name,
-                        node.url
+                        node.url,
+                        index
                 );
             });
             json.edges.forEach(function(edge) {
@@ -48,26 +52,155 @@
                 }
             });
 
-            function addMarker(lat,lng,label,url){
+            function addMarker(lat,lng,label,url,index){
                 var latlng = new google.maps.LatLng(lat,lng);
 
                 var infowindow = new google.maps.InfoWindow({
-                    content: "<a href=\"" + url + "\">" + label + "</a>"
+                    content: "<div style='padding: 2px 4px; font-size: 12px;'><a href='" + url + "' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>" + label + "</a></div>",
+                    disableAutoPan: true
+                });
+                
+                // Hide close button when opened
+                google.maps.event.addListener(infowindow, 'domready', function() {
+                    setTimeout(function() {
+                        var closeButtons = document.querySelectorAll('.gm-ui-hover-effect');
+                        closeButtons.forEach(function(btn) {
+                            btn.style.display = 'none';
+                        });
+                    }, 10);
                 });
 
                 var marker = new google.maps.Marker({
                     position: latlng,
-                    map: map
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 4,
+                        fillColor: "#FF0000",
+                        fillOpacity: 0.8,
+                        strokeColor: "#CC0000",
+                        strokeWeight: 1
+                    }
+                });
+                
+                allMarkers.push(marker);
+
+                // Calculate offset based on nearby markers - use alternating positions
+                var nearbyCount = 0;
+                var xOffset = 8;
+                var yOffset = -6;
+                
+                for (var i = 0; i < index; i++) {
+                    var otherMarker = allMarkers[i];
+                    var distance = google.maps.geometry.spherical.computeDistanceBetween(
+                        marker.getPosition(), 
+                        otherMarker.getPosition()
+                    );
+                    // If markers are very close (less than 500m), offset the label
+                    if (distance < 500) {
+                        nearbyCount++;
+                        // Alternate positions: right, below, left, above, then stack
+                        switch(nearbyCount % 4) {
+                            case 0: // right
+                                xOffset = 8;
+                                yOffset = -6 + Math.floor(nearbyCount/4) * 20;
+                                break;
+                            case 1: // below
+                                xOffset = 8;
+                                yOffset = 10 + Math.floor(nearbyCount/4) * 20;
+                                break;
+                            case 2: // left-below
+                                xOffset = -80;
+                                yOffset = 10 + Math.floor(nearbyCount/4) * 20;
+                                break;
+                            case 3: // right-above
+                                xOffset = 8;
+                                yOffset = -22 - Math.floor(nearbyCount/4) * 20;
+                                break;
+                        }
+                    }
+                }
+
+                // Create a custom label overlay
+                var labelOverlay = new google.maps.OverlayView();
+                labelOverlay.onAdd = function() {
+                    var div = document.createElement('div');
+                    div.style.position = 'absolute';
+                    div.style.display = 'none';
+                    div.style.pointerEvents = 'none';
+                    div.innerHTML = '<div style="background: rgba(255,255,255,0.95); padding: 3px 5px; border: 1px solid #333; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 4px rgba(0,0,0,0.4);">' + label + '</div>';
+                    
+                    var panes = this.getPanes();
+                    panes.overlayLayer.appendChild(div);
+                    this.div = div;
+                };
+                
+                labelOverlay.draw = function() {
+                    var projection = this.getProjection();
+                    var position = projection.fromLatLngToDivPixel(marker.getPosition());
+                    var div = this.div;
+                    div.style.left = (position.x + xOffset) + 'px';
+                    div.style.top = (position.y + yOffset) + 'px';
+                };
+                
+                labelOverlay.onRemove = function() {
+                    if (this.div) {
+                        this.div.parentNode.removeChild(this.div);
+                        this.div = null;
+                    }
+                };
+                
+                labelOverlay.setMap(map);
+                allLabels.push(labelOverlay);
+
+                // Show/hide labels based on zoom level
+                function updateLabelVisibility() {
+                    var zoom = map.getZoom();
+                    if (zoom >= 8) {
+                        labelOverlay.div.style.display = 'block';
+                    } else {
+                        labelOverlay.div.style.display = 'none';
+                    }
+                }
+
+                // Update visibility on zoom change
+                google.maps.event.addListener(map, 'zoom_changed', updateLabelVisibility);
+                google.maps.event.addListener(map, 'bounds_changed', function() {
+                    if (labelOverlay.div) {
+                        labelOverlay.draw();
+                    }
+                });
+                
+                // Set initial visibility
+                setTimeout(updateLabelVisibility, 100);
+
+                google.maps.event.addListener(marker, 'mouseover', function() {
+                    infowindow.open(map, marker);
                 });
 
-                google.maps.event.addListener(marker, 'click', function() {
-                    infowindow.open(map, marker);
+                google.maps.event.addListener(marker, 'mouseout', function() {
+                    infowindow.close();
+                });
+
+                google.maps.event.addListener(marker, 'dblclick', function() {
+                    window.location.href = url;
                 });
             }
 
             function addLine(start_lat, start_lng, end_lat, end_lng, label, url){
                 var infowindow = new google.maps.InfoWindow({
-                    content: "Cable:<br /><a href=\"" + url + "\">" + label + "</a>"
+                    content: "<div style='padding: 2px 4px; font-size: 12px;'><span style='color: #666; font-size: 11px;'>Cable:</span><br/><a href='" + url + "' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>" + label + "</a></div>",
+                    disableAutoPan: true
+                });
+                
+                // Hide close button when opened
+                google.maps.event.addListener(infowindow, 'domready', function() {
+                    setTimeout(function() {
+                        var closeButtons = document.querySelectorAll('.gm-ui-hover-effect');
+                        closeButtons.forEach(function(btn) {
+                            btn.style.display = 'none';
+                        });
+                    }, 10);
                 });
 
                 var path = [
@@ -84,16 +217,18 @@
                 });
 
                 google.maps.event.addListener(line, 'mouseover', function(event) {
-                    line.setOptions({strokeWeight: 4, strokeOpacity: 0.8})
+                    line.setOptions({strokeWeight: 4, strokeOpacity: 0.8});
+                    infowindow.open(map);
+                    infowindow.setPosition(event.latLng);
                 });
 
-                google.maps.event.addListener(line, 'click', function(event) {
-                    infowindow.open(map);
-                    infowindow.setPosition(event.latLng)
+                google.maps.event.addListener(line, 'dblclick', function(event) {
+                    window.location.href = url;
                 });
 
                 google.maps.event.addListener(line, 'mouseout', function() {
-                    line.setOptions({strokeWeight: 2, strokeOpacity: 0.5})
+                    line.setOptions({strokeWeight: 2, strokeOpacity: 0.5});
+                    infowindow.close();
                 });
             }
         });
