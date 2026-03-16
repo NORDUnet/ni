@@ -416,13 +416,20 @@ def gmaps_optical_paths(request, node_handle_id):
     Return optical paths that include the specified optical node.
     Returns JSON with path information and all the nodes in each path sequence.
     Only returns paths with operational_state = "In service".
+    Includes paths where the node is an endpoint or a transit node.
     """
     q = """
         MATCH (node:Optical_Node)
         WHERE node.handle_id = $handle_id
-        MATCH (node)-[:Has]->(port:Port)<-[:Depends_on]-(path:Optical_Path)
+        
+        // Find all paths that pass through this node via optical links
+        MATCH (node)-[:Has]->(port:Port)<-[:Depends_on]-(link:Optical_Link)
+        <-[:Depends_on]-(oms:Optical_Multiplex_Section)<-[:Depends_on]-(path:Optical_Path)
         WHERE path.operational_state = "In service"
-        WITH path
+        
+        WITH DISTINCT path
+        
+        // Get all nodes in each path
         MATCH (path)-[:Depends_on]->(oms:Optical_Multiplex_Section)
         -[:Depends_on]->(link:Optical_Link)
         -[:Depends_on]->(p:Port)<-[:Has]-(on:Optical_Node)

@@ -18,6 +18,41 @@
         box-sizing: border-box;
       }
       #path_panel h3 { margin-top: 0; }
+      .path-section {
+        margin-bottom: 15px;
+      }
+      .path-section-header {
+        background: #e8e8e8;
+        padding: 8px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+      }
+      .path-section-header:hover {
+        background: #d8d8d8;
+      }
+      .path-section-header .toggle-icon {
+        transition: transform 0.2s;
+      }
+      .path-section-header.collapsed .toggle-icon {
+        transform: rotate(-90deg);
+      }
+      .path-section-content {
+        margin-top: 8px;
+        display: block;
+      }
+      .path-section-content.collapsed {
+        display: none;
+      }
+      .path-count {
+        font-size: 0.9em;
+        color: #666;
+        font-weight: normal;
+      }
       .path-item {
         margin-bottom: 10px;
         padding: 8px;
@@ -123,11 +158,16 @@
                                 // Mark as selected
                                 selectedPaths[pathKey] = true;
                                 
-                                // Add to UI
+                                // Add to UI - wrap in a preloaded section
                                 var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
                                 var pathUrl = '/optical-path/' + targetPath.id + '/';
                                 
-                                var pathListHtml = '<div class="path-item">';
+                                var pathListHtml = '<div class="path-section">';
+                                pathListHtml += '<div class="path-section-header">';
+                                pathListHtml += '<span>Preloaded Path <span class="path-count">(1)</span></span>';
+                                pathListHtml += '</div>';
+                                pathListHtml += '<div class="path-section-content">';
+                                pathListHtml += '<div class="path-item">';
                                 pathListHtml += '<label>';
                                 pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" checked>';
                                 pathListHtml += colorIndicator;
@@ -138,6 +178,7 @@
                                 pathListHtml += '<br><small>State: ' + targetPath.operational_state + '</small>';
                                 pathListHtml += '</label>';
                                 pathListHtml += '</div>';
+                                pathListHtml += '</div></div>';
                                 
                                 $('#path_list').append(pathListHtml);
                                 
@@ -211,57 +252,145 @@
     }
     
     function displayOpticalPaths(paths, nodeHandleId) {
-        // Remove unchecked paths from previous selection
+        // Save checked state and remove unchecked paths from availablePaths
         $('.path-item').each(function() {
             var checkbox = $(this).find('.path-checkbox');
             var pathKey = checkbox.data('path-key');
             
-            // If the path is not currently selected/checked, remove it
+            // If the path is not currently selected/checked, remove it from availablePaths
             if (!checkbox.is(':checked')) {
-                $(this).remove();
                 delete availablePaths[pathKey];
             }
         });
         
-        var pathListHtml = '';
+        // Clear all path sections to rebuild them
+        $('.path-section').remove();
         
+        // Add new paths to availablePaths
         paths.forEach(function(path) {
-            // Use just the path ID as the key to avoid duplicates
             var pathKey = path.id.toString();
-            
-            // Skip if this path is already displayed (checked or not)
-            if ($('.path-checkbox[data-path-key="' + pathKey + '"]').length > 0) {
-                return; // Path already in the list, skip it
-            }
-            
-            // Store path data if not already stored
             if (!availablePaths[pathKey]) {
                 availablePaths[pathKey] = path;
                 availablePaths[pathKey].color = getNextColor();
             }
-            
-            var checked = selectedPaths[pathKey] ? 'checked' : '';
-            var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
-            
-            // Construct the optical path URL
-            var pathUrl = '/optical-path/' + path.id + '/';
-            
-            pathListHtml += '<div class="path-item">';
-            pathListHtml += '<label>';
-            pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" ' + checked + '>';
-            pathListHtml += colorIndicator;
-            pathListHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + path.name + '</a>';
-            if (path.description) {
-                pathListHtml += '<br><small>' + path.description + '</small>';
-            }
-            pathListHtml += '<br><small>State: ' + path.operational_state + '</small>';
-            pathListHtml += '</label>';
-            pathListHtml += '</div>';
         });
         
-        if (pathListHtml) {
-            $('#path_list').append(pathListHtml);
+        // Now categorize ALL paths in availablePaths based on current node position
+        var ingressPaths = [];
+        var egressPaths = [];
+        var transitPaths = [];
+        
+        for (var pathKey in availablePaths) {
+            if (!availablePaths.hasOwnProperty(pathKey)) continue;
+            
+            var path = availablePaths[pathKey];
+            
+            // Determine path type based on node position
+            if (path.nodes && path.nodes.length > 0) {
+                var currentNodeId = nodeHandleId.toString();
+                
+                // Check if current node is in the path
+                var nodeIndex = -1;
+                for (var i = 0; i < path.nodes.length; i++) {
+                    if (path.nodes[i].handle_id.toString() === currentNodeId) {
+                        nodeIndex = i;
+                        break;
+                    }
+                }
+                
+                if (nodeIndex === -1) {
+                    // Node not in path, skip this path
+                    continue;
+                } else if (nodeIndex === 0) {
+                    // First node - ingress
+                    ingressPaths.push(path);
+                } else if (nodeIndex === path.nodes.length - 1) {
+                    // Last node - egress
+                    egressPaths.push(path);
+                } else {
+                    // Middle node - transit
+                    transitPaths.push(path);
+                }
+            }
         }
+        
+        // Build HTML for each section
+        var html = '';
+        
+        // Helper function to build path item HTML
+        function buildPathItem(path) {
+            var pathKey = path.id.toString();
+            var checked = selectedPaths[pathKey] ? 'checked' : '';
+            var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
+            var pathUrl = '/optical-path/' + path.id + '/';
+            
+            var itemHtml = '<div class="path-item">';
+            itemHtml += '<label>';
+            itemHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" ' + checked + '>';
+            itemHtml += colorIndicator;
+            itemHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + path.name + '</a>';
+            if (path.description) {
+                itemHtml += '<br><small>' + path.description + '</small>';
+            }
+            itemHtml += '<br><small>State: ' + path.operational_state + '</small>';
+            itemHtml += '</label>';
+            itemHtml += '</div>';
+            return itemHtml;
+        }
+        
+        // Ingress section
+        if (ingressPaths.length > 0) {
+            html += '<div class="path-section">';
+            html += '<div class="path-section-header" onclick="toggleSection(\'ingress\')">';
+            html += '<span>Ingress <span class="path-count">(' + ingressPaths.length + ')</span></span>';
+            html += '<span class="toggle-icon">▼</span>';
+            html += '</div>';
+            html += '<div class="path-section-content" id="ingress-section">';
+            ingressPaths.forEach(function(path) {
+                html += buildPathItem(path);
+            });
+            html += '</div></div>';
+        }
+        
+        // Egress section
+        if (egressPaths.length > 0) {
+            html += '<div class="path-section">';
+            html += '<div class="path-section-header" onclick="toggleSection(\'egress\')">';
+            html += '<span>Egress <span class="path-count">(' + egressPaths.length + ')</span></span>';
+            html += '<span class="toggle-icon">▼</span>';
+            html += '</div>';
+            html += '<div class="path-section-content" id="egress-section">';
+            egressPaths.forEach(function(path) {
+                html += buildPathItem(path);
+            });
+            html += '</div></div>';
+        }
+        
+        // Transit section (collapsed by default)
+        if (transitPaths.length > 0) {
+            html += '<div class="path-section">';
+            html += '<div class="path-section-header collapsed" onclick="toggleSection(\'transit\')">';
+            html += '<span>Transit <span class="path-count">(' + transitPaths.length + ')</span></span>';
+            html += '<span class="toggle-icon">▼</span>';
+            html += '</div>';
+            html += '<div class="path-section-content collapsed" id="transit-section">';
+            transitPaths.forEach(function(path) {
+                html += buildPathItem(path);
+            });
+            html += '</div></div>';
+        }
+        
+        if (html) {
+            $('#path_list').append(html);
+        }
+    }
+    
+    function toggleSection(sectionId) {
+        var header = event.currentTarget;
+        var content = $('#' + sectionId + '-section');
+        
+        $(header).toggleClass('collapsed');
+        content.toggleClass('collapsed');
     }
     
    function drawOpticalPath(pathData, pathKey) {
