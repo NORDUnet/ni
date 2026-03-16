@@ -6,13 +6,55 @@
     <style type="text/css">
       html { height: 100% }
       body { height: 100%; margin: 0; padding: 0 }
-      #map_canvas { height: 100% }
+      #map_canvas { height: 100%; width: calc(100% - 300px); float: left; }
+      #path_panel { 
+        width: 300px;
+        height: 100%;
+        float: right;
+        background: white;
+        border-left: 2px solid #ccc;
+        overflow-y: auto;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      #path_panel h3 { margin-top: 0; }
+      .path-item {
+        margin-bottom: 10px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #f9f9f9;
+      }
+      .path-item label { cursor: pointer; display: block; }
+      .path-item input[type="checkbox"] { margin-right: 8px; }
+      .path-color-indicator {
+        display: inline-block;
+        width: 20px;
+        height: 3px;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+      .node-selected-label {
+        font-weight: bold;
+        color: #0066cc;
+        margin-bottom: 10px;
+      }
     </style>
     <title>NOCLook Google Maps</title>
 {% load noclook_tags %}
 <script type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
 <script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&libraries=geometry&key={{ maps_api_key }}" type="text/javascript"></script>
 <script type="text/javascript">
+    var map;
+    var allMarkers = [];
+    var allLabels = [];
+    var selectedNode = null;
+    var availablePaths = {};
+    var selectedPaths = {};
+    var drawnPaths = [];
+    var pathColors = ['#0066CC', '#CC6600', '#009900', '#CC0066', '#6600CC', '#00CC66', '#CCCC00', '#00CCCC'];
+    var colorIndex = 0;
+    
     function initialize() {
         var latlng = new google.maps.LatLng(59, 5);
         var myOptions = {
@@ -20,12 +62,202 @@
             center: latlng,
             mapTypeId: google.maps.MapTypeId.ROADMAP
         };
-        var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-        load_content(map)
+        map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+        
+        // Redraw paths when zoom level changes
+        google.maps.event.addListener(map, 'zoom_changed', function() {
+            redrawAllPaths();
+        });
+        
+        load_content(map);
     }
+    
+    function redrawAllPaths() {
+        // Remove all current path polylines
+        drawnPaths.forEach(function(item) {
+            item.polyline.setMap(null);
+        });
+        drawnPaths = [];
+        
+        // Redraw all selected paths with new zoom-based offsets
+        for (var pathKey in selectedPaths) {
+            if (selectedPaths.hasOwnProperty(pathKey) && availablePaths[pathKey]) {
+                drawOpticalPath(availablePaths[pathKey], pathKey);
+            }
+        }
+    }
+    
+    function getNextColor() {
+        var color = pathColors[colorIndex % pathColors.length];
+        colorIndex++;
+        return color;
+    }
+    
+    function selectNode(nodeHandleId, nodeName, marker) {
+        // Update selected node marker color
+        if (selectedNode && selectedNode.marker) {
+            selectedNode.marker.setIcon({
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 4,
+                fillColor: "#FF0000",
+                fillOpacity: 0.8,
+                strokeColor: "#CC0000",
+                strokeWeight: 1
+            });
+        }
+        
+        selectedNode = {handle_id: nodeHandleId, name: nodeName, marker: marker};
+        marker.setIcon({
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 6,
+            fillColor: "#0066CC",
+            fillOpacity: 1.0,
+            strokeColor: "#003366",
+            strokeWeight: 2
+        });
+        
+        $('#selected_node_name').text(nodeName);
+        
+        // Fetch optical paths for this node
+        $.getJSON('/gmaps/optical-paths/' + nodeHandleId + '.json', function(data) {
+            displayOpticalPaths(data.paths, nodeHandleId);
+        });
+    }
+    
+    function displayOpticalPaths(paths, nodeHandleId) {
+        // Remove unchecked paths from previous selection
+        $('.path-item').each(function() {
+            var checkbox = $(this).find('.path-checkbox');
+            var pathKey = checkbox.data('path-key');
+            
+            // If the path is not currently selected/checked, remove it
+            if (!checkbox.is(':checked')) {
+                $(this).remove();
+                delete availablePaths[pathKey];
+            }
+        });
+        
+        var pathListHtml = '';
+        
+        paths.forEach(function(path) {
+            var pathKey = nodeHandleId + '_' + path.id;
+            
+            // Store path data if not already stored
+            if (!availablePaths[pathKey]) {
+                availablePaths[pathKey] = path;
+                availablePaths[pathKey].color = getNextColor();
+            }
+            
+            var checked = selectedPaths[pathKey] ? 'checked' : '';
+            var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
+            
+            pathListHtml += '<div class="path-item">';
+            pathListHtml += '<label>';
+            pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" ' + checked + '>';
+            pathListHtml += colorIndicator;
+            pathListHtml += '<strong>' + path.name + '</strong>';
+            if (path.description) {
+                pathListHtml += '<br><small>' + path.description + '</small>';
+            }
+            pathListHtml += '<br><small>State: ' + path.operational_state + '</small>';
+            pathListHtml += '</label>';
+            pathListHtml += '</div>';
+        });
+        
+        $('#path_list').append(pathListHtml);
+        
+        // Add checkbox handlers
+        $('.path-checkbox').on('change', function() {
+            var pathKey = $(this).data('path-key');
+            if ($(this).is(':checked')) {
+                selectedPaths[pathKey] = true;
+                drawOpticalPath(availablePaths[pathKey], pathKey);
+            } else {
+                delete selectedPaths[pathKey];
+                removeOpticalPath(pathKey);
+            }
+        });
+    }
+    
+   function drawOpticalPath(pathData, pathKey) {
+        pathKey = pathKey || (pathData.handle_id || pathData.id);
+        var nodes = pathData.nodes;
+        
+        if (nodes.length < 2) return;
+        
+        for (var i = 0; i < nodes.length - 1; i++) {
+            var start = nodes[i];
+            var end = nodes[i + 1];
+            
+            var startLatLng = new google.maps.LatLng(start.lat, start.lng);
+            var endLatLng = new google.maps.LatLng(end.lat, end.lng);
+            
+            // Calculate offset for this specific segment
+            var offset = calculateSegmentOffset(start.handle_id, end.handle_id, pathKey);
+            
+            // Apply offset perpendicular to the line (parallel offset for both points)
+            if (offset !== 0) {
+                var heading = google.maps.geometry.spherical.computeHeading(startLatLng, endLatLng);
+                var perpendicular = heading + 90;
+                startLatLng = google.maps.geometry.spherical.computeOffset(startLatLng, offset, perpendicular);
+                endLatLng = google.maps.geometry.spherical.computeOffset(endLatLng, offset, perpendicular);
+            }
+            
+            var path = new google.maps.Polyline({
+                path: [startLatLng, endLatLng],
+                strokeWeight: 5,
+                strokeColor: pathData.color,
+                strokeOpacity: 0.9,
+                map: map
+            });
+            
+            drawnPaths.push({
+                pathKey: pathKey, 
+                polyline: path,
+                startNodeId: start.handle_id,
+                endNodeId: end.handle_id
+            });
+        }
+    }
+    
+    function calculateSegmentOffset(startNodeId, endNodeId, currentPathKey) {
+        // Count how many paths already use this segment (in either direction)
+        var segmentPaths = drawnPaths.filter(function(p) {
+            return (p.startNodeId === startNodeId && p.endNodeId === endNodeId) ||
+                   (p.startNodeId === endNodeId && p.endNodeId === startNodeId);
+        });
+        
+        // Calculate offset based on position among parallel paths
+        var pathIndex = segmentPaths.length;
+        
+        // Calculate offset to ensure lines never overlap
+        // Line width is 5 pixels, we need at least 6 pixels separation for visibility
+        var currentZoom = map.getZoom();
+        var pixelSeparation = 6; // pixels between line centers
+        
+        // Calculate meters per pixel at current zoom level (at equator, approximate for latitude ~60)
+        var metersPerPixel = 156543.03392 * Math.cos(60 * Math.PI / 180) / Math.pow(2, currentZoom);
+        var offsetDistance = pixelSeparation * metersPerPixel;
+        
+        // Distribute paths evenly on both sides of the center line
+        if (pathIndex === 0) return 0;
+        var side = (pathIndex % 2 === 0) ? 1 : -1;
+        var magnitude = Math.ceil(pathIndex / 2);
+        
+        return side * magnitude * offsetDistance;
+    }
+    
+    function removeOpticalPath(pathKey) {
+        drawnPaths = drawnPaths.filter(function(item) {
+            if (item.pathKey == pathKey) {
+                item.polyline.setMap(null);
+                return false;
+            }
+            return true;
+        });
+    }
+    
     function load_content(map) {
-        var allMarkers = [];
-        var allLabels = [];
         
         $.getJSON('/gmaps/{{ slug }}.json', function(json) {
             json.nodes.forEach(function(node, index) {
@@ -82,6 +314,10 @@
                         strokeWeight: 1
                     }
                 });
+                
+                // Store metadata on marker
+                marker.nodeUrl = url;
+                marker.nodeName = label;
                 
                 allMarkers.push(marker);
 
@@ -182,6 +418,14 @@
                     infowindow.close();
                 });
 
+                google.maps.event.addListener(marker, 'click', function() {
+                    // Extract handle_id from URL
+                    var handleId = url.match(/\/(\d+)\/?$/);
+                    if (handleId) {
+                        selectNode(handleId[1], label, marker);
+                    }
+                });
+
                 google.maps.event.addListener(marker, 'dblclick', function() {
                     window.location.href = url;
                 });
@@ -236,6 +480,13 @@
 </script>
 </head>
 <body onload="initialize()">
-  <div id="map_canvas" style="width:100%; height:100%"></div>
+  <div id="map_canvas"></div>
+  <div id="path_panel">
+    <h3>Optical Path Selector</h3>
+    <div class="node-selected-label">
+      Selected Node: <span id="selected_node_name">None</span>
+    </div>
+    <div id="path_list"></div>
+  </div>
 </body>
 </html>

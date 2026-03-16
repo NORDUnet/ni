@@ -411,6 +411,122 @@ def gmaps_optical_nodes(request):
 
 
 @login_required
+def gmaps_optical_paths(request, node_handle_id):
+    """
+    Return optical paths that include the specified optical node.
+    Returns JSON with path information and all the nodes in each path sequence.
+    Only returns paths with operational_state = "In service".
+    """
+    q = """
+        MATCH (node:Optical_Node)
+        WHERE node.handle_id = $handle_id
+        MATCH (node)-[:Has]->(port:Port)<-[:Depends_on]-(path:Optical_Path)
+        WHERE path.operational_state = "In service"
+        WITH path
+        MATCH (path)-[:Depends_on]->(oms:Optical_Multiplex_Section)
+        -[:Depends_on]->(link:Optical_Link)
+        -[:Depends_on]->(p:Port)<-[:Has]-(on:Optical_Node)
+        WITH path, oms, link, on
+        MATCH (on)-[:Located_in]->()<-[:Has*0..]-(loc:Site)
+        WITH path, oms.name as oms_name, link.name as link_name, on, loc
+        ORDER BY oms_name, link_name
+        WITH path, collect({node: on, site: loc, oms: oms_name, link: link_name}) as all_nodes
+        RETURN path, all_nodes
+        """
+    result = nc.query_to_list(nc.graphdb.manager, q, handle_id=int(node_handle_id))
+    
+    paths = []
+    for item in result:
+        # Build ordered path using graph traversal
+        all_nodes_data = item['all_nodes']
+        
+        if not all_nodes_data:
+            continue
+        
+        # Build adjacency graph from links
+        # Each link connects exactly 2 nodes
+        adjacency = {}  # node_id -> list of (neighbor_id, link_name)
+        node_lookup = {}  # node_id -> node_data
+        
+        # Group nodes by link
+        links_dict = {}
+        for node_data in all_nodes_data:
+            link_name = node_data['link']
+            node_id = node_data['node']['handle_id']
+            
+            if link_name not in links_dict:
+                links_dict[link_name] = []
+            links_dict[link_name].append(node_data)
+            node_lookup[node_id] = node_data
+        
+        # Build adjacency list
+        for link_name, link_nodes in links_dict.items():
+            if len(link_nodes) == 2:
+                node1_id = link_nodes[0]['node']['handle_id']
+                node2_id = link_nodes[1]['node']['handle_id']
+                
+                if node1_id not in adjacency:
+                    adjacency[node1_id] = []
+                if node2_id not in adjacency:
+                    adjacency[node2_id] = []
+                
+                adjacency[node1_id].append((node2_id, link_name))
+                adjacency[node2_id].append((node1_id, link_name))
+        
+        # Find path endpoints (nodes with only 1 connection) or start from any node
+        endpoints = [nid for nid, neighbors in adjacency.items() if len(neighbors) == 1]
+        
+        if not endpoints:
+            # No clear endpoints, start from first node
+            start_node = list(adjacency.keys())[0] if adjacency else None
+        else:
+            # Start from one endpoint
+            start_node = endpoints[0]
+        
+        if not start_node:
+            continue
+        
+        # Traverse the path using DFS
+        ordered_nodes = []
+        visited = set()
+        
+        def dfs(node_id):
+            if node_id in visited:
+                return
+            visited.add(node_id)
+            ordered_nodes.append(node_lookup[node_id])
+            
+            # Visit unvisited neighbors
+            if node_id in adjacency:
+                for neighbor_id, _ in adjacency[node_id]:
+                    if neighbor_id not in visited:
+                        dfs(neighbor_id)
+        
+        dfs(start_node)
+        
+        path_nodes = []
+        for node_data in ordered_nodes:
+            path_nodes.append({
+                'name': node_data['node']['name'],
+                'handle_id': node_data['node']['handle_id'],
+                'lng': float(str(node_data['site'].get('longitude', 0))),
+                'lat': float(str(node_data['site'].get('latitude', 0)))
+            })
+        
+        paths.append({
+            'id': item['path']['handle_id'],
+            'name': item['path']['name'],
+            'description': item['path'].get('description', ''),
+            'operational_state': item['path'].get('operational_state', ''),
+            'nodes': path_nodes
+        })
+    
+    response = HttpResponse(content_type='application/json')
+    json.dump({'paths': paths}, response)
+    return response
+
+
+@login_required
 def qr_lookup(request, name):
     hits = list(nc.get_nodes_by_name(nc.graphdb.manager, name))
     if len(hits) == 1:

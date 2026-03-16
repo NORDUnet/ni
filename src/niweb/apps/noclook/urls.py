@@ -15,6 +15,7 @@ urlpatterns = [
     # Google maps views
     path('gmaps/<slug>.json', other.gmaps_json),
     path('gmaps/<slug>/', other.gmaps),
+    path('gmaps/optical-paths/<node_handle_id>.json', other.gmaps_optical_paths),
     # Get all
     # TODO: can it be switched to path instead
     # Or are they even used?, cannot find anything on getall and findall
