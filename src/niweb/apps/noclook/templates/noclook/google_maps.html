@@ -69,6 +69,18 @@
             redrawAllPaths();
         });
         
+        // Set up event delegation for path checkbox changes
+        $('#path_list').on('change', '.path-checkbox', function() {
+            var pathKey = $(this).data('path-key');
+            if ($(this).is(':checked')) {
+                selectedPaths[pathKey] = true;
+                drawOpticalPath(availablePaths[pathKey], pathKey);
+            } else {
+                delete selectedPaths[pathKey];
+                redrawAllPaths(); // Redraw all paths with correct spacing
+            }
+        });
+        
         load_content(map);
     }
     
@@ -140,7 +152,13 @@
         var pathListHtml = '';
         
         paths.forEach(function(path) {
-            var pathKey = nodeHandleId + '_' + path.id;
+            // Use just the path ID as the key to avoid duplicates
+            var pathKey = path.id.toString();
+            
+            // Skip if this path is already displayed (checked or not)
+            if ($('.path-checkbox[data-path-key="' + pathKey + '"]').length > 0) {
+                return; // Path already in the list, skip it
+            }
             
             // Store path data if not already stored
             if (!availablePaths[pathKey]) {
@@ -151,11 +169,14 @@
             var checked = selectedPaths[pathKey] ? 'checked' : '';
             var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
             
+            // Construct the optical path URL
+            var pathUrl = '/optical-path/' + path.id + '/';
+            
             pathListHtml += '<div class="path-item">';
             pathListHtml += '<label>';
             pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" ' + checked + '>';
             pathListHtml += colorIndicator;
-            pathListHtml += '<strong>' + path.name + '</strong>';
+            pathListHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + path.name + '</a>';
             if (path.description) {
                 pathListHtml += '<br><small>' + path.description + '</small>';
             }
@@ -164,19 +185,9 @@
             pathListHtml += '</div>';
         });
         
-        $('#path_list').append(pathListHtml);
-        
-        // Add checkbox handlers
-        $('.path-checkbox').on('change', function() {
-            var pathKey = $(this).data('path-key');
-            if ($(this).is(':checked')) {
-                selectedPaths[pathKey] = true;
-                drawOpticalPath(availablePaths[pathKey], pathKey);
-            } else {
-                delete selectedPaths[pathKey];
-                removeOpticalPath(pathKey);
-            }
-        });
+        if (pathListHtml) {
+            $('#path_list').append(pathListHtml);
+        }
     }
     
    function drawOpticalPath(pathData, pathKey) {
@@ -432,21 +443,6 @@
             }
 
             function addLine(start_lat, start_lng, end_lat, end_lng, label, url){
-                var infowindow = new google.maps.InfoWindow({
-                    content: "<div style='padding: 2px 4px; font-size: 12px;'><span style='color: #666; font-size: 11px;'>Optical Link:</span><br/><a href='" + url + "' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>" + label + "</a></div>",
-                    disableAutoPan: true
-                });
-                
-                // Hide close button when opened
-                google.maps.event.addListener(infowindow, 'domready', function() {
-                    setTimeout(function() {
-                        var closeButtons = document.querySelectorAll('.gm-ui-hover-effect');
-                        closeButtons.forEach(function(btn) {
-                            btn.style.display = 'none';
-                        });
-                    }, 10);
-                });
-
                 var path = [
                     new google.maps.LatLng(start_lat, start_lng),
                     new google.maps.LatLng(end_lat, end_lng)
@@ -460,19 +456,8 @@
                     map: map
                 });
 
-                google.maps.event.addListener(line, 'mouseover', function(event) {
-                    line.setOptions({strokeWeight: 4, strokeOpacity: 0.8});
-                    infowindow.open(map);
-                    infowindow.setPosition(event.latLng);
-                });
-
                 google.maps.event.addListener(line, 'dblclick', function(event) {
                     window.location.href = url;
-                });
-
-                google.maps.event.addListener(line, 'mouseout', function() {
-                    line.setOptions({strokeWeight: 2, strokeOpacity: 0.5});
-                    infowindow.close();
                 });
             }
         });
