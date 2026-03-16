@@ -54,6 +54,14 @@
     var drawnPaths = [];
     var pathColors = ['#0066CC', '#CC6600', '#009900', '#CC0066', '#6600CC', '#00CC66', '#CCCC00', '#00CCCC'];
     var colorIndex = 0;
+    var pathToPreload = null; // Store path ID to preload after map loads
+    
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
     
     function initialize() {
         var latlng = new google.maps.LatLng(59, 5);
@@ -81,7 +89,73 @@
             }
         });
         
+        // Check if there's a path parameter to preselect
+        pathToPreload = getUrlParameter('path');
+        
         load_content(map);
+    }
+    
+    function preloadOpticalPath(pathHandleId) {
+        // Try to find which optical node has this path by checking all markers
+        var foundPath = false;
+        var checkPromises = [];
+        
+        allMarkers.forEach(function(marker) {
+            // Extract handle_id from marker URL
+            var handleId = marker.nodeUrl.match(/\/(\d+)\/?$/);
+            if (handleId) {
+                var promise = $.getJSON('/gmaps/optical-paths/' + handleId[1] + '.json')
+                    .done(function(data) {
+                        if (!foundPath && data.paths) {
+                            // Look for our target path
+                            var targetPath = data.paths.find(function(p) {
+                                return p.id.toString() === pathHandleId;
+                            });
+                            
+                            if (targetPath) {
+                                foundPath = true;
+                                var pathKey = pathHandleId;
+                                
+                                // Add to available paths
+                                availablePaths[pathKey] = targetPath;
+                                availablePaths[pathKey].color = getNextColor();
+                                
+                                // Mark as selected
+                                selectedPaths[pathKey] = true;
+                                
+                                // Add to UI
+                                var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
+                                var pathUrl = '/optical-path/' + targetPath.id + '/';
+                                
+                                var pathListHtml = '<div class="path-item">';
+                                pathListHtml += '<label>';
+                                pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" checked>';
+                                pathListHtml += colorIndicator;
+                                pathListHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + targetPath.name + '</a>';
+                                if (targetPath.description) {
+                                    pathListHtml += '<br><small>' + targetPath.description + '</small>';
+                                }
+                                pathListHtml += '<br><small>State: ' + targetPath.operational_state + '</small>';
+                                pathListHtml += '</label>';
+                                pathListHtml += '</div>';
+                                
+                                $('#path_list').append(pathListHtml);
+                                
+                                // Draw the path on the map
+                                drawOpticalPath(targetPath, pathKey);
+                                
+                                // Center map on the first node of the path
+                                if (targetPath.nodes && targetPath.nodes.length > 0) {
+                                    var firstNode = targetPath.nodes[0];
+                                    map.setCenter(new google.maps.LatLng(firstNode.lat, firstNode.lng));
+                                    map.setZoom(7);
+                                }
+                            }
+                        }
+                    });
+                checkPromises.push(promise);
+            }
+        });
     }
     
     function redrawAllPaths() {
@@ -459,6 +533,11 @@
                 google.maps.event.addListener(line, 'dblclick', function(event) {
                     window.location.href = url;
                 });
+            }
+            
+            // After map content is fully loaded, check if we need to preload a specific path
+            if (pathToPreload) {
+                preloadOpticalPath(pathToPreload);
             }
         });
     }

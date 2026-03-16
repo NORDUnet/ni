@@ -67,5 +67,6 @@
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
+<a href="/gmaps/optical-nodes/?path={{ node.data.handle_id }}" class="btn btn-primary"><i class="icon-map-marker icon-white"></i> Show in Optical Node Map</a>
 {% include "noclook/detail/includes/depend_include.html" %}
 {% endblock %}
