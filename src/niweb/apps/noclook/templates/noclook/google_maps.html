@@ -276,8 +276,7 @@
         });
         
         // Now categorize ALL paths in availablePaths based on current node position
-        var ingressPaths = [];
-        var egressPaths = [];
+        var endpointPaths = [];
         var transitPaths = [];
         
         for (var pathKey in availablePaths) {
@@ -301,12 +300,9 @@
                 if (nodeIndex === -1) {
                     // Node not in path, skip this path
                     continue;
-                } else if (nodeIndex === 0) {
-                    // First node - ingress
-                    ingressPaths.push(path);
-                } else if (nodeIndex === path.nodes.length - 1) {
-                    // Last node - egress
-                    egressPaths.push(path);
+                } else if (nodeIndex === 0 || nodeIndex === path.nodes.length - 1) {
+                    // First or last node - endpoint
+                    endpointPaths.push(path);
                 } else {
                     // Middle node - transit
                     transitPaths.push(path);
@@ -338,29 +334,15 @@
             return itemHtml;
         }
         
-        // Ingress section
-        if (ingressPaths.length > 0) {
+        // Endpoint section
+        if (endpointPaths.length > 0) {
             html += '<div class="path-section">';
-            html += '<div class="path-section-header" onclick="toggleSection(\'ingress\')">';
-            html += '<span>Ingress <span class="path-count">(' + ingressPaths.length + ')</span></span>';
+            html += '<div class="path-section-header" onclick="toggleSection(\'endpoint\')">';
+            html += '<span>Endpoint <span class="path-count">(' + endpointPaths.length + ')</span></span>';
             html += '<span class="toggle-icon">▼</span>';
             html += '</div>';
-            html += '<div class="path-section-content" id="ingress-section">';
-            ingressPaths.forEach(function(path) {
-                html += buildPathItem(path);
-            });
-            html += '</div></div>';
-        }
-        
-        // Egress section
-        if (egressPaths.length > 0) {
-            html += '<div class="path-section">';
-            html += '<div class="path-section-header" onclick="toggleSection(\'egress\')">';
-            html += '<span>Egress <span class="path-count">(' + egressPaths.length + ')</span></span>';
-            html += '<span class="toggle-icon">▼</span>';
-            html += '</div>';
-            html += '<div class="path-section-content" id="egress-section">';
-            egressPaths.forEach(function(path) {
+            html += '<div class="path-section-content" id="endpoint-section">';
+            endpointPaths.forEach(function(path) {
                 html += buildPathItem(path);
             });
             html += '</div></div>';
