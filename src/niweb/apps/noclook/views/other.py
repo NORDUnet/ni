@@ -11,6 +11,7 @@ from re import escape as re_escape
 import json
 import zipfile
 from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
@@ -625,9 +626,9 @@ def optical_path_kmz(request, handle_id):
     kml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
     kml += '<Document>\n'
-    kml += f'<name>{path_name}</name>\n'
+    kml += f'<name>{xml_escape(path_name)}</name>\n'
     if path_description:
-        kml += f'<description>{path_description}</description>\n'
+        kml += f'<description>{xml_escape(path_description)}</description>\n'
     
     # Add line style
     kml += '<Style id="pathLine">\n'
@@ -641,11 +642,12 @@ def optical_path_kmz(request, handle_id):
     for node_data in ordered_nodes:
         node_name = node_data['node']['name']
         site = node_data['site']
-        lng = float(str(site.get('longitude', 0)))
-        lat = float(str(site.get('latitude', 0)))
+        # Round coordinates to 3 decimal places (~111m precision) for security
+        lng = round(float(str(site.get('longitude', 0))), 3)
+        lat = round(float(str(site.get('latitude', 0))), 3)
         
         kml += '<Placemark>\n'
-        kml += f'<name>{node_name}</name>\n'
+        kml += f'<name>{xml_escape(node_name)}</name>\n'
         kml += '<Point>\n'
         kml += f'<coordinates>{lng},{lat},0</coordinates>\n'
         kml += '</Point>\n'
@@ -653,14 +655,15 @@ def optical_path_kmz(request, handle_id):
     
     # Add the path line
     kml += '<Placemark>\n'
-    kml += f'<name>{path_name} Path</name>\n'
+    kml += f'<name>{xml_escape(path_name)} Path</name>\n'
     kml += '<styleUrl>#pathLine</styleUrl>\n'
     kml += '<LineString>\n'
     kml += '<coordinates>\n'
     for node_data in ordered_nodes:
         site = node_data['site']
-        lng = float(str(site.get('longitude', 0)))
-        lat = float(str(site.get('latitude', 0)))
+        # Round coordinates to 3 decimal places (~111m precision) for security
+        lng = round(float(str(site.get('longitude', 0))), 3)
+        lat = round(float(str(site.get('latitude', 0))), 3)
         kml += f'{lng},{lat},0\n'
     kml += '</coordinates>\n'
     kml += '</LineString>\n'
