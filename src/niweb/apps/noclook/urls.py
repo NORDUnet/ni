@@ -134,6 +134,7 @@ urlpatterns = [
     path('service/<int:handle_id>/', detail.service_detail),
     path('optical-link/<int:handle_id>/', detail.optical_link_detail),
     path('optical-path/<int:handle_id>/', detail.optical_path_detail),
+    path('optical-path/<int:handle_id>/kmz/', other.optical_path_kmz),
     path('end-user/<int:handle_id>/', detail.end_user_detail),
     path('customer/<int:handle_id>/', detail.customer_detail),
     path('provider/<int:handle_id>/', detail.provider_detail),

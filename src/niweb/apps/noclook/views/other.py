@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from re import escape as re_escape
 import json
+import zipfile
+from io import BytesIO
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
@@ -530,6 +532,153 @@ def gmaps_optical_paths(request, node_handle_id):
     
     response = HttpResponse(content_type='application/json')
     json.dump({'paths': paths}, response)
+    return response
+
+
+@login_required
+def optical_path_kmz(request, handle_id):
+    """
+    Generate and download a KMZ file for an optical path.
+    """
+    # Get the optical path
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    path_node = nh.get_node()
+    
+    # Query to get all nodes in the optical path
+    q = """
+        MATCH (path:Optical_Path)
+        WHERE path.handle_id = $handle_id
+        MATCH (path)-[:Depends_on]->(oms:Optical_Multiplex_Section)
+        -[:Depends_on]->(link:Optical_Link)
+        -[:Depends_on]->(p:Port)<-[:Has]-(on:Optical_Node)
+        WITH path, oms, link, on
+        MATCH (on)-[:Located_in]->()<-[:Has*0..]-(loc:Site)
+        WITH path, oms.name as oms_name, link.name as link_name, on, loc
+        ORDER BY oms_name, link_name
+        WITH path, collect({node: on, site: loc, oms: oms_name, link: link_name}) as all_nodes
+        RETURN path, all_nodes
+        """
+    result = nc.query_to_list(nc.graphdb.manager, q, handle_id=int(handle_id))
+    
+    if not result:
+        raise Http404("Optical path not found or has no nodes")
+    
+    item = result[0]
+    all_nodes_data = item['all_nodes']
+    
+    # Build ordered path using the same logic as gmaps_optical_paths
+    adjacency = {}
+    node_lookup = {}
+    links_dict = {}
+    
+    for node_data in all_nodes_data:
+        link_name = node_data['link']
+        node_id = node_data['node']['handle_id']
+        
+        if link_name not in links_dict:
+            links_dict[link_name] = []
+        links_dict[link_name].append(node_data)
+        node_lookup[node_id] = node_data
+    
+    # Build adjacency list
+    for link_name, link_nodes in links_dict.items():
+        if len(link_nodes) == 2:
+            node1_id = link_nodes[0]['node']['handle_id']
+            node2_id = link_nodes[1]['node']['handle_id']
+            
+            if node1_id not in adjacency:
+                adjacency[node1_id] = []
+            if node2_id not in adjacency:
+                adjacency[node2_id] = []
+            
+            adjacency[node1_id].append((node2_id, link_name))
+            adjacency[node2_id].append((node1_id, link_name))
+    
+    # Find start node
+    endpoints = [nid for nid, neighbors in adjacency.items() if len(neighbors) == 1]
+    start_node = endpoints[0] if endpoints else list(adjacency.keys())[0] if adjacency else None
+    
+    if not start_node:
+        raise Http404("Cannot determine path sequence")
+    
+    # Traverse path
+    ordered_nodes = []
+    visited = set()
+    
+    def dfs(node_id):
+        if node_id in visited:
+            return
+        visited.add(node_id)
+        ordered_nodes.append(node_lookup[node_id])
+        
+        if node_id in adjacency:
+            for neighbor_id, _ in adjacency[node_id]:
+                if neighbor_id not in visited:
+                    dfs(neighbor_id)
+    
+    dfs(start_node)
+    
+    # Generate KML
+    path_name = item['path']['name']
+    path_description = item['path'].get('description', '')
+    
+    kml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
+    kml += '<Document>\n'
+    kml += f'<name>{path_name}</name>\n'
+    if path_description:
+        kml += f'<description>{path_description}</description>\n'
+    
+    # Add line style
+    kml += '<Style id="pathLine">\n'
+    kml += '<LineStyle>\n'
+    kml += '<color>ff0000ff</color>\n'  # Red color
+    kml += '<width>4</width>\n'
+    kml += '</LineStyle>\n'
+    kml += '</Style>\n'
+    
+    # Add placemarks for each node
+    for node_data in ordered_nodes:
+        node_name = node_data['node']['name']
+        site = node_data['site']
+        lng = float(str(site.get('longitude', 0)))
+        lat = float(str(site.get('latitude', 0)))
+        
+        kml += '<Placemark>\n'
+        kml += f'<name>{node_name}</name>\n'
+        kml += '<Point>\n'
+        kml += f'<coordinates>{lng},{lat},0</coordinates>\n'
+        kml += '</Point>\n'
+        kml += '</Placemark>\n'
+    
+    # Add the path line
+    kml += '<Placemark>\n'
+    kml += f'<name>{path_name} Path</name>\n'
+    kml += '<styleUrl>#pathLine</styleUrl>\n'
+    kml += '<LineString>\n'
+    kml += '<coordinates>\n'
+    for node_data in ordered_nodes:
+        site = node_data['site']
+        lng = float(str(site.get('longitude', 0)))
+        lat = float(str(site.get('latitude', 0)))
+        kml += f'{lng},{lat},0\n'
+    kml += '</coordinates>\n'
+    kml += '</LineString>\n'
+    kml += '</Placemark>\n'
+    
+    kml += '</Document>\n'
+    kml += '</kml>\n'
+    
+    # Create KMZ (zipped KML)
+    kmz_buffer = BytesIO()
+    with zipfile.ZipFile(kmz_buffer, 'w', zipfile.ZIP_DEFLATED) as kmz:
+        kmz.writestr('doc.kml', kml.encode('utf-8'))
+    
+    # Prepare response
+    response = HttpResponse(kmz_buffer.getvalue(), content_type='application/vnd.google-earth.kmz')
+    filename = f'{path_name.replace(" ", "_")}.kmz'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
     return response
 
 
