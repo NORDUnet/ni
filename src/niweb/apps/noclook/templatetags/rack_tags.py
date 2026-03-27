@@ -45,18 +45,29 @@ def _equipment(item):
     }
 
 
+def _is_decommissioned(equipment):
+    return equipment['data'].get("operational_state", "").lower() == 'decommissioned'
+
+
 def place_equipment(view_data, current_idx, last_eq, result):
     spacing = view_data['position'] - current_idx
     if spacing < 0:
+        new_idx = max(current_idx, view_data['position'] + view_data['units'])
         # Equipment overlaps with previous
-        last_eq['sub_equipment'].append(view_data)
+        if not _is_decommissioned(view_data) and _is_decommissioned(last_eq):
+            result.remove(last_eq)
+            result.append(view_data)
+            view_data['sub_equipment'].append(last_eq)
+            return new_idx, view_data
+        else:
+            last_eq['sub_equipment'].append(view_data)
+            return new_idx, last_eq
     else:
         if spacing > 0:
             result.append(_equipment_spacer(spacing))
         result.append(view_data)
         new_idx = view_data['position'] + view_data['units']
         return new_idx, view_data
-    return current_idx, last_eq
 
 
 @register.inclusion_tag('noclook/tags/rack.html')

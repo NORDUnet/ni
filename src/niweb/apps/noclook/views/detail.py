@@ -573,7 +573,6 @@ def provider_detail(request, handle_id):
 def _nodes_without(nodes, what, excludes):
     return [n for n in nodes if n.get('node').data.get(what, '').lower() not in excludes]
 
-
 @login_required
 def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -582,10 +581,7 @@ def rack_detail(request, handle_id):
     last_seen, expired = helpers.neo4j_data_age(rack.data)
     location_path = rack.get_location_path()
     # Get equipment in rack
-    _located_in = rack.get_located_in().get('Located_in', [])
-    physical_relationships = {
-        "Located_in": _nodes_without(_located_in, 'operational_state', ['decommissioned'])
-    }
+    physical_relationships = rack.get_located_in()
 
     urls = helpers.get_node_urls(rack, physical_relationships, location_path)
     return render(request, 'noclook/detail/rack_detail.html',
