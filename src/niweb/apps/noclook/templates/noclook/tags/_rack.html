@@ -22,7 +22,14 @@
           {% if item.sub_equipment %}
             <ul class="sub-equipment unstyled">
               {% for sub in item.sub_equipment %}
-              <li{% if sub.data.operational_state|lower == 'decommissioned' %} class="decommissioned"{% endif %}>{% noclook_node_to_link sub.data %}</li>
+              <li{% if sub.data.operational_state|lower == 'decommissioned' %} class="decommissioned"{% endif %}>
+                {% noclook_node_to_link sub.data %}
+                {% if sub.data.operational_state|lower == 'decommissioned' %}
+                <span class="decommissioned-marker" aria-label="Decommissioned">
+                  <span class="decommissioned-tooltip">Decommissioned</span>
+                </span>
+                {% endif %}
+              </li>
               {% endfor %}
             </ul>
           {% endif %}

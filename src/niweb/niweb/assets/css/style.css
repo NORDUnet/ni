@@ -431,11 +431,8 @@ h3.compact {
   border-right-color: #ee0a0a;
 }
 
-.equipment.decommissioned>.handle {
-  color: #ee0a0a;
-}
-
-.equipment.decommissioned .decommissioned-marker {
+.equipment.decommissioned .decommissioned-marker,
+.sub-equipment .decommissioned .decommissioned-marker {
   position: absolute;
   top: 0;
   right: 0;
@@ -461,7 +458,7 @@ h3.compact {
   pointer-events: none;
 }
 
-.equipment.decommissioned .decommissioned-marker:hover .decommissioned-tooltip {
+.equipment.decommissioned:hover .decommissioned-tooltip {
   opacity: 1;
 }
 
@@ -480,12 +477,22 @@ h3.compact {
   z-index: 2;
 }
 
+.sub-equipment>li {
+  position: relative;
+  border-right: 2px solid transparent;
+  padding-right: 12px;
+}
+
 .sub-equipment .handle {
   display: inline-block;
 }
 
-.sub-equipment .decommissioned>.handle {
-  color: #ee0a0a;
+.sub-equipment .decommissioned {
+  border-right-color: #ee0a0a;
+}
+
+.sub-equipment .decommissioned:hover .decommissioned-tooltip {
+  opacity: 1;
 }
 
 .equipment:hover .sub-equipment {
