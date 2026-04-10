@@ -1,8 +1,12 @@
+import logging
+
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers, activitylog
 import ipaddress
 import norduniclient as nc
+
+logger = logging.getLogger(__name__)
 
 
 def get_user(username='noclook'):
