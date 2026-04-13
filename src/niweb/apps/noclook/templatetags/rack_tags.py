@@ -77,6 +77,7 @@ def noclook_rack(rack, equipment):
     racked_equipment = []
     racked_equipment_back = []
     unracked_equipment = []
+    decommissioned_equipment = []
 
     # mem
     front_idx = 1
@@ -86,6 +87,8 @@ def noclook_rack(rack, equipment):
 
     for item in equipment:
         view_data = _equipment(item)
+        if _is_decommissioned(view_data):
+            decommissioned_equipment.append(item)
         is_rack_front = not view_data.get('is_back')
         if view_data['position'] > 0:
             if is_rack_front:
@@ -99,6 +102,7 @@ def noclook_rack(rack, equipment):
         'racked_equipment': racked_equipment,
         'racked_equipment_back': racked_equipment_back,
         'unracked_equipment': unracked_equipment,
+        'decommissioned_equipment': decommissioned_equipment,
     }
 
 

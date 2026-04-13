@@ -23,4 +23,24 @@
   {% table th tbody id="equipment" %}
 </div>
 {% endif %}
+{% if decommissioned_equipment %}
+<div class="decommissioned flex-adjust">
+  <h4>Decommissioned Equipment</h4>
+  {% blockvar th %}
+              <th>Type</th><th>Name</th><th>Rack Position</th>
+  {% endblockvar %}
+  {% blockvar tbody %}
+      {% for item in decommissioned_equipment %}
+          <tr>
+              {% noclook_get_type item.node.handle_id as node_type %}
+              <td>{{ node_type }}</td>
+              <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+              <td>{{ item.node.data.rack_position }}</td>
+
+          </tr>
+      {% endfor %}
+  {% endblockvar %}
+  {% table th tbody id="decommissioned" %}
+</div>
+{% endif %}
 </div>
