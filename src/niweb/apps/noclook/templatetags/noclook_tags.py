@@ -371,21 +371,63 @@ def has_label(item, label):
 @register.inclusion_tag('noclook/tags/ticket_info.html')
 def ticket_info(services, tid='inTicketInfo'):
     """
-    A helpful button for the NOC when they create service tickets
+    A helpful button for the NOC when they create service tickets.
+    Categorizes services, affected organizations and impacts by operational_state.
     """
+    CATEGORIES = ['In service', 'Testing', 'Reserved', 'Decommissioned']
+
+    # Query users per service so we can categorize them by operational_state
     q = """
-    MATCH (n:Node)<-[:Uses]-(u:Node) where n.handle_id in $handle_ids return DISTINCT(u.name) as Uses
+    MATCH (n:Node)<-[:Uses]-(u:Node) where n.handle_id in $handle_ids
+    RETURN n.handle_id AS handle_id, collect(DISTINCT u.name) AS Uses
     """
     d = nc.query_to_list(nc.graphdb.manager, q, handle_ids=[s['handle_id'] for s in services])
 
-    impacted_users = {u['Uses'] for u in d}
-    service_ids = {s.get('name') for s in services}
-    impacts = ["{} - {}".format(s.get('name'), s.get('description')) for s in services]
+    # Build a mapping: handle_id -> set of user names
+    users_by_handle = {}
+    for row in d:
+        hid = row['handle_id']
+        users_by_handle.setdefault(hid, set()).add(row['Uses'])
+
+    # Categorize by operational_state
+    service_ids_by_state = {cat: [] for cat in CATEGORIES}
+    users_by_state = {cat: set() for cat in CATEGORIES}
+    impacts_by_state = {cat: [] for cat in CATEGORIES}
+
+    for s in services:
+        state = s.get('operational_state', 'Reserved') or 'Reserved'
+        # Normalize state to match categories; default to 'Reserved' if unknown
+        if state not in service_ids_by_state:
+            state = 'Reserved'
+
+        name = s.get('name', '')
+        description = s.get('description', '')
+        handle_id = s.get('handle_id')
+
+        service_ids_by_state[state].append(name)
+        impacts_by_state[state].append("{} - {}".format(name, description))
+
+        for user in users_by_handle.get(handle_id, []):
+            users_by_state[state].add(user)
+
+    # Convert user sets to sorted lists for consistent template rendering
+    users_by_state = {cat: sorted(users) for cat, users in users_by_state.items()}
+
+    # Build a list of dicts so the template can iterate without needing dict-lookup filters
+    grouped = [
+        {
+            'category': cat,
+            'service_ids': service_ids_by_state[cat],
+            'service_ids_joined': ', '.join(service_ids_by_state[cat]),
+            'users': users_by_state[cat],
+            'users_joined': ', '.join(users_by_state[cat]),
+            'impacts': impacts_by_state[cat],
+        }
+        for cat in CATEGORIES
+    ]
 
     return {
-        'impacted_users': impacted_users,
-        'service_ids': service_ids,
-        'impacts': impacts,
+        'grouped': grouped,
         'tid': tid,
     }
 
