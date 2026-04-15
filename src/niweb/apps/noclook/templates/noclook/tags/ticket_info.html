@@ -4,14 +4,23 @@
   <div class="popover-content">
     <div class="arrow"></div>
     <h4>Services</h4>
-    {{service_ids | join:', '}}
-    {% if impacted_users %}
+    {% for group in grouped %}
+      <strong>{{ group.category }}:</strong>
+      {{ group.service_ids_joined }}
+      <br>
+    {% endfor %}
     <h4>Affected Organizations</h4>
-    {{ impacted_users | join:', ' }}
-    {% endif %}
+    {% for group in grouped %}
+      <strong>{{ group.category }}:</strong>
+      {{ group.users_joined }}
+      <br>
+    {% endfor %}
     <h4>Impact</h4>
-    {% for item in impacts %}
-      {{item}} <br>
+    {% for group in grouped %}
+      <strong>{{ group.category }}:</strong><br>
+      {% for item in group.impacts %}
+        {{ item }}<br>
+      {% endfor %}
     {% endfor %}
   </div>
 </div>
