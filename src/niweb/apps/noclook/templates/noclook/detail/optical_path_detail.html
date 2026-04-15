@@ -67,7 +67,11 @@
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<a href="/gmaps/optical-nodes/?path={{ node.data.handle_id }}" class="btn btn-primary"><i class="icon-map-marker icon-white"></i> Show in Optical Node Map</a>
-<a href="/optical-path/{{ node.data.handle_id }}/kmz/" class="btn btn-success"><i class="icon-download-alt icon-white"></i> Download KMZ</a>
 {% include "noclook/detail/includes/depend_include.html" %}
+{% endblock %}
+
+{% block content_footer %}
+    {{ block.super }}
+    <a href="/gmaps/optical-nodes/?path={{ node.data.handle_id }}" class="btn btn-info"><i class="icon-map-marker icon-white"></i> Show in Optical Node Map</a>
+    <a href="/optical-path/{{ node.data.handle_id }}/kmz/" class="btn btn-info"><i class="icon-download-alt icon-white"></i> Download KMZ</a>
 {% endblock %}

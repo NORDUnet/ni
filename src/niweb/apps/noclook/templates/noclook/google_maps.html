@@ -159,26 +159,27 @@
                                 selectedPaths[pathKey] = true;
                                 
                                 // Add to UI - wrap in a preloaded section
-                                var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
                                 var pathUrl = '/optical-path/' + targetPath.id + '/';
+                                var descriptionHtml = targetPath.description ? `<br><small>${targetPath.description}</small>` : '';
                                 
-                                var pathListHtml = '<div class="path-section">';
-                                pathListHtml += '<div class="path-section-header">';
-                                pathListHtml += '<span>Preloaded Path <span class="path-count">(1)</span></span>';
-                                pathListHtml += '</div>';
-                                pathListHtml += '<div class="path-section-content">';
-                                pathListHtml += '<div class="path-item">';
-                                pathListHtml += '<label>';
-                                pathListHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" checked>';
-                                pathListHtml += colorIndicator;
-                                pathListHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + targetPath.name + '</a>';
-                                if (targetPath.description) {
-                                    pathListHtml += '<br><small>' + targetPath.description + '</small>';
-                                }
-                                pathListHtml += '<br><small>State: ' + targetPath.operational_state + '</small>';
-                                pathListHtml += '</label>';
-                                pathListHtml += '</div>';
-                                pathListHtml += '</div></div>';
+                                var pathListHtml = `
+                                    <div class="path-section">
+                                        <div class="path-section-header">
+                                            <span>Preloaded Path <span class="path-count">(1)</span></span>
+                                        </div>
+                                        <div class="path-section-content">
+                                            <div class="path-item">
+                                                <label>
+                                                    <input type="checkbox" class="path-checkbox" data-path-key="${pathKey}" checked>
+                                                    <span class="path-color-indicator" style="background-color:${availablePaths[pathKey].color}"></span>
+                                                    <a href="${pathUrl}" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">${targetPath.name}</a>
+                                                    ${descriptionHtml}
+                                                    <br><small>State: ${targetPath.operational_state}</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
                                 
                                 $('#path_list').append(pathListHtml);
                                 
@@ -317,49 +318,52 @@
         function buildPathItem(path) {
             var pathKey = path.id.toString();
             var checked = selectedPaths[pathKey] ? 'checked' : '';
-            var colorIndicator = '<span class="path-color-indicator" style="background-color:' + availablePaths[pathKey].color + '"></span>';
             var pathUrl = '/optical-path/' + path.id + '/';
+            var descriptionHtml = path.description ? `<br><small>${path.description}</small>` : '';
             
-            var itemHtml = '<div class="path-item">';
-            itemHtml += '<label>';
-            itemHtml += '<input type="checkbox" class="path-checkbox" data-path-key="' + pathKey + '" ' + checked + '>';
-            itemHtml += colorIndicator;
-            itemHtml += '<a href="' + pathUrl + '" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">' + path.name + '</a>';
-            if (path.description) {
-                itemHtml += '<br><small>' + path.description + '</small>';
-            }
-            itemHtml += '<br><small>State: ' + path.operational_state + '</small>';
-            itemHtml += '</label>';
-            itemHtml += '</div>';
-            return itemHtml;
+            return `
+                <div class="path-item">
+                    <label>
+                        <input type="checkbox" class="path-checkbox" data-path-key="${pathKey}" ${checked}>
+                        <span class="path-color-indicator" style="background-color:${availablePaths[pathKey].color}"></span>
+                        <a href="${pathUrl}" target="_blank" style="text-decoration: none; color: #1a0dab; font-weight: 500;">${path.name}</a>
+                        ${descriptionHtml}
+                        <br><small>State: ${path.operational_state}</small>
+                    </label>
+                </div>
+            `;
         }
         
         // Endpoint section
         if (endpointPaths.length > 0) {
-            html += '<div class="path-section">';
-            html += '<div class="path-section-header" onclick="toggleSection(\'endpoint\')">';
-            html += '<span>Endpoint <span class="path-count">(' + endpointPaths.length + ')</span></span>';
-            html += '<span class="toggle-icon">▼</span>';
-            html += '</div>';
-            html += '<div class="path-section-content" id="endpoint-section">';
-            endpointPaths.forEach(function(path) {
-                html += buildPathItem(path);
-            });
-            html += '</div></div>';
+            var endpointItems = endpointPaths.map(buildPathItem).join('');
+            html += `
+                <div class="path-section">
+                    <div class="path-section-header" onclick="toggleSection('endpoint')">
+                        <span>Endpoint <span class="path-count">(${endpointPaths.length})</span></span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="path-section-content" id="endpoint-section">
+                        ${endpointItems}
+                    </div>
+                </div>
+            `;
         }
         
         // Transit section (collapsed by default)
         if (transitPaths.length > 0) {
-            html += '<div class="path-section">';
-            html += '<div class="path-section-header collapsed" onclick="toggleSection(\'transit\')">';
-            html += '<span>Transit <span class="path-count">(' + transitPaths.length + ')</span></span>';
-            html += '<span class="toggle-icon">▼</span>';
-            html += '</div>';
-            html += '<div class="path-section-content collapsed" id="transit-section">';
-            transitPaths.forEach(function(path) {
-                html += buildPathItem(path);
-            });
-            html += '</div></div>';
+            var transitItems = transitPaths.map(buildPathItem).join('');
+            html += `
+                <div class="path-section">
+                    <div class="path-section-header collapsed" onclick="toggleSection('transit')">
+                        <span>Transit <span class="path-count">(${transitPaths.length})</span></span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="path-section-content collapsed" id="transit-section">
+                        ${transitItems}
+                    </div>
+                </div>
+            `;
         }
         
         if (html) {
@@ -484,7 +488,7 @@
                 var latlng = new google.maps.LatLng(lat,lng);
 
                 var infowindow = new google.maps.InfoWindow({
-                    content: "<div style='padding: 2px 4px; font-size: 12px;'><a href='" + url + "' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>" + label + "</a></div>",
+                    content: `<div style='padding: 2px 4px; font-size: 12px;'><a href='${url}' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>${label}</a></div>`,
                     disableAutoPan: true
                 });
                 
@@ -560,7 +564,11 @@
                     div.style.position = 'absolute';
                     div.style.display = 'none';
                     div.style.pointerEvents = 'none';
-                    div.innerHTML = '<div style="background: rgba(255,255,255,0.95); padding: 3px 5px; border: 1px solid #333; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 4px rgba(0,0,0,0.4);">' + label + '</div>';
+                    div.innerHTML = `
+                        <div style="background: rgba(255,255,255,0.95); padding: 3px 5px; border: 1px solid #333; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
+                            ${label}
+                        </div>
+                    `;
                     
                     var panes = this.getPanes();
                     panes.overlayLayer.appendChild(div);
