@@ -384,10 +384,11 @@ def ticket_info(services, tid='inTicketInfo'):
     d = nc.query_to_list(nc.graphdb.manager, q, handle_ids=[s['handle_id'] for s in services])
 
     # Build a mapping: handle_id -> set of user names
+    # Uses is a list from collect() in the Cypher query
     users_by_handle = {}
     for row in d:
         hid = row['handle_id']
-        users_by_handle.setdefault(hid, set()).add(row['Uses'])
+        users_by_handle.setdefault(hid, set()).update(row['Uses'])
 
     # Categorize by operational_state
     service_ids_by_state = {cat: [] for cat in CATEGORIES}
