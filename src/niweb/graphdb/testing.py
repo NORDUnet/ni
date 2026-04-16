@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import unittest
 import time
 import atexit
@@ -39,8 +40,9 @@ class Neo4jTemporaryInstance(object):
         for i in range(300):
             time.sleep(0.5)
             try:
-                self._db = init_db('bolt://{!s}:{!s}'.format(self.host, self.bolt_port), username='neo4j',
-                                   password='testing', encrypted=False)
+                auth = os.environ.get('NEO4J_AUTH', 'neo4j/testing').split('/')
+                self._db = init_db('bolt://{!s}:{!s}'.format(self.host, self.bolt_port), username=auth[0] or 'neo4j',
+                                   password=auth[1] or 'testing', encrypted=False)
             except SocketError:
                 continue
             else:
