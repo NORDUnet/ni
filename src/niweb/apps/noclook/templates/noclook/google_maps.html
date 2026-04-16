@@ -74,11 +74,23 @@
         color: #0066cc;
         margin-bottom: 10px;
       }
+      .marker-label {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+      }
+      .marker-label::before {
+        border: none;
+      }
     </style>
-    <title>NOCLook Google Maps</title>
+    <title>NOCLook OpenStreetMap</title>
 {% load noclook_tags %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
-<script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&libraries=geometry&key={{ maps_api_key }}" type="text/javascript"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script type="text/javascript">
     var map;
     var allMarkers = [];
@@ -99,16 +111,17 @@
     }
     
     function initialize() {
-        var latlng = new google.maps.LatLng(59, 5);
-        var myOptions = {
-            zoom: 5,
-            center: latlng,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+        // Initialize Leaflet map
+        map = L.map('map_canvas').setView([59, 5], 5);
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
         
         // Redraw paths when zoom level changes
-        google.maps.event.addListener(map, 'zoom_changed', function() {
+        map.on('zoomend', function() {
             redrawAllPaths();
         });
         
@@ -189,8 +202,7 @@
                                 // Center map on the first node of the path
                                 if (targetPath.nodes && targetPath.nodes.length > 0) {
                                     var firstNode = targetPath.nodes[0];
-                                    map.setCenter(new google.maps.LatLng(firstNode.lat, firstNode.lng));
-                                    map.setZoom(7);
+                                    map.setView([firstNode.lat, firstNode.lng], 7);
                                 }
                             }
                         }
@@ -203,7 +215,7 @@
     function redrawAllPaths() {
         // Remove all current path polylines
         drawnPaths.forEach(function(item) {
-            item.polyline.setMap(null);
+            map.removeLayer(item.polyline);
         });
         drawnPaths = [];
         
@@ -224,24 +236,22 @@
     function selectNode(nodeHandleId, nodeName, marker) {
         // Update selected node marker color
         if (selectedNode && selectedNode.marker) {
-            selectedNode.marker.setIcon({
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 4,
+            selectedNode.marker.setStyle({
+                radius: 4,
                 fillColor: "#FF0000",
                 fillOpacity: 0.8,
-                strokeColor: "#CC0000",
-                strokeWeight: 1
+                color: "#CC0000",
+                weight: 1
             });
         }
         
         selectedNode = {handle_id: nodeHandleId, name: nodeName, marker: marker};
-        marker.setIcon({
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 6,
+        marker.setStyle({
+            radius: 6,
             fillColor: "#0066CC",
             fillOpacity: 1.0,
-            strokeColor: "#003366",
-            strokeWeight: 2
+            color: "#003366",
+            weight: 2
         });
         
         $('#selected_node_name').text(nodeName);
@@ -389,27 +399,33 @@
             var start = nodes[i];
             var end = nodes[i + 1];
             
-            var startLatLng = new google.maps.LatLng(start.lat, start.lng);
-            var endLatLng = new google.maps.LatLng(end.lat, end.lng);
+            var startLatLng = [start.lat, start.lng];
+            var endLatLng = [end.lat, end.lng];
             
             // Calculate offset for this specific segment
             var offset = calculateSegmentOffset(start.handle_id, end.handle_id, pathKey);
             
-            // Apply offset perpendicular to the line (parallel offset for both points)
+            // Apply offset perpendicular to the line using Turf.js
             if (offset !== 0) {
-                var heading = google.maps.geometry.spherical.computeHeading(startLatLng, endLatLng);
-                var perpendicular = heading + 90;
-                startLatLng = google.maps.geometry.spherical.computeOffset(startLatLng, offset, perpendicular);
-                endLatLng = google.maps.geometry.spherical.computeOffset(endLatLng, offset, perpendicular);
+                var startPoint = turf.point([start.lng, start.lat]);
+                var endPoint = turf.point([end.lng, end.lat]);
+                var bearing = turf.bearing(startPoint, endPoint);
+                var perpendicular = bearing + 90;
+                
+                // Convert offset from meters to kilometers for turf.destination
+                var offsetKm = offset / 1000;
+                var newStart = turf.destination(startPoint, offsetKm, perpendicular);
+                var newEnd = turf.destination(endPoint, offsetKm, perpendicular);
+                
+                startLatLng = [newStart.geometry.coordinates[1], newStart.geometry.coordinates[0]];
+                endLatLng = [newEnd.geometry.coordinates[1], newEnd.geometry.coordinates[0]];
             }
             
-            var path = new google.maps.Polyline({
-                path: [startLatLng, endLatLng],
-                strokeWeight: 5,
-                strokeColor: pathData.color,
-                strokeOpacity: 0.9,
-                map: map
-            });
+            var path = L.polyline([startLatLng, endLatLng], {
+                weight: 5,
+                color: pathData.color,
+                opacity: 0.9
+            }).addTo(map);
             
             drawnPaths.push({
                 pathKey: pathKey, 
@@ -450,7 +466,7 @@
     function removeOpticalPath(pathKey) {
         drawnPaths = drawnPaths.filter(function(item) {
             if (item.pathKey == pathKey) {
-                item.polyline.setMap(null);
+                map.removeLayer(item.polyline);
                 return false;
             }
             return true;
@@ -485,35 +501,13 @@
             });
 
             function addMarker(lat,lng,label,url,index){
-                var latlng = new google.maps.LatLng(lat,lng);
-
-                var infowindow = new google.maps.InfoWindow({
-                    content: `<div style='padding: 2px 4px; font-size: 12px;'><a href='${url}' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>${label}</a></div>`,
-                    disableAutoPan: true
-                });
-                
-                // Hide close button when opened
-                google.maps.event.addListener(infowindow, 'domready', function() {
-                    setTimeout(function() {
-                        var closeButtons = document.querySelectorAll('.gm-ui-hover-effect');
-                        closeButtons.forEach(function(btn) {
-                            btn.style.display = 'none';
-                        });
-                    }, 10);
-                });
-
-                var marker = new google.maps.Marker({
-                    position: latlng,
-                    map: map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 4,
-                        fillColor: "#FF0000",
-                        fillOpacity: 0.8,
-                        strokeColor: "#CC0000",
-                        strokeWeight: 1
-                    }
-                });
+                var marker = L.circleMarker([lat, lng], {
+                    radius: 4,
+                    fillColor: "#FF0000",
+                    fillOpacity: 0.8,
+                    color: "#CC0000",
+                    weight: 1
+                }).addTo(map);
                 
                 // Store metadata on marker
                 marker.nodeUrl = url;
@@ -528,10 +522,10 @@
                 
                 for (var i = 0; i < index; i++) {
                     var otherMarker = allMarkers[i];
-                    var distance = google.maps.geometry.spherical.computeDistanceBetween(
-                        marker.getPosition(), 
-                        otherMarker.getPosition()
-                    );
+                    var markerLatLng = turf.point([lng, lat]);
+                    var otherLatLng = turf.point([otherMarker.getLatLng().lng, otherMarker.getLatLng().lat]);
+                    var distance = turf.distance(markerLatLng, otherLatLng, {units: 'meters'});
+                    
                     // If markers are very close (less than 500m), offset the label
                     if (distance < 500) {
                         nearbyCount++;
@@ -557,72 +551,64 @@
                     }
                 }
 
-                // Create a custom label overlay
-                var labelOverlay = new google.maps.OverlayView();
-                labelOverlay.onAdd = function() {
-                    var div = document.createElement('div');
-                    div.style.position = 'absolute';
-                    div.style.display = 'none';
-                    div.style.pointerEvents = 'none';
-                    div.innerHTML = `
-                        <div style="background: rgba(255,255,255,0.95); padding: 3px 5px; border: 1px solid #333; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
-                            ${label}
-                        </div>
-                    `;
-                    
-                    var panes = this.getPanes();
-                    panes.overlayLayer.appendChild(div);
-                    this.div = div;
-                };
+                // Create a custom label using Leaflet tooltip
+                var tooltipContent = `<div style="background: rgba(255,255,255,0.95); padding: 3px 5px; border: 1px solid #333; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
+                    ${label}
+                </div>`;
                 
-                labelOverlay.draw = function() {
-                    var projection = this.getProjection();
-                    var position = projection.fromLatLngToDivPixel(marker.getPosition());
-                    var div = this.div;
-                    div.style.left = (position.x + xOffset) + 'px';
-                    div.style.top = (position.y + yOffset) + 'px';
-                };
+                var tooltip = L.tooltip({
+                    permanent: true,
+                    direction: 'right',
+                    className: 'marker-label',
+                    offset: [xOffset, yOffset],
+                    opacity: 1
+                }).setContent(tooltipContent);
                 
-                labelOverlay.onRemove = function() {
-                    if (this.div) {
-                        this.div.parentNode.removeChild(this.div);
-                        this.div = null;
-                    }
-                };
+                marker.bindTooltip(tooltip);
                 
-                labelOverlay.setMap(map);
-                allLabels.push(labelOverlay);
+                // Store tooltip reference
+                marker.labelTooltip = tooltip;
+                allLabels.push(tooltip);
 
                 // Show/hide labels based on zoom level
                 function updateLabelVisibility() {
                     var zoom = map.getZoom();
                     if (zoom >= 8) {
-                        labelOverlay.div.style.display = 'block';
+                        if (!marker.isTooltipOpen()) {
+                            marker.openTooltip();
+                        }
                     } else {
-                        labelOverlay.div.style.display = 'none';
+                        if (marker.isTooltipOpen()) {
+                            marker.closeTooltip();
+                        }
                     }
                 }
 
                 // Update visibility on zoom change
-                google.maps.event.addListener(map, 'zoom_changed', updateLabelVisibility);
-                google.maps.event.addListener(map, 'bounds_changed', function() {
-                    if (labelOverlay.div) {
-                        labelOverlay.draw();
-                    }
-                });
+                map.on('zoomend', updateLabelVisibility);
                 
                 // Set initial visibility
                 setTimeout(updateLabelVisibility, 100);
 
-                google.maps.event.addListener(marker, 'mouseover', function() {
-                    infowindow.open(map, marker);
+                // Create popup for mouseover
+                var popupContent = `<div style='padding: 2px 4px; font-size: 12px;'><a href='${url}' style='text-decoration: none; color: #1a0dab; font-weight: 500;'>${label}</a></div>`;
+                var popup = L.popup({
+                    closeButton: false,
+                    autoClose: true,
+                    closeOnClick: false
+                }).setContent(popupContent);
+                
+                marker.bindPopup(popup);
+
+                marker.on('mouseover', function() {
+                    marker.openPopup();
                 });
 
-                google.maps.event.addListener(marker, 'mouseout', function() {
-                    infowindow.close();
+                marker.on('mouseout', function() {
+                    marker.closePopup();
                 });
 
-                google.maps.event.addListener(marker, 'click', function() {
+                marker.on('click', function() {
                     // Extract handle_id from URL
                     var handleId = url.match(/\/(\d+)\/?$/);
                     if (handleId) {
@@ -630,26 +616,19 @@
                     }
                 });
 
-                google.maps.event.addListener(marker, 'dblclick', function() {
+                marker.on('dblclick', function() {
                     window.location.href = url;
                 });
             }
 
             function addLine(start_lat, start_lng, end_lat, end_lng, label, url){
-                var path = [
-                    new google.maps.LatLng(start_lat, start_lng),
-                    new google.maps.LatLng(end_lat, end_lng)
-                ];
-                var line = new google.maps.Polyline({
-                    path: path,
-                    title: label,
-                    strokeWeight: 2,
-                    strokeColor: "#FF0000",
-                    strokeOpacity: 0.5,
-                    map: map
-                });
+                var line = L.polyline([[start_lat, start_lng], [end_lat, end_lng]], {
+                    weight: 2,
+                    color: "#FF0000",
+                    opacity: 0.5
+                }).addTo(map);
 
-                google.maps.event.addListener(line, 'dblclick', function(event) {
+                line.on('dblclick', function(event) {
                     window.location.href = url;
                 });
             }
@@ -661,8 +640,14 @@
         });
     }
 </script>
+<script type="text/javascript">
+    // Initialize map when page loads
+    $(document).ready(function() {
+        initialize();
+    });
+</script>
 </head>
-<body onload="initialize()">
+<body>
   <div id="map_canvas"></div>
   <div id="path_panel">
     <h3>Optical Path Selector</h3>
