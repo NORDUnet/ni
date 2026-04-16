@@ -13,8 +13,8 @@ import re
 from apps.noclook import forms
 from apps.noclook import helpers
 
-import norduniclient as nc
-from norduniclient.exceptions import UniqueNodeError
+import graphdb as nc
+from graphdb.exceptions import UniqueNodeError
 
 VALIDATION_FORMS = {
   'Rack': forms.EditRackForm,

@@ -13,7 +13,7 @@ import json
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 
 def index(request):

@@ -25,8 +25,8 @@ import argparse
 import logging
 import utils
 
-import norduniclient as nc
-from norduniclient.exceptions import MultipleNodesReturned
+import graphdb as nc
+from graphdb.exceptions import MultipleNodesReturned
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.cfengine')

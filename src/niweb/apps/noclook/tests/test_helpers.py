@@ -2,8 +2,8 @@
 from .neo4j_base import NeoTestCase
 from apps.noclook import helpers
 from actstream.models import actor_stream
-from norduniclient.exceptions import UniqueNodeError
-import norduniclient as nc
+from graphdb.exceptions import UniqueNodeError
+import graphdb as nc
 
 
 class Neo4jHelpersTest(NeoTestCase):

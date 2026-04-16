@@ -17,7 +17,7 @@ except ImportError:
         from neo4j.v1.api import CypherError
 
 
-import norduniclient as nc
+import graphdb as nc
 import re
 import logging
 

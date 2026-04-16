@@ -27,7 +27,7 @@ import django_hack
 
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType
-import norduniclient as nc
+import graphdb as nc
 
 
 django_hack.nop()

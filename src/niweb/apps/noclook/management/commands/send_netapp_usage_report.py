@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 import json
 from decimal import Decimal, ROUND_DOWN
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 class Command(BaseCommand):
     help = 'Sends netapp usage report for services specified in settings/secrets.py'

@@ -14,7 +14,7 @@ import logging
 from apps.noclook import helpers, activitylog
 from apps.noclook.models import UniqueIdGenerator, NodeHandle
 from apps.nerds.lib import consumer_util as nlu
-import norduniclient as nc
+import graphdb as nc
 from dynamic_preferences.registries import global_preferences_registry
 
 logger = logging.getLogger('noclook_consumer.juniper')

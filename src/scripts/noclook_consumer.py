@@ -30,7 +30,7 @@ from apps.noclook.models import NodeHandle
 from django.conf import settings as django_settings
 from django_comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
-import norduniclient as nc
+import graphdb as nc
 
 import noclook_juniper_consumer
 import noclook_nmap_consumer

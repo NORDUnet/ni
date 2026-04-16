@@ -22,8 +22,8 @@ from neo4j.v1.types import Node
 
 from .models import NodeHandle, NodeType
 from . import activitylog
-import norduniclient as nc
-from norduniclient.exceptions import UniqueNodeError, NodeNotFound
+import graphdb as nc
+from graphdb.exceptions import UniqueNodeError, NodeNotFound
 
 # File upload
 from django.core.files.uploadedfile import SimpleUploadedFile

@@ -33,7 +33,7 @@ import argparse
 import logging
 import django_hack
 
-import norduniclient as nc
+import graphdb as nc
 import utils
 from apps.noclook import helpers
 from apps.nerds.lib.juniper_consumer import consume_juniper_conf

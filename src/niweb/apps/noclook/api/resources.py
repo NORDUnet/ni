@@ -28,8 +28,8 @@ from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook import helpers
 from apps.noclook import unique_ids
-import norduniclient as nc
-from norduniclient.exceptions import NodeNotFound
+import graphdb as nc
+from graphdb.exceptions import NodeNotFound
 import logging
 from datetime import datetime, timedelta
 

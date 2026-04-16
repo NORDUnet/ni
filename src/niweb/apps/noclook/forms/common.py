@@ -7,7 +7,7 @@ import json
 import csv
 from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown, SwitchType
 from .. import unique_ids
-import norduniclient as nc
+import graphdb as nc
 from dynamic_preferences.registries import global_preferences_registry
 from io import StringIO
 import ipaddress

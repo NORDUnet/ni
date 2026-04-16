@@ -26,7 +26,7 @@ from datetime import datetime
 import logging
 import utils
 
-import norduniclient as nc
+import graphdb as nc
 from apps.noclook import activitylog
 from apps.noclook import helpers
 from apps.nerds.lib.consumer_util import address_is_a
