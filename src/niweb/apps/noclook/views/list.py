@@ -229,7 +229,7 @@ def list_hosts(request):
 def _switch_table(switch, users):
     ip_addresses = switch.get('ip_addresses', ['No address'])
     model = switch.get('model')
-    row = TableRow(switch, model, ip_addresses, users)
+    row = TableRow(switch, model, ip_addresses, users, switch.get('operational_state'))
     _set_expired(row, switch)
     return row
 
@@ -247,7 +247,7 @@ def list_switches(request):
     switch_list = _filter_expired(switch_list, request, select=lambda n: n.get('switch'))
     urls = get_node_urls(switch_list)
 
-    table = Table('Switch', 'Model', 'Address', 'User')
+    table = Table('Switch', 'Model', 'Address', 'User', 'Operational state')
     table.rows = [_switch_table(item['switch'], item['users']) for item in switch_list]
     _set_filters_expired(table, request)
 
