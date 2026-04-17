@@ -207,6 +207,9 @@ def table_search(target=None, field_id=None):
 def as_json(value):
     return json.dumps(value, indent=4, sort_keys=True)
 
+@register.filter
+def in_service(services):
+    return [s for s in services if s.get('operational_state') == "In service"]
 
 @register.filter
 def get_item(dictionary, key):
