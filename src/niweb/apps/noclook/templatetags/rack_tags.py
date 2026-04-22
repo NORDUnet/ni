@@ -46,7 +46,7 @@ def _equipment(item):
 
 
 def _is_decommissioned(equipment):
-    return equipment['data'].get("operational_state", "").lower() == 'decommissioned'
+    return (equipment['data'].get("operational_state", "") or "").lower() == 'decommissioned'
 
 
 def place_equipment(view_data, current_idx, last_eq, result):

@@ -553,11 +553,18 @@ h3.compact {
 }
 
 .row-flex .rack {
-  margin-right: 194px;
+  margin-right: 189px;
 }
 
 .flex-adjust {
   flex: 1 2;
+}
+
+.rack-flex {
+  gap: 10px;
+  display: flex;
+  flex-flow: row wrap;
+
 }
 
 .floorplan th,
