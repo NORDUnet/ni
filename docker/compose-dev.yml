@@ -50,6 +50,9 @@ services:
       - DJANGO_SETTINGS_MODULE=niweb.settings.dev
       - REPORTS_TO=markus@nordu.net
       - LOGO_SUBTEXT=DOCKER
+    env_file:
+      - path: ./dotenv-local
+        required: false
     volumes:
       - ../src/niweb:/app/niweb
       - ../src/scripts:/app/scripts
