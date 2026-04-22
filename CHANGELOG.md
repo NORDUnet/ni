@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-04-22
+### Changed
+- Ticket info on e.g. routers now splits dependent services out into groups based on operational_state
+
+## Added
+- Rack details now show decomissioned equipment that are still associated with a rack. It also lists the equipment for easier cleanup.
+
 ## 2026-02-26
 ### Added
 - You can now create firewalls, routers and PDUs manually
