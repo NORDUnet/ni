@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-04-23
+### Changed
+- Moved norduniclient to be an internal package - thus it is no longer a dependency
+- Sped up the backup restore by batching requests to neo4j
+
+### Added
+- Scan router functionality for on-demand scanning, still requires a ni-producer to look in the queue.
+
 ## 2026-04-22
 ### Changed
 - Ticket info on e.g. routers now splits dependent services out into groups based on operational_state
