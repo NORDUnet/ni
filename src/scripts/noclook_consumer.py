@@ -21,9 +21,12 @@
 #       MA 02110-1301, USA.
 
 import sys
+import random
 import datetime
 import argparse
 import logging
+import traceback
+from collections import defaultdict
 import utils
 
 from apps.noclook.models import NodeHandle
@@ -52,7 +55,6 @@ def normalize_whitespace(text):
 
 
 def generate_password(n):
-    import random
     return ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(n)])
 
 
@@ -117,7 +119,6 @@ def _consume_node(item, fallback_user):
         nc.set_node_properties(nc.graphdb.manager, nh.handle_id, properties)
         logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
     except Exception as e:
-        import traceback
         traceback.print_exc()
         ex_type = type(e).__name__
         logger.error('Could not add node {} (handle_id={}, node_type={}, meta_type={}) got {}: {})'.format(node_name, handle_id, node_type, meta_type, ex_type, str(e)))
@@ -126,42 +127,130 @@ def _consume_node(item, fallback_user):
 def consume_noclook(nodes, relationships):
     """
     Inserts the backup made with NOCLook producer.
+
+    Batches all operations to minimise Neo4j session round-trips and use
+    bulk SQL inserts for Django NodeHandles.
     """
-    tot_nodes = 0
-    tot_rels = 0
+    BATCH_SIZE = 500
+
+    def _chunks(lst, n):
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
     fallback_user = utils.get_user()
-    # Loop through all files starting with node
-    for i in nodes:
-        item = i['host']['noclook_producer']
-        if i['host']['name'].startswith('node'):
-            _consume_node(item, fallback_user)
-            tot_nodes += 1
+
+    # Nodes
+    node_items = [
+        i['host']['noclook_producer']
+        for i in nodes
+        if i['host']['name'].startswith('node')
+    ]
+
+    # Cache NodeType lookups (one query per distinct type name instead of one per node)
+    type_cache = {}
+    for item in node_items:
+        name = item.get('node_type')
+        if name not in type_cache:
+            type_cache[name] = utils.get_node_type(name)
+
+    # Bulk-create Django NodeHandles (skips already-existing handles)
+    # bulk_create does NOT call save() so we handle Neo4j separately below.
+    handles = [
+        NodeHandle(
+            handle_id=item.get('handle_id'),
+            node_name=item.get('properties', {}).get('name'),
+            node_type=type_cache[item.get('node_type')],
+            node_meta_type=item.get('meta_type'),
+            creator=fallback_user,
+            modifier=fallback_user,
+        )
+        for item in node_items
+    ]
+    NodeHandle.objects.bulk_create(handles, ignore_conflicts=True)
+
+    # Update node_meta_type on any already-existing handles where it has changed
+    meta_by_id = {h.handle_id: h.node_meta_type for h in handles}
+    to_update = []
+    for nh in NodeHandle.objects.filter(handle_id__in=meta_by_id):
+        if nh.node_meta_type != meta_by_id[nh.handle_id]:
+            nh.node_meta_type = meta_by_id[nh.handle_id]
+            to_update.append(nh)
+    if to_update:
+        NodeHandle.objects.bulk_update(to_update, ['node_meta_type'])
+
+    # Batch Neo4j node creation grouped by (meta_type, type_label).
+    # Labels can't be parameterised in Cypher so we issue one UNWIND per group.
+    neo4j_groups = defaultdict(list)
+    for item in node_items:
+        meta_type = item.get('meta_type')
+        type_label = type_cache[item.get('node_type')].get_label()
+        neo4j_groups[(meta_type, type_label)].append({
+            'handle_id': item.get('handle_id'),
+            'name': item.get('properties', {}).get('name'),
+        })
+
+    all_props = []
+    for item in node_items:
+        props = dict(item.get('properties') or {})
+        props['handle_id'] = item.get('handle_id')
+        all_props.append({'handle_id': item.get('handle_id'), 'props': props})
+
+    for (meta_type, type_label), group in neo4j_groups.items():
+        q = """
+            UNWIND $nodes AS n
+            MERGE (node:Node:%s:%s {handle_id: n.handle_id})
+            ON CREATE SET node.name = n.name
+            """ % (meta_type, type_label)
+        for chunk in _chunks(group, BATCH_SIZE):
+            with nc.graphdb.manager.session as s:
+                s.run(q, {'nodes': chunk})
+
+    set_q = """
+        UNWIND $items AS item
+        MATCH (n:Node {handle_id: item.handle_id})
+        SET n = item.props
+        """
+    for chunk in _chunks(all_props, BATCH_SIZE):
+        with nc.graphdb.manager.session as s:
+            s.run(set_q, {'items': chunk})
+
+    tot_nodes = len(node_items)
     print('Added {!s} nodes.'.format(tot_nodes))
 
-    # Loop through all files starting with relationship
-    tot_rels = 0
+    # Relationships
+    # Group by (type, sorted property keys) to preserve the original MERGE
+    # semantics where relationship identity included all properties.
+    rel_groups = defaultdict(list)
     for i in relationships:
         rel = i['host']['noclook_producer']
-        properties = rel.get('properties')
-
-        propmap = ', '.join([f'{prop}: $props.{prop}' for prop in properties])
-
-        q = """
-             MATCH (start:Node { handle_id: $start_id }),(end:Node {handle_id: $end_id })
-             MERGE (start)-[r:%s {%s}]->(end)
-             """ % (rel.get('type'), propmap) 
-
-        query_data = {
+        rel_type = rel.get('type')
+        properties = rel.get('properties') or {}
+        prop_keys = tuple(sorted(properties.keys()))
+        rel_groups[(rel_type, prop_keys)].append({
+            'start': rel.get('start'),
+            'end': rel.get('end'),
             'props': properties,
-            'start_id': rel.get('start'),
-            'end_id': rel.get('end')
-        }
+        })
 
-        with nc.graphdb.manager.session as s:
-            s.run(q, query_data)
-        logger.info('{start}-[{rel_type}]->{end}'.format(start=rel.get('start'), rel_type=rel.get('type'),
-                                                         end=rel.get('end')))
-        tot_rels += 1
+    for (rel_type, prop_keys), rels in rel_groups.items():
+        if prop_keys:
+            propmap = ', '.join(['{k}: r.props.{k}'.format(k=k) for k in prop_keys])
+            q = """
+                UNWIND $rels AS r
+                MATCH (start:Node {handle_id: r.start}), (end:Node {handle_id: r.end})
+                MERGE (start)-[rel:%s {%s}]->(end)
+                """ % (rel_type, propmap)
+        else:
+            q = """
+                UNWIND $rels AS r
+                MATCH (start:Node {handle_id: r.start}), (end:Node {handle_id: r.end})
+                MERGE (start)-[rel:%s]->(end)
+                """ % rel_type
+        for chunk in _chunks(rels, BATCH_SIZE):
+            with nc.graphdb.manager.session as s:
+                s.run(q, {'rels': chunk})
+
+    tot_rels = sum(len(v) for v in rel_groups.values())
     print('Added {!s} relationships.'.format(tot_rels))
 
 
