@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, get_object_or_404
 from django.views import generic
 from django.urls import reverse
@@ -25,6 +27,21 @@ def host(request):
             item.save()
             # Do stuff with hostname
             messages.success(request, "Added {0} to the scan queue".format(hostname))
+    else:
+        messages.warning(request, "GET request not allowed")
+    return HttpResponseRedirect(reverse("scan:queue"))
+
+
+def router(request):
+    if request.POST:
+        target = request.POST.get("target", "").strip()
+        if target:
+            item = QueueItem(type="Router", data=json.dumps({"target": target}))
+            item.save()
+            messages.success(request, "Added {} to the router scan queue".format(target))
+        else:
+            # TODO: scan all routers, or something else?
+            messages.warning(request, "No target provided")
     else:
         messages.warning(request, "GET request not allowed")
     return HttpResponseRedirect(reverse("scan:queue"))

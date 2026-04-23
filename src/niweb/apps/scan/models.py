@@ -3,7 +3,8 @@ from django.db import models
 # Create your models here.
 
 QUEUE_TYPES = [
-    ("Host", "Host"),
+    ("Host",   "Host"),
+    ("Router", "Router"),
 ]
 
 STATUS = [

@@ -248,7 +248,11 @@ def hardware_module(module, level=0):
 
 @register.simple_tag
 def scan_data(host_node):
-    return escape(json.dumps({"target": host_node.data.get("hostnames", ["unknown"])[0], "ipv4s": host_node.data.get("ip_addresses",[])}))
+    target = host_node.data.get("hostnames", ["unknown"])[0]
+    ipv4s = host_node.data.get("ip_addresses", [])
+    if target == "unknown" and not ipv4s:
+        return None
+    return escape(json.dumps({"target": target, "ipv4s": ipv4s}))
 
 
 @register.inclusion_tag("noclook/dynamic_ports.html", takes_context=True)
