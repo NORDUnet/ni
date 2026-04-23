@@ -3,8 +3,8 @@ import logging
 import utils  # noqa: F401 Keep for django_hack
 
 from apps.noclook.models import NodeHandle, NodeType
-from norduniclient.exceptions import NodeNotFound
-import norduniclient as nc
+from graphdb.exceptions import NodeNotFound
+import graphdb as nc
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import utils  # noqa: F401 Keep for django_hack
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 from actstream.models import Action
 

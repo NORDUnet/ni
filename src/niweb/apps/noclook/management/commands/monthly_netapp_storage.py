@@ -8,7 +8,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 
 class Command(BaseCommand):

@@ -13,7 +13,7 @@ from apps.noclook.forms import get_node_type_tuples, SearchIdForm
 from apps.noclook.forms.reports import HostReportForm
 from apps.noclook.models import NordunetUniqueId, NodeHandle
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 
 @login_required

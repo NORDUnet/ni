@@ -28,7 +28,7 @@ import logging
 import utils
 
 from django.conf import settings as django_settings
-import norduniclient as nc
+import graphdb as nc
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')

@@ -19,7 +19,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
-import norduniclient as nc
+import graphdb as nc
 
 
 def init_config(path):

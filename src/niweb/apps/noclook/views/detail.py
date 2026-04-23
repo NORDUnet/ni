@@ -9,7 +9,7 @@ import logging
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
 from apps.noclook.views.helpers import Table, TableRow
-import norduniclient as nc
+import graphdb as nc
 
 logger = logging.getLogger(__name__)
 

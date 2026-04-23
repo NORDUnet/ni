@@ -18,8 +18,8 @@ from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
 from apps.noclook import unique_ids
-import norduniclient as nc
-from norduniclient.exceptions import UniqueNodeError
+import graphdb as nc
+from graphdb.exceptions import UniqueNodeError
 
 
 # Helper functions

@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers, activitylog
 import ipaddress
-import norduniclient as nc
+import graphdb as nc
 
 logger = logging.getLogger(__name__)
 

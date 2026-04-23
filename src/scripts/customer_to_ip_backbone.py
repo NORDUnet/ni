@@ -3,7 +3,7 @@ import logging
 import utils
 
 from apps.noclook import helpers
-import norduniclient as nc
+import graphdb as nc
 
 logger = logging.getLogger('add_customer_to_ip_backbone')
 

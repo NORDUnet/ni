@@ -15,7 +15,7 @@ from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle, Dropdown, SwitchType
 from apps.noclook import helpers
 from apps.noclook import unique_ids
-from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
+from graphdb.exceptions import UniqueNodeError, NoRelationshipPossible
 
 
 TYPES = [
