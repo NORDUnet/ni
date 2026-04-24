@@ -1,8 +1,8 @@
-import utils
+from . import utils
 import argparse
 import logging
-from apps.noclook import helpers, forms
-from apps.noclook.models import ServiceType, NodeHandle
+from norduni.apps.noclook import helpers, forms
+from norduni.apps.noclook.models import ServiceType, NodeHandle
 
 logger = logging.getLogger('noclook_bulk_service')
 

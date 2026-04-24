@@ -4,8 +4,8 @@
 import logging
 import argparse
 from configparser import SafeConfigParser
-import utils
-from apps.noclook import helpers
+from . import utils
+from norduni.apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')
 

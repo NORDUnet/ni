@@ -31,10 +31,9 @@ them to consume_juniper_conf().
 import sys
 import argparse
 import logging
-import django_hack
+from . import utils
 
 import norduni.graphdb as nc
-from . import utils
 from norduni.apps.noclook import helpers
 from norduni.apps.nerds.lib.juniper_consumer import consume_juniper_conf
 

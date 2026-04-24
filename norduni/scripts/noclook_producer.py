@@ -23,11 +23,13 @@
 import os
 import json
 import argparse
-import django_hack
+from . import django_setup
+
+django_setup.nop()
 
 from django.core.exceptions import ObjectDoesNotExist
-from apps.noclook.models import NodeType
-import graphdb as nc
+from norduni.apps.noclook.models import NodeType
+import norduni.graphdb as nc
 
 
 django_hack.nop()

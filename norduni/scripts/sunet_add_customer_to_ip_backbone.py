@@ -1,9 +1,9 @@
 import argparse
 import logging
-import utils
+from . import utils
 
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 logger = logging.getLogger('sunet_add_customer_to_ip_backbone')
 

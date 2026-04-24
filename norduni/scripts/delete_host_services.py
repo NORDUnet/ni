@@ -1,10 +1,12 @@
 import argparse
 import logging
-import utils  # noqa: F401 Keep for django_hack
+from . import django_setup
 
-from apps.noclook.models import NodeHandle, NodeType
-from graphdb.exceptions import NodeNotFound
-import graphdb as nc
+django_setup.nop()
+
+from norduni.apps.noclook.models import NodeHandle, NodeType
+from norduni.graphdb.exceptions import NodeNotFound
+import norduni.graphdb as nc
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)

@@ -3,12 +3,12 @@
 import sys
 import argparse
 import logging
-import utils
+from . import utils
 
 __author__ = 'markus'
 
 
-from apps.noclook import helpers
+from norduni.apps.noclook import helpers
 logger = logging.getLogger('noclook_consumer.sunet_host_json')
 
 #

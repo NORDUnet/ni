@@ -1,7 +1,10 @@
 import argparse
 import logging
-import utils  # noqa: F401 Keep for django_hack
-from apps.noclook.models import NodeType, NodeHandle
+from . import django_setup
+
+django_setup.nop()
+
+from norduni.apps.noclook.models import NodeType, NodeHandle
 from actstream.models import Action
 
 logger = logging.getLogger('noclook_cleanup_peering_partners')

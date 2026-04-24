@@ -4,14 +4,11 @@ import argparse
 import csv
 import logging
 
-base_path = '../../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'niweb.settings.prod')
-import django
-django.setup()
-from apps.noclook.models import ServiceType, ServiceClass
+from norduni.scripts import django_setup
+
+django_setup.nop()
+
+from norduni.apps.noclook.models import ServiceType, ServiceClass
 
 logger = logging.getLogger('noclook_service_types_import')
 

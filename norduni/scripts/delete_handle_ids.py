@@ -6,11 +6,11 @@
 import argparse
 import csv
 import logging
-import utils
+from . import utils
 
 from django.core.exceptions import ObjectDoesNotExist
-from apps.noclook import helpers
-from apps.noclook.models import NodeHandle
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook.models import NodeHandle
 
 logger = logging.getLogger('noclook_delete_handle_ids')
 

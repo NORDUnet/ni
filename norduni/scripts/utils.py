@@ -8,7 +8,9 @@ except ImportError:
     from configparser import ConfigParser as SafeConfigParser
 
 import random
-import django_hack  # Keep
+from . import django_setup # if you import this file, do not import django_setup again.
+
+django_setup.nop()
 
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
@@ -16,7 +18,6 @@ from norduni.apps.noclook import activitylog
 from norduni.apps.noclook.models import NodeType, NodeHandle
 
 logger = logging.getLogger('noclook_utils')
-django_hack.nop()
 
 
 def load_json(json_dir, starts_with='', with_filename=False):

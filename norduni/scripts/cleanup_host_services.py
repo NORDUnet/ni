@@ -1,11 +1,13 @@
 import argparse
 import logging
 from datetime import date, timedelta
-import utils  # noqa: F401 Keep for django_hack
+from . import django_setup
 
-from apps.noclook.models import NodeHandle, NodeType
-from apps.noclook import helpers
-import graphdb as nc
+django_setup.nop()
+
+from norduni.apps.noclook.models import NodeHandle, NodeType
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 from actstream.models import Action
 

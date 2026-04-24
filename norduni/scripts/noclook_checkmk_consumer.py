@@ -25,11 +25,11 @@ import argparse
 from datetime import datetime, timedelta
 import re
 import logging
-import utils
+from . import utils
 
 from django.conf import settings as django_settings
-import graphdb as nc
-from apps.noclook import helpers
+import norduni.graphdb as nc
+from norduni.apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')
 

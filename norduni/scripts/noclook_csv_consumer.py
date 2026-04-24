@@ -1,8 +1,8 @@
-import utils
+from . import utils
 import argparse
 import csv
 import logging
-from apps.noclook import helpers
+from norduni.apps.noclook import helpers
 
 logger = logging.getLogger('noclook_csv_consumer')
 
