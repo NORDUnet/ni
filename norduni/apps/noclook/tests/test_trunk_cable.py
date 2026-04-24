@@ -1,8 +1,8 @@
 from .neo4j_base import NeoTestCase
-from apps.noclook.views.edit import _handle_trunk_cable
-from apps.noclook.forms.common import TrunkCableForm
-from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
-from apps.noclook import helpers
+from norduni.apps.noclook.views.edit import _handle_trunk_cable
+from norduni.apps.noclook.forms.common import TrunkCableForm
+from norduni.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
+from norduni.apps.noclook import helpers
 
 
 class TrunkCableTest(NeoTestCase):

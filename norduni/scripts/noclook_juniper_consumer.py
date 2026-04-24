@@ -33,10 +33,10 @@ import argparse
 import logging
 import django_hack
 
-import graphdb as nc
-import utils
-from apps.noclook import helpers
-from apps.nerds.lib.juniper_consumer import consume_juniper_conf
+import norduni.graphdb as nc
+from . import utils
+from norduni.apps.noclook import helpers
+from norduni.apps.nerds.lib.juniper_consumer import consume_juniper_conf
 
 django_hack.nop()
 

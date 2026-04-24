@@ -3,10 +3,10 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.views.helpers import Table, TableRow
-from apps.noclook.helpers import get_node_urls, neo4j_data_age
-import graphdb as nc
+from norduni.apps.noclook.models import NodeType, NodeHandle
+from norduni.apps.noclook.views.helpers import Table, TableRow
+from norduni.apps.noclook.helpers import get_node_urls, neo4j_data_age
+import norduni.graphdb as nc
 
 __author__ = 'lundberg'
 

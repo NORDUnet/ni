@@ -5,7 +5,7 @@ from django.apps import AppConfig
 
 
 class NOCLookConfig(AppConfig):
-    name = 'apps.noclook'
+    name = 'norduni.apps.noclook'
 
     def ready(self):
         from actstream import registry

@@ -1,6 +1,6 @@
 from django.core.management import call_command
 from ..neo4j_base import NeoTestCase
-from apps.noclook import helpers
+from norduni.apps.noclook import helpers
 from django.core import mail
 
 

@@ -15,9 +15,9 @@ from tastypie.test import ResourceTestCaseMixin
 from django.test import TestCase
 from tastypie.models import ApiKey
 from dynamic_preferences.registries import global_preferences_registry
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-from apps.noclook import helpers, forms
-from apps.noclook.tests.testing import nc
+from norduni.apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from norduni.apps.noclook import helpers, forms
+from norduni.apps.noclook.tests.testing import nc
 
 # We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()

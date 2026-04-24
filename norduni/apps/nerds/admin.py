@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from .models import HostUserMap
-from apps.noclook.models import NodeHandle
+from norduni.apps.noclook.models import NodeHandle
 from django.utils.functional import lazy
 
 

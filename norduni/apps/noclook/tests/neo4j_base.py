@@ -7,11 +7,11 @@ except NameError:
     from importlib import reload
 from django.test import TestCase, Client, tag
 from django.contrib.auth.models import User
-from apps.noclook.models import NodeHandle
+from norduni.apps.noclook.models import NodeHandle
 from dynamic_preferences.registries import global_preferences_registry
-from apps.noclook import forms, helpers
+from norduni.apps.noclook import forms, helpers
 from django.template.defaultfilters import slugify
-from apps.noclook.tests.testing import nc
+from norduni.apps.noclook.tests.testing import nc
 
 # We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()

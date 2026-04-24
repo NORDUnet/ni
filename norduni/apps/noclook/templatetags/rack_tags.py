@@ -2,7 +2,7 @@ from django import template
 import re
 from collections.abc import Iterable
 from collections import defaultdict
-from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
+from norduni.apps.noclook.templatetags.noclook_tags import noclook_node_to_link
 
 register = template.Library()
 RACK_SIZE_PX = 20

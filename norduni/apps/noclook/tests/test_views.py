@@ -1,6 +1,6 @@
 from .neo4j_base import NeoTestCase
-from apps.noclook.helpers import set_user, set_noclook_auto_manage
-from apps.noclook import forms
+from norduni.apps.noclook.helpers import set_user, set_noclook_auto_manage
+from norduni.apps.noclook import forms
 from django.urls import reverse
 
 

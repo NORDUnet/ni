@@ -3,7 +3,7 @@ from django import template
 import string
 import random
 from django.utils.functional import lazy
-from apps.noclook import forms, models
+from norduni.apps.noclook import forms, models
 
 register = template.Library()
 

@@ -9,11 +9,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 
-from apps.noclook.forms import get_node_type_tuples, SearchIdForm
-from apps.noclook.forms.reports import HostReportForm
-from apps.noclook.models import NordunetUniqueId, NodeHandle
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook.forms import get_node_type_tuples, SearchIdForm
+from norduni.apps.noclook.forms.reports import HostReportForm
+from norduni.apps.noclook.models import NordunetUniqueId, NodeHandle
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 
 @login_required

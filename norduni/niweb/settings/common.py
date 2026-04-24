@@ -1,31 +1,26 @@
 # -*- coding: utf-8 -*-
 
-from os.path import abspath, basename, dirname, join, normpath
+from pathlib import Path
+from os.path import normpath, join
 from os import environ
-from sys import path
 import dotenv
 
 __author__ = 'lundberg'
 
 """
 Common settings and globals.
-
-Based on https://github.com/rdegges/django-skel/.
 """
 
 ########## PATH CONFIGURATION
-# Absolute filesystem path to the Django project directory:
-DJANGO_ROOT = dirname(dirname(abspath(__file__)))
+# norduni/niweb/settings/ -> norduni/niweb/ -> norduni/ -> repo root
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
-# Absolute filesystem path to the top-level project folder:
-SITE_ROOT = dirname(DJANGO_ROOT)
+# The Django project package dir (norduni/niweb/)
+DJANGO_ROOT = str(Path(__file__).resolve().parent.parent)
 
-# Read .env for settings
-config_file = environ.get('CONFIG_FILE', join(SITE_ROOT, '.env'))
+# Read .env for settings (CONFIG_FILE env var overrides, else repo root .env)
+config_file = environ.get('CONFIG_FILE', str(REPO_ROOT / '.env'))
 dotenv.read_dotenv(config_file)
-
-# Site name:
-SITE_NAME = basename(DJANGO_ROOT)
 
 # SAML config
 APP_SERVER_NAME =  environ.get("APP_SERVER_NAME", "norpan-ni.cnaas.sunet.se")
@@ -36,10 +31,6 @@ LOCAL_METADATA =  environ.get("LOCAL_METADATA", None)
 MDQ_URL= environ.get("MDQ_URL", None)
 MDQ_CERT= environ.get("MDQ_CERT", None)
 AUTHN_REQUESTS_SIGNED = environ.get('AUTHN_REQUESTS_SIGNED', 'False').lower() == 'true'
-
-# Add our project to our pythonpath, this way we don't need to type our project
-# name in our dotted import paths:
-path.append(DJANGO_ROOT)
 ########## END PATH CONFIGURATION
 
 ########## PROJECT CONFIGURATION
@@ -191,8 +182,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
                 'dynamic_preferences.processors.global_preferences',
-                'apps.noclook.announcements.page_flash',
-                'apps.noclook.context_processors.brand',
+                'norduni.apps.noclook.announcements.page_flash',
+                'norduni.apps.noclook.context_processors.brand',
             ]
         }
     }
@@ -227,12 +218,12 @@ if SAML_ENABLED:
     # Switch to env or SAML login
     LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
     AUTHENTICATION_BACKENDS += (
-        environ.get('SAML_BACKEND', 'apps.saml2auth.middleware.ModifiedSaml2Backend'),
+        environ.get('SAML_BACKEND', 'norduni.apps.saml2auth.middleware.ModifiedSaml2Backend'),
     )
     # environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     MIDDLEWARE += (
         'djangosaml2.middleware.SamlSessionMiddleware',
-        'apps.saml2auth.middleware.HandleUnsupportedBinding',
+        'norduni.apps.saml2auth.middleware.HandleUnsupportedBinding',
     )
     # Needed since django 2+ sets lax per default
     # SESSION_COOKIE_SAMESITE = None
@@ -241,7 +232,7 @@ if SAML_ENABLED:
 
 ########## URL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
-ROOT_URLCONF = '%s.urls' % SITE_NAME
+ROOT_URLCONF = 'norduni.niweb.urls'
 ########## END URL CONFIGURATION
 
 
@@ -269,10 +260,10 @@ THIRD_PARTY_APPS = (
 )
 
 LOCAL_APPS = (
-    'apps.userprofile',
-    'apps.noclook',
-    'apps.scan',
-    'apps.nerds',
+    'norduni.apps.userprofile',
+    'norduni.apps.noclook',
+    'norduni.apps.scan',
+    'norduni.apps.nerds',
 )
 
 OPTIONAL_APPS = environ.get('OPTIONAL_APPS', '').split()
@@ -292,7 +283,7 @@ ACTSTREAM_SETTINGS = {
 
 ########## LOGGING CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#logging
-LOG_PATH = environ.get('LOG_PATH', '{!s}/logs'.format(SITE_ROOT))
+LOG_PATH = environ.get('LOG_PATH', '{!s}/logs'.format(DJANGO_ROOT))
 
 LOGGING = {
     'version': 1,
@@ -361,5 +352,5 @@ LOGGING = {
 
 ########## WSGI CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
-WSGI_APPLICATION = 'wsgi.application'
+WSGI_APPLICATION = 'norduni.niweb.wsgi.application'
 ########## END WSGI CONFIGURATION

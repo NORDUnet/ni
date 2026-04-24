@@ -7,7 +7,7 @@ Created on Thu Nov 10 14:52:53 2011
 
 import json
 from .helpers import labels_to_node_type, get_node_urls
-import graphdb as nc
+import norduni.graphdb as nc
 from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)

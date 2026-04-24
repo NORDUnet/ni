@@ -5,8 +5,8 @@ from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from django.conf import settings as django_settings
 from datetime import datetime
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 
 class Command(BaseCommand):

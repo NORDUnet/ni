@@ -23,13 +23,13 @@ from django.urls import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
-from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId, Dropdown
-from apps.noclook import forms
-from apps.noclook.forms import common as common_forms
-from apps.noclook import helpers
-from apps.noclook import unique_ids
-import graphdb as nc
-from graphdb.exceptions import NodeNotFound
+from norduni.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId, Dropdown
+from norduni.apps.noclook import forms
+from norduni.apps.noclook.forms import common as common_forms
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook import unique_ids
+import norduni.graphdb as nc
+from norduni.graphdb.exceptions import NodeNotFound
 import logging
 from datetime import datetime, timedelta
 
@@ -134,8 +134,8 @@ class FullUserResource(ModelResource):
             "username": ALL
         }
 
-    created = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'creator', related_name='creator')
-    modified = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'modifier', related_name='modifier')
+    created = fields.ToManyField('norduni.apps.noclook.api.resources.NodeHandleResource', 'creator', related_name='creator')
+    modified = fields.ToManyField('norduni.apps.noclook.api.resources.NodeHandleResource', 'modifier', related_name='modifier')
 
 
 class UserResource(ModelResource):
@@ -149,7 +149,7 @@ class UserResource(ModelResource):
 
 class NodeTypeResource(ModelResource):
 
-    node_handles = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource',
+    node_handles = fields.ToManyField('norduni.apps.noclook.api.resources.NodeHandleResource',
                                       'nodehandle_set', related_name='node_type')
 
     class Meta:

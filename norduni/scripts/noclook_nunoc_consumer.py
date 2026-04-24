@@ -2,10 +2,10 @@
 
 import argparse
 import logging
-import utils
+from . import utils
 
-from apps.noclook import helpers
-from apps.nerds.lib.consumer_util import address_is_a
+from norduni.apps.noclook import helpers
+from norduni.apps.nerds.lib.consumer_util import address_is_a
 
 logger = logging.getLogger('noclook_consumer.nunoc')
 ALLOWED_NODE_TYPE_SET = {'Host'}

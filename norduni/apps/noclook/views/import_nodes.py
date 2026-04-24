@@ -10,11 +10,11 @@ from ..models import NodeHandle
 import json
 import re
 
-from apps.noclook import forms
-from apps.noclook import helpers
+from norduni.apps.noclook import forms
+from norduni.apps.noclook import helpers
 
-import graphdb as nc
-from graphdb.exceptions import UniqueNodeError
+import norduni.graphdb as nc
+from norduni.graphdb.exceptions import UniqueNodeError
 
 VALIDATION_FORMS = {
   'Rack': forms.EditRackForm,

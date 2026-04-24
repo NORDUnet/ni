@@ -5,9 +5,9 @@ from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
 import csv
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown, SwitchType
+from norduni.apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown, SwitchType
 from .. import unique_ids
-import graphdb as nc
+import norduni.graphdb as nc
 from dynamic_preferences.registries import global_preferences_registry
 from io import StringIO
 import ipaddress

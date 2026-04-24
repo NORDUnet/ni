@@ -1,6 +1,6 @@
-from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
-import graphdb as nc
+from norduni.apps.noclook.models import NodeType, NodeHandle
+from norduni.apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
+import norduni.graphdb as nc
 from datetime import datetime, timedelta
 from django import template
 import json

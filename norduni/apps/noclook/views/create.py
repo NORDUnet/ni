@@ -10,12 +10,12 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import render, redirect
-from apps.noclook import forms
-from apps.noclook.forms import common as common_forms
-from apps.noclook.models import NodeHandle, Dropdown, SwitchType
-from apps.noclook import helpers
-from apps.noclook import unique_ids
-from graphdb.exceptions import UniqueNodeError, NoRelationshipPossible
+from norduni.apps.noclook import forms
+from norduni.apps.noclook.forms import common as common_forms
+from norduni.apps.noclook.models import NodeHandle, Dropdown, SwitchType
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook import unique_ids
+from norduni.graphdb.exceptions import UniqueNodeError, NoRelationshipPossible
 
 
 TYPES = [

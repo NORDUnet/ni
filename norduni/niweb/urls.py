@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.urls import include, path
 from tastypie.api import Api
-import apps.noclook.api.resources as niapi
+import norduni.apps.noclook.api.resources as niapi
 from django.contrib.auth import views as auth_views
 from django.conf.urls.static import static
 
@@ -56,11 +56,11 @@ v1_api.register(niapi.SiteOwnerResource())
 v1_api.register(niapi.SwitchResource())
 v1_api.register(niapi.UnitResource())
 # other
-if "apps.scan" in settings.INSTALLED_APPS:
-    from apps.scan.api.resources import ScanQueryItemResource
+if "norduni.apps.scan" in settings.INSTALLED_APPS:
+    from norduni.apps.scan.api.resources import ScanQueryItemResource
     v1_api.register(ScanQueryItemResource())
-if "apps.nerds" in settings.INSTALLED_APPS:
-    from apps.nerds.api.resources import NerdsResource
+if "norduni.apps.nerds" in settings.INSTALLED_APPS:
+    from norduni.apps.nerds.api.resources import NerdsResource
     v1_api.register(NerdsResource())
 
 urlpatterns = [
@@ -90,15 +90,15 @@ urlpatterns += [
     path('activity/', include('actstream.urls')),
 
     # User Profiles
-    path('userprofile/', include('apps.userprofile.urls')),
+    path('userprofile/', include('norduni.apps.userprofile.urls')),
 
     # Scan
-    if_installed('apps.scan', 'scan/', include('apps.scan.urls', namespace="scan")),
+    if_installed('norduni.apps.scan', 'scan/', include('norduni.apps.scan.urls', namespace="scan")),
 
     path('attachments/', include('attachments.urls', namespace='attachments')),
-    path('userprofile/', include('apps.userprofile.urls')),
+    path('userprofile/', include('norduni.apps.userprofile.urls')),
     # NOCLook URLs
-    path('', include('apps.noclook.urls')),
+    path('', include('norduni.apps.noclook.urls')),
 ]
 
 if settings.DEBUG:

@@ -6,10 +6,10 @@ import ipaddress
 import json
 import logging
 
-from apps.noclook.models import NodeHandle
-from apps.noclook import helpers
-from apps.noclook.views.helpers import Table, TableRow
-import graphdb as nc
+from norduni.apps.noclook.models import NodeHandle
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook.views.helpers import Table, TableRow
+import norduni.graphdb as nc
 
 logger = logging.getLogger(__name__)
 

@@ -27,19 +27,19 @@ import argparse
 import logging
 import traceback
 from collections import defaultdict
-import utils
+from . import utils
 
-from apps.noclook.models import NodeHandle
+from norduni.apps.noclook.models import NodeHandle
 from django.conf import settings as django_settings
 from django_comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
-import graphdb as nc
+import norduni.graphdb as nc
 
-import noclook_juniper_consumer
-import noclook_nmap_consumer
-import noclook_checkmk_consumer
-import noclook_cfengine_consumer
-import noclook_nunoc_consumer
+from . import noclook_juniper_consumer
+from . import noclook_nmap_consumer
+from . import noclook_checkmk_consumer
+from . import noclook_cfengine_consumer
+from . import noclook_nunoc_consumer
 
 logger = logging.getLogger('noclook_consumer')
 # This script is used for adding the objects collected with the

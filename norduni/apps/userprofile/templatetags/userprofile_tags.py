@@ -2,7 +2,7 @@ from django.utils.html import format_html
 from django import template
 from django.urls import reverse
 from django.contrib.auth.models import User
-from apps.userprofile.models import UserProfile
+from norduni.apps.userprofile.models import UserProfile
 
 register = template.Library()
 

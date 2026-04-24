@@ -3,8 +3,8 @@ __author__ = 'lundberg'
 
 from django import forms
 from django.db import IntegrityError
-from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, NodeHandle
-from apps.noclook.helpers import get_provider_id
+from norduni.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, NodeHandle
+from norduni.apps.noclook.helpers import get_provider_id
 from .. import unique_ids
 from . import common
 

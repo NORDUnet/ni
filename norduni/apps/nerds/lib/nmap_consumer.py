@@ -1,7 +1,7 @@
 from datetime import datetime
-from apps.noclook import helpers, activitylog
+from norduni.apps.noclook import helpers, activitylog
 from . import consumer_util as nlu
-from apps.nerds.models import HostUserMap
+from norduni.apps.nerds.models import HostUserMap
 
 
 # Type of equipment we want to update with this consumer

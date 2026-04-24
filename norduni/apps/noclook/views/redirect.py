@@ -4,8 +4,8 @@ from django.shortcuts import redirect, get_object_or_404, render
 from django.http import Http404
 from time import sleep
 
-from apps.noclook.models import NodeHandle
-from apps.noclook import helpers
+from norduni.apps.noclook.models import NodeHandle
+from norduni.apps.noclook import helpers
 
 
 @login_required

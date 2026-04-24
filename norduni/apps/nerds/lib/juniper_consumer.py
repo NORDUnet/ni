@@ -11,10 +11,10 @@ import ipaddress
 import json
 import logging
 
-from apps.noclook import helpers, activitylog
-from apps.noclook.models import UniqueIdGenerator, NodeHandle
-from apps.nerds.lib import consumer_util as nlu
-import graphdb as nc
+from norduni.apps.noclook import helpers, activitylog
+from norduni.apps.noclook.models import UniqueIdGenerator, NodeHandle
+from norduni.apps.nerds.lib import consumer_util as nlu
+import norduni.graphdb as nc
 from dynamic_preferences.registries import global_preferences_registry
 
 logger = logging.getLogger('noclook_consumer.juniper')

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import graphdb as nc
+import norduni.graphdb as nc
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 

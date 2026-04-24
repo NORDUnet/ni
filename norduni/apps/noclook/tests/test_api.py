@@ -4,9 +4,9 @@ from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCaseMixin
 from django.test import TestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-from apps.noclook import helpers
-from apps.noclook.tests.testing import nc
+from norduni.apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook.tests.testing import nc
 
 __author__ = 'lundberg'
 

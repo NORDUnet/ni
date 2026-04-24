@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from collections.abc import Iterable
 
 from django import template
-from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
+from norduni.apps.noclook.templatetags.noclook_tags import noclook_node_to_link
 from django.utils.safestring import mark_safe
 from django.utils.html import format_html, format_html_join
 

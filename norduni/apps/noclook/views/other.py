@@ -10,10 +10,10 @@ from django.conf import settings
 from re import escape as re_escape
 import json
 
-from apps.noclook.models import NodeHandle, NodeType
-from apps.noclook import arborgraph
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook.models import NodeHandle, NodeType
+from norduni.apps.noclook import arborgraph
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 
 def index(request):

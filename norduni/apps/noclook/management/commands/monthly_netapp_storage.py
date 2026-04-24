@@ -7,8 +7,8 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 
 class Command(BaseCommand):

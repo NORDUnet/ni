@@ -24,12 +24,12 @@ import sys
 import argparse
 from datetime import datetime
 import logging
-import utils
+from . import utils
 
-import graphdb as nc
-from apps.noclook import activitylog
-from apps.noclook import helpers
-from apps.nerds.lib.consumer_util import address_is_a
+import norduni.graphdb as nc
+from norduni.apps.noclook import activitylog
+from norduni.apps.noclook import helpers
+from norduni.apps.nerds.lib.consumer_util import address_is_a
 
 logger = logging.getLogger('noclook_consumer.nmap')
 

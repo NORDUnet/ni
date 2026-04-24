@@ -7,9 +7,9 @@ from django.conf import settings as django_settings
 import tempfile
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from apps.noclook.templatetags.noclook_tags import timestamp_to_td
-from apps.noclook import helpers
-import graphdb as nc
+from norduni.apps.noclook.templatetags.noclook_tags import timestamp_to_td
+from norduni.apps.noclook import helpers
+import norduni.graphdb as nc
 
 
 class Command(BaseCommand):

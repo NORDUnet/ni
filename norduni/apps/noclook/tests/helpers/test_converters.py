@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from apps.noclook import helpers
+from norduni.apps.noclook import helpers
 
 
 class FileExportHelperTest(SimpleTestCase):

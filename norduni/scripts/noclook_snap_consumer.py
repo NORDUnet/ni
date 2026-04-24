@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 
-import utils
+from . import utils
 import argparse
 import logging
-from apps.noclook import helpers
-from apps.noclook.models import NodeHandle
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook.models import NodeHandle
 
 logger = logging.getLogger('noclook_consumer.snap')
 

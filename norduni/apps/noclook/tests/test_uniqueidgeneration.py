@@ -8,8 +8,8 @@ Created on 2014-06-26 1:40 PM
 from django.test import TestCase
 from django.db import transaction, IntegrityError
 from django.contrib.auth.models import User
-from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
-from apps.noclook import unique_ids
+from norduni.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
+from norduni.apps.noclook import unique_ids
 
 
 class UniqueIdGeneration(TestCase):

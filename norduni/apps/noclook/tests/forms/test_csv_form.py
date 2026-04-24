@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from unittest import skip
 from django.test import SimpleTestCase
-from apps.noclook.forms import common as forms
+from norduni.apps.noclook.forms import common as forms
 
 
 class CsvFormTest(SimpleTestCase):

@@ -12,14 +12,14 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Dropdown, UniqueIdGenerator, NordunetUniqueId
+from norduni.apps.noclook.models import NodeHandle, Dropdown, UniqueIdGenerator, NordunetUniqueId
 from django.core.exceptions import ObjectDoesNotExist
-from apps.noclook import forms
-from apps.noclook import activitylog
-from apps.noclook import helpers
-from apps.noclook import unique_ids
-import graphdb as nc
-from graphdb.exceptions import UniqueNodeError
+from norduni.apps.noclook import forms
+from norduni.apps.noclook import activitylog
+from norduni.apps.noclook import helpers
+from norduni.apps.noclook import unique_ids
+import norduni.graphdb as nc
+from norduni.graphdb.exceptions import UniqueNodeError
 
 
 # Helper functions

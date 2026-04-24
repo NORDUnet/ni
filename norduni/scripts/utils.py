@@ -12,8 +12,8 @@ import django_hack  # Keep
 
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
-from apps.noclook import activitylog
-from apps.noclook.models import NodeType, NodeHandle
+from norduni.apps.noclook import activitylog
+from norduni.apps.noclook.models import NodeType, NodeHandle
 
 logger = logging.getLogger('noclook_utils')
 django_hack.nop()

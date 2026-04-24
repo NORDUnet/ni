@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from ..neo4j_base import NeoTestCase
-from apps.noclook.forms import nordunet as forms
-from apps.noclook.models import NodeHandle, NodeType, Dropdown, NordunetUniqueId
+from norduni.apps.noclook.forms import nordunet as forms
+from norduni.apps.noclook.models import NodeHandle, NodeType, Dropdown, NordunetUniqueId
 
 
 class NordunetFormTest(NeoTestCase):

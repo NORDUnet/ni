@@ -3,7 +3,7 @@ __author__ = 'lundberg'
 
 from django import forms
 from . import common
-from apps.noclook.models import Dropdown
+from norduni.apps.noclook.models import Dropdown
 
 
 class NewSiteForm(common.NewSiteForm):
