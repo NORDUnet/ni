@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "norduni"
+version = "2.0.0"
+description = "NORDUnet Network Inventory (NOCLook)"
+requires-python = ">=3.10"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "django-activity-stream>1.9,<2.1",
+    "django-tastypie<0.15",
+    "neo4j-driver<2.0",
+    "psycopg2-binary<3.0",
+    "python-dateutil<3.0",
+    "xlwt<1.3",
+    "django-crispy-forms<2.0",
+    "django-contrib-comments<3.0",
+    "django-dotenv<1.5",
+    "django-dynamic-preferences<2.0",
+    "django-attachments<2.0",
+    "configparser",
+    "tzdata",
+]
+
+[project.optional-dependencies]
+saml = ["djangosaml2~=1.11"]
+dev  = ["ipython", "pytest"]
+
+[project.scripts]
+noclook-consumer         = "norduni.scripts.noclook_consumer:main"
+noclook-juniper-consumer = "norduni.scripts.noclook_juniper_consumer:main"
+noclook-snap-consumer    = "norduni.scripts.noclook_snap_consumer:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["norduni*"]
+
+[tool.pytest]
+testpaths = ["tests"]
