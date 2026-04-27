@@ -93,7 +93,7 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
     if result.get('Part_of', None):
         unit_node = result.get('Part_of')[0].get('node')
     else:
-        node_handle = nlu.get_unique_node_handle(unit_name, 'Unit', 'Logical')
+        node_handle = nlu.create_node_handle(unit_name, 'Unit', 'Logical')
         unit_node = node_handle.get_node()
         helpers.set_part_of(user, iface_node, unit_node.handle_id)
         logger.info('Unit %s.%s created.', iface_node.data['name'], unit_node.data['name'])
@@ -142,7 +142,7 @@ def insert_juniper_interfaces(router_node, interfaces):
             if 'Has' in result:
                 port_node = result.get('Has')[0].get('node')
             else:
-                node_handle = nlu.get_unique_node_handle(port_name, 'Port', 'Physical')
+                node_handle = nlu.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
                 helpers.set_has(user, router_node, port_node.handle_id)
             helpers.set_noclook_auto_manage(port_node, True)

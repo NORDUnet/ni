@@ -64,6 +64,23 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type, allowed_no
     return node_handle
 
 
+def create_node_handle(node_name, node_type_name, node_meta_type):
+    """
+    Takes the arguments needed to create a NodeHandle.
+    Returns a NodeHandle object.
+    """
+    user = get_user()
+    node_type = get_node_type(node_type_name)
+    node_handle = NodeHandle.objects.create(
+        node_name=node_name,
+        node_type=node_type,
+        node_meta_type=node_meta_type,
+        creator=user,
+        modifier=user
+    )
+    activitylog.create_node(user, node_handle)
+    return node_handle
+
 def get_relationship_model(relationship_id):
     return nc.get_relationship_model(nc.graphdb.manager, relationship_id)
 
