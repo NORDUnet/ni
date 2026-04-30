@@ -28,8 +28,9 @@ pg_dump norduni | gzip > $BACKUPDIR/postgres-$TODAY.sql.gz
 # Backup Neo4j data
 [ -d $BACKUPDIR/json ] && rm -r $BACKUPDIR/json
 mkdir $BACKUPDIR/json
-cd $NORDUNIDIR/src/scripts/
-./noclook_producer.py -O $BACKUPDIR/json
+cd $NORDUNIDIR
+# ni should be installed with pip install -e in the venv for this to work
+noclook_producer -O $BACKUPDIR/json
 cd $BACKUPDIR
 tar cfz ni_data-$TODAY.tar.gz json/
 rm -r json

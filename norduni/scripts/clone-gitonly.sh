@@ -25,7 +25,7 @@ if [ ! -d "$NISTORE_DIR/producers" ]; then
   ERROR=true
 fi
 
-if [ ! -d "$NORDUNI_DIR/src" ]; then
+if [ ! -d "$NORDUNI_DIR/norduni" ]; then
   echo "Error: no norduni @ $NORDUNI_DIR"
   ERROR=true
 fi
@@ -39,8 +39,8 @@ if [ $ERROR ]; then
   exit 1
 fi
 
-ENV_FILE="$NORDUNI_DIR/src/niweb/.env"
-NOCLOOK_DIR="$NORDUNI_DIR/src/scripts"
+ENV_FILE="$NORDUNI_DIR/.env"
+NOCLOOK_DIR="$NORDUNI_DIR/norduni/scripts"
 SQL_DUMP="$NISTORE_DIR/producers/noclook/sql"
 NI_PULL_CMD="$SCRIPT_DIR/git-scripts/ni-pull.sh"
 DB_NAME=$(grep DB_NAME $ENV_FILE | sed -e 's/^[^=]*=\s*//')
@@ -77,8 +77,9 @@ psql --quiet -f "$NOCLOOK_DIR/sql/reset-sequences-noclook.sql" norduni
 
 msg "Importing data from json"
 . $VIRTUAL_ENV/bin/activate
-cd $NOCLOOK_DIR
-python noclook_consumer.py -C $SCRIPT_DIR/restore.conf -I
+cd $NORDUNI_DIR
+# ni should be installed with pip install -e in the venv for this to work
+noclook-consumer -C $SCRIPT_DIR/restore.conf -I
 
 msg "Reset last modified"
 psql --quiet -f "$NOCLOOK_DIR/sql/fix-last-modified.sql" norduni
