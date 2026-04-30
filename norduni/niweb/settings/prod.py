@@ -2,7 +2,11 @@
 
 from os import environ
 import json
-from norduni.apps.saml2auth import config
+try:
+    # we first try to import a local config which can be customized, and fallback to the default/example config if it does not exist
+    from norduni.apps.saml2auth import config_local as config
+except ImportError:
+    from norduni.apps.saml2auth import config
 from .common import *
 
 __author__ = 'lundberg'
