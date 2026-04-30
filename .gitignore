@@ -19,3 +19,4 @@ tools/nerds
 docker/data
 .DS_Store
 norduni/apps/saml2auth/config_local.py
+*.egg-info
