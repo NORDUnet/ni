@@ -37,8 +37,6 @@ import norduni.graphdb as nc
 from norduni.apps.noclook import helpers
 from norduni.apps.nerds.lib.juniper_consumer import consume_juniper_conf
 
-django_hack.nop()
-
 logger = logging.getLogger('noclook_consumer.juniper')
 
 # This script is used for adding the objects collected with the

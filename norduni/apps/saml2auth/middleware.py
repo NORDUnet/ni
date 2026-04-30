@@ -2,12 +2,12 @@ from os import environ
 from django.shortcuts import render
 from saml2.s_utils import UnsupportedBinding
 from djangosaml2.backends import Saml2Backend
-from niweb.settings import prod as prod_settings
+from norduni.niweb.settings import prod as prod_settings
 from .utils import get_authorized_users
 
 
 ENABLE_AUTHORIZATION_BY_FILE = environ.get("ENABLE_AUTHORIZATION_BY_FILE", 'False').lower() == 'true'
-AUTH_GROUP_FILE = environ.get("AUTH_GROUP_FILE", "/opt/ni/src/niweb/auth_groups.ini")
+AUTH_GROUP_FILE = environ.get("AUTH_GROUP_FILE", "/var/opt/norduni/norduni/auth_groups.ini")
 authorized_users = get_authorized_users(AUTH_GROUP_FILE, allowed_groups=['*']) if ENABLE_AUTHORIZATION_BY_FILE else {}
 
 

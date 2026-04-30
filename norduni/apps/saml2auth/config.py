@@ -1,7 +1,7 @@
 from os import path
 import saml2
 from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
-from niweb.settings import common as settings
+from norduni.niweb.settings import common as settings
 
 
 APP_SERVER_NAME = settings.APP_SERVER_NAME

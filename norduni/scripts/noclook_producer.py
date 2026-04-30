@@ -31,9 +31,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from norduni.apps.noclook.models import NodeType
 import norduni.graphdb as nc
 
-
-django_hack.nop()
-
 # A NERDS producer for the NOCLook application. It should be used to take
 # backups of the data inserted manually in to the databases.
 
@@ -156,4 +153,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
