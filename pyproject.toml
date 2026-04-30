@@ -32,6 +32,7 @@ dev  = ["ipython", "pytest"]
 noclook-consumer         = "norduni.scripts.noclook_consumer:main"
 noclook-juniper-consumer = "norduni.scripts.noclook_juniper_consumer:main"
 noclook-snap-consumer    = "norduni.scripts.noclook_snap_consumer:main"
+noclook_producer         = "norduni.scripts.noclook_producer:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
