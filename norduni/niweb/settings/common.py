@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from pathlib import Path
-from os.path import normpath, join
+from os.path import normpath, join, basename
 from os import environ
 import dotenv
 
@@ -17,6 +17,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
 # The Django project package dir (norduni/niweb/)
 DJANGO_ROOT = str(Path(__file__).resolve().parent.parent)
+
+# Site name (used e.g. in email subject prefix)
+SITE_NAME = basename(DJANGO_ROOT)
 
 # Read .env for settings (CONFIG_FILE env var overrides, else repo root .env)
 config_file = environ.get('CONFIG_FILE', str(REPO_ROOT / '.env'))

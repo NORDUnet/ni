@@ -7,7 +7,7 @@ try:
     from norduni.apps.saml2auth import config_local as config
 except ImportError:
     from norduni.apps.saml2auth import config
-from .common import *
+from norduni.niweb.settings.common import *
 
 __author__ = 'lundberg'
 
