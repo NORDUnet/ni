@@ -31,11 +31,10 @@ test:
   variables:
     TEST_NEO4J_URI: bolt://neo4j:7687
     DB_HOST: postgres
-    DJANGO_SETTINGS_MODULE: niweb.settings.dev
+    DJANGO_SETTINGS_MODULE: norduni.niweb.settings.dev
     REPORTS_TO: markus@nordu.net
   script:
     - for i in $(seq 1 60); do if nc -z neo4j 7474; then break; fi; sleep 1; done
-    - cd src/niweb
     - coverage run --source='.' manage.py test
     - coverage report
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
