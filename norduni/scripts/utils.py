@@ -8,7 +8,7 @@ except ImportError:
     from configparser import ConfigParser as SafeConfigParser
 
 import random
-from . import django_setup # if you import this file, do not import django_setup again.
+from norduni.scripts import django_setup # if you import this file, do not import django_setup again.
 
 django_setup.nop()
 
