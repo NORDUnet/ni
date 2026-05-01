@@ -1,7 +1,6 @@
 *~
 *.pyc
-logs
-*.log
+*.log*
 db
 dependencies
 settings.py
