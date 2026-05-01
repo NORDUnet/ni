@@ -74,14 +74,14 @@ def main():
     args = parser.parse_args()
     # Load the configuration file
     if not args.D:
-        print 'Please provide a path to the data directory with -D.'
+        print('Please provide a path to the data directory with -D.')
         sys.exit(1)
     if args.V:
         logger.setLevel(logging.INFO)
 
-    print 'Inserting data...'
+    print('Inserting data...')
     run_consume(args.D)
-    print 'done.'
+    print('done.')
     return 0
 
 
