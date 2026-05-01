@@ -3,7 +3,7 @@ image: python:3.11.11
 
 services:
   - postgres:latest
-  - neo4j:3.5
+  - neo4j:4.4
 
 variables:
   POSTGRES_DB: norduni
