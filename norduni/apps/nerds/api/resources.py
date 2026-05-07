@@ -27,6 +27,7 @@ class NerdsResource(Resource):
             consumer.process()
         else:
             raise BadRequest('Could not find a nerds consumer that matches supplied data')
+        return bundle
     
     def get_consumer(self, data):
         host = data['host']
