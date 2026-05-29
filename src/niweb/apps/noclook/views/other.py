@@ -9,6 +9,9 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from re import escape as re_escape
 import json
+import zipfile
+from io import BytesIO
+from xml.sax.saxutils import escape as xml_escape
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
@@ -355,7 +358,7 @@ def gmaps_sites(request):
 @login_required
 def gmaps_optical_nodes(request):
     """
-    Return a json object with dicts of optical node and cables.
+    Return a json object with dicts of optical nodes and optical links.
     {
     nodes: [
         {
@@ -373,19 +376,13 @@ def gmaps_optical_nodes(request):
         }
     ]
     """
-    # Cypher query to get all cables with cable type fiber that are connected
-    # to two optical node.
+    # Cypher query to get all optical links that connect optical nodes
     q = """
-        MATCH (cable:Cable)
-        WHERE cable.cable_type = "Dark Fiber"
-        MATCH (cable)-[Connected_to]->(port)
-        WITH cable, port
-        MATCH (port)<-[:Has*0..]-(equipment)
-        WHERE (equipment:Optical_Node) AND NOT equipment.type =~ "(?i).*tss.*"
-        WITH cable, port, equipment
-        MATCH p2=(equipment)-[:Located_in]->()<-[:Has*0..]-(loc)
+        MATCH (link:Optical_Link)-[:Depends_on]->(port:Port)<-[:Has]-(equipment:Optical_Node)
+        WITH link, equipment
+        MATCH (equipment)-[:Located_in]->()<-[:Has*0..]-(loc)
         WHERE (loc:Site)
-        RETURN cable, equipment, loc
+        RETURN link, equipment, loc
         """
     result = nc.query_to_list(nc.graphdb.manager, q)
     nodes = {}
@@ -402,17 +399,289 @@ def gmaps_optical_nodes(request):
             'lat': float(str(item['loc'].get('latitude', 0)))
         }
         edge = {
-            'name': item['cable']['name'],
-            'url': helpers.get_node_url(item['cable']['handle_id']),
+            'name': item['link']['name'],
+            'url': helpers.get_node_url(item['link']['handle_id']),
             'end_points': [coords]
         }
         nodes[item['equipment']['name']] = node
-        if item['cable']['name'] in edges:
-            edges[item['cable']['name']]['end_points'].append(coords)
+        if item['link']['name'] in edges:
+            edges[item['link']['name']]['end_points'].append(coords)
         else:
-            edges[item['cable']['name']] = edge
+            edges[item['link']['name']] = edge
     response = HttpResponse(content_type='application/json')
     json.dump({'nodes': list(nodes.values()), 'edges': list(edges.values())}, response)
+    return response
+
+
+@login_required
+def gmaps_optical_paths(request, node_handle_id):
+    """
+    Return optical paths that include the specified optical node.
+    Returns JSON with path information and all the nodes in each path sequence.
+    Only returns paths with operational_state = "In service".
+    Includes paths where the node is an endpoint or a transit node.
+    """
+    q = """
+        MATCH (node:Optical_Node)
+        WHERE node.handle_id = $handle_id
+        
+        // Find all paths that pass through this node via optical links
+        MATCH (node)-[:Has]->(port:Port)<-[:Depends_on]-(link:Optical_Link)
+        <-[:Depends_on]-(oms:Optical_Multiplex_Section)<-[:Depends_on]-(path:Optical_Path)
+        WHERE path.operational_state = "In service"
+        
+        WITH DISTINCT path
+        
+        // Get all nodes in each path
+        MATCH (path)-[:Depends_on]->(oms:Optical_Multiplex_Section)
+        -[:Depends_on]->(link:Optical_Link)
+        -[:Depends_on]->(p:Port)<-[:Has]-(on:Optical_Node)
+        WITH path, oms, link, on
+        MATCH (on)-[:Located_in]->()<-[:Has*0..]-(loc:Site)
+        WITH path, oms.name as oms_name, link.name as link_name, on, loc
+        ORDER BY oms_name, link_name
+        WITH path, collect({node: on, site: loc, oms: oms_name, link: link_name}) as all_nodes
+        RETURN path, all_nodes
+        """
+    result = nc.query_to_list(nc.graphdb.manager, q, handle_id=int(node_handle_id))
+    
+    paths = []
+    for item in result:
+        # Build ordered path using graph traversal
+        all_nodes_data = item['all_nodes']
+        
+        if not all_nodes_data:
+            continue
+        
+        # Build adjacency graph from links
+        # Each link connects exactly 2 nodes
+        adjacency = {}  # node_id -> list of (neighbor_id, link_name)
+        node_lookup = {}  # node_id -> node_data
+        
+        # Group nodes by link
+        links_dict = {}
+        for node_data in all_nodes_data:
+            link_name = node_data['link']
+            node_id = node_data['node']['handle_id']
+            
+            if link_name not in links_dict:
+                links_dict[link_name] = []
+            links_dict[link_name].append(node_data)
+            node_lookup[node_id] = node_data
+        
+        # Build adjacency list
+        for link_name, link_nodes in links_dict.items():
+            if len(link_nodes) == 2:
+                node1_id = link_nodes[0]['node']['handle_id']
+                node2_id = link_nodes[1]['node']['handle_id']
+                
+                if node1_id not in adjacency:
+                    adjacency[node1_id] = []
+                if node2_id not in adjacency:
+                    adjacency[node2_id] = []
+                
+                adjacency[node1_id].append((node2_id, link_name))
+                adjacency[node2_id].append((node1_id, link_name))
+        
+        # Find path endpoints (nodes with only 1 connection) or start from any node
+        endpoints = [nid for nid, neighbors in adjacency.items() if len(neighbors) == 1]
+        
+        if not endpoints:
+            # No clear endpoints, start from first node
+            start_node = list(adjacency.keys())[0] if adjacency else None
+        else:
+            # Start from one endpoint
+            start_node = endpoints[0]
+        
+        if not start_node:
+            continue
+        
+        # Traverse the path using DFS
+        ordered_nodes = []
+        visited = set()
+        
+        def dfs(node_id):
+            if node_id in visited:
+                return
+            visited.add(node_id)
+            ordered_nodes.append(node_lookup[node_id])
+            
+            # Visit unvisited neighbors
+            if node_id in adjacency:
+                for neighbor_id, _ in adjacency[node_id]:
+                    if neighbor_id not in visited:
+                        dfs(neighbor_id)
+        
+        dfs(start_node)
+        
+        path_nodes = []
+        for node_data in ordered_nodes:
+            path_nodes.append({
+                'name': node_data['node']['name'],
+                'handle_id': node_data['node']['handle_id'],
+                'lng': float(str(node_data['site'].get('longitude', 0))),
+                'lat': float(str(node_data['site'].get('latitude', 0)))
+            })
+        
+        paths.append({
+            'id': item['path']['handle_id'],
+            'name': item['path']['name'],
+            'description': item['path'].get('description', ''),
+            'operational_state': item['path'].get('operational_state', ''),
+            'nodes': path_nodes
+        })
+    
+    response = HttpResponse(content_type='application/json')
+    json.dump({'paths': paths}, response)
+    return response
+
+
+@login_required
+def optical_path_kmz(request, handle_id):
+    """
+    Generate and download a KMZ file for an optical path.
+    """
+    # Get the optical path
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    path_node = nh.get_node()
+    
+    # Query to get all nodes in the optical path
+    q = """
+        MATCH (path:Optical_Path)
+        WHERE path.handle_id = $handle_id
+        MATCH (path)-[:Depends_on]->(oms:Optical_Multiplex_Section)
+        -[:Depends_on]->(link:Optical_Link)
+        -[:Depends_on]->(p:Port)<-[:Has]-(on:Optical_Node)
+        WITH path, oms, link, on
+        MATCH (on)-[:Located_in]->()<-[:Has*0..]-(loc:Site)
+        WITH path, oms.name as oms_name, link.name as link_name, on, loc
+        ORDER BY oms_name, link_name
+        WITH path, collect({node: on, site: loc, oms: oms_name, link: link_name}) as all_nodes
+        RETURN path, all_nodes
+        """
+    result = nc.query_to_list(nc.graphdb.manager, q, handle_id=int(handle_id))
+    
+    if not result:
+        raise Http404("Optical path not found or has no nodes")
+    
+    item = result[0]
+    all_nodes_data = item['all_nodes']
+    
+    # Build ordered path using the same logic as gmaps_optical_paths
+    adjacency = {}
+    node_lookup = {}
+    links_dict = {}
+    
+    for node_data in all_nodes_data:
+        link_name = node_data['link']
+        node_id = node_data['node']['handle_id']
+        
+        if link_name not in links_dict:
+            links_dict[link_name] = []
+        links_dict[link_name].append(node_data)
+        node_lookup[node_id] = node_data
+    
+    # Build adjacency list
+    for link_name, link_nodes in links_dict.items():
+        if len(link_nodes) == 2:
+            node1_id = link_nodes[0]['node']['handle_id']
+            node2_id = link_nodes[1]['node']['handle_id']
+            
+            if node1_id not in adjacency:
+                adjacency[node1_id] = []
+            if node2_id not in adjacency:
+                adjacency[node2_id] = []
+            
+            adjacency[node1_id].append((node2_id, link_name))
+            adjacency[node2_id].append((node1_id, link_name))
+    
+    # Find start node
+    endpoints = [nid for nid, neighbors in adjacency.items() if len(neighbors) == 1]
+    start_node = endpoints[0] if endpoints else list(adjacency.keys())[0] if adjacency else None
+    
+    if not start_node:
+        raise Http404("Cannot determine path sequence")
+    
+    # Traverse path
+    ordered_nodes = []
+    visited = set()
+    
+    def dfs(node_id):
+        if node_id in visited:
+            return
+        visited.add(node_id)
+        ordered_nodes.append(node_lookup[node_id])
+        
+        if node_id in adjacency:
+            for neighbor_id, _ in adjacency[node_id]:
+                if neighbor_id not in visited:
+                    dfs(neighbor_id)
+    
+    dfs(start_node)
+    
+    # Generate KML
+    path_name = item['path']['name']
+    path_description = item['path'].get('description', '')
+    
+    kml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
+    kml += '<Document>\n'
+    kml += f'<name>{xml_escape(path_name)}</name>\n'
+    if path_description:
+        kml += f'<description>{xml_escape(path_description)}</description>\n'
+    
+    # Add line style
+    kml += '<Style id="pathLine">\n'
+    kml += '<LineStyle>\n'
+    kml += '<color>ff0000ff</color>\n'  # Red color
+    kml += '<width>4</width>\n'
+    kml += '</LineStyle>\n'
+    kml += '</Style>\n'
+    
+    # Add placemarks for each node
+    for node_data in ordered_nodes:
+        node_name = node_data['node']['name']
+        site = node_data['site']
+        # Round coordinates to 3 decimal places (~111m precision) for security
+        lng = round(float(str(site.get('longitude', 0))), 3)
+        lat = round(float(str(site.get('latitude', 0))), 3)
+        
+        kml += '<Placemark>\n'
+        kml += f'<name>{xml_escape(node_name)}</name>\n'
+        kml += '<Point>\n'
+        kml += f'<coordinates>{lng},{lat},0</coordinates>\n'
+        kml += '</Point>\n'
+        kml += '</Placemark>\n'
+    
+    # Add the path line
+    kml += '<Placemark>\n'
+    kml += f'<name>{xml_escape(path_name)} Path</name>\n'
+    kml += '<styleUrl>#pathLine</styleUrl>\n'
+    kml += '<LineString>\n'
+    kml += '<coordinates>\n'
+    for node_data in ordered_nodes:
+        site = node_data['site']
+        # Round coordinates to 3 decimal places (~111m precision) for security
+        lng = round(float(str(site.get('longitude', 0))), 3)
+        lat = round(float(str(site.get('latitude', 0))), 3)
+        kml += f'{lng},{lat},0\n'
+    kml += '</coordinates>\n'
+    kml += '</LineString>\n'
+    kml += '</Placemark>\n'
+    
+    kml += '</Document>\n'
+    kml += '</kml>\n'
+    
+    # Create KMZ (zipped KML)
+    kmz_buffer = BytesIO()
+    with zipfile.ZipFile(kmz_buffer, 'w', zipfile.ZIP_DEFLATED) as kmz:
+        kmz.writestr('doc.kml', kml.encode('utf-8'))
+    
+    # Prepare response
+    response = HttpResponse(kmz_buffer.getvalue(), content_type='application/vnd.google-earth.kmz')
+    filename = f'{path_name.replace(" ", "_")}.kmz'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
     return response
 
 
