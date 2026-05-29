@@ -69,3 +69,9 @@
 {% endif %}
 {% include "noclook/detail/includes/depend_include.html" %}
 {% endblock %}
+
+{% block content_footer %}
+    {{ block.super }}
+    <a href="/gmaps/optical-nodes/?path={{ node.data.handle_id }}" class="btn btn-info"><i class="icon-map-marker icon-white"></i> Show in Optical Node Map</a>
+    <a href="/optical-path/{{ node.data.handle_id }}/kmz/" class="btn btn-info"><i class="icon-download-alt icon-white"></i> Download KMZ</a>
+{% endblock %}
