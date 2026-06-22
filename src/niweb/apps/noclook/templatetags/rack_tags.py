@@ -123,7 +123,7 @@ class Floorplan():
 
     def add_tile(self, x, y, tile):
         #TODO: check if inside floor grid
-        if x == -1 or y == -1:
+        if x == -1 or y == -1 or x is None:
             self.unplaced += [tile]
         self.floorplan[(x,y)].append(tile)
 

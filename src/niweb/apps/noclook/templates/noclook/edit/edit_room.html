@@ -9,5 +9,19 @@
         {{ form.floor | as_crispy_field}}
         {% include "noclook/edit/includes/parent_group.html" %}
     </div>
+
+
+    <div class="accordion" id="edit-accordion">
+      {% if form.floorplan_col %}
+        {% accordion 'Floorplan (optional)' 'floorplan-edit' '#edit-accordion' %}
+          {{ form.floorplan_col | as_crispy_field}}
+          {{ form.floorplan_row | as_crispy_field}}
+          {% load rack_tags %}
+          <div>
+            {% noclook_floorplan_placement node form.floorplan_door_x form.floorplan_door_y 'Access door placement' %}
+          </div>
+        {% endaccordion %}
+      {% endif %}
+    </div>
 {% endblock %}
 
