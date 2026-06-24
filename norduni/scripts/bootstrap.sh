@@ -5,8 +5,8 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR="$(pwd)"
 popd > /dev/null
 VIRTUAL_ENV="/var/opt/norduni/norduni_environment"
-MANAGE_PY="/var/opt/norduni/norduni/src/niweb"
-NOCLOOK_DIR="/var/opt/norduni/norduni/src/scripts"
+MANAGE_PY="/var/opt/norduni/norduni"
+NOCLOOK_DIR="/var/opt/norduni/norduni/norduni/scripts"
 NISTORE_DIR="/var/opt/norduni/nistore"
 NEO4J_DIR="/var/opt/neo4j-community"
 DB_NAME="norduni"

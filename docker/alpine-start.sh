@@ -1,6 +1,6 @@
 #!/bin/sh
 
-MANAGE_PY=/app/niweb/manage.py
+MANAGE_PY=/app/manage.py
 case "$*" in
   dev)
     export SECRET_KEY=$(python -c "import random; print(''.join([random.SystemRandom().choice('abcdefghijlkmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(50)]))")
@@ -33,8 +33,8 @@ case "$*" in
     python $MANAGE_PY "$@"
     ;;
   consume-restore)
-    if [ ! -f /app/scripts/restore.conf ]; then
-      cat <<EOM > /app/scripts/restore.conf
+    if [ ! -f /app/norduni/scripts/restore.conf ]; then
+      cat <<EOM > /app/norduni/scripts/restore.conf
 # Set after how many days data should be considered old.
 [data_age]
 juniper_conf = 30
@@ -54,14 +54,14 @@ cfengine_report =
 noclook = /opt/noclook
 EOM
     fi
-    cd /app/scripts
-    python noclook_consumer.py -C restore.conf -I
+    cd /app
+    python -m norduni.scripts.noclook_consumer -C norduni/scripts/restore.conf -I
     ;;
   consume)
-    if [ ! -f /app/scripts/consume.conf ]; then
-      cat > /app/scripts/consume.conf
+    if [ ! -f /app/norduni/scripts/consume.conf ]; then
+      cat > /app/norduni/scripts/consume.conf
     fi
-    cd /app/scripts
-    python noclook_consumer.py -C consume.conf -I
+    cd /app
+    python -m norduni.scripts.noclook_consumer -C norduni/scripts/consume.conf -I
     ;;
 esac

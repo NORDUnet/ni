@@ -6,7 +6,9 @@ RUN pip3 install --upgrade pip --break-system-packages
 RUN mkdir /app
 WORKDIR /app
 
-ADD src /app
+ADD manage.py /app/manage.py
+ADD pyproject.toml /app/pyproject.toml
+ADD norduni /app/norduni
 ADD requirements /app/requirements
 RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python3-dev git && \
       pip3 install --break-system-packages -r requirements/dev.txt && \
