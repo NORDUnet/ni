@@ -11,8 +11,8 @@
             {{ form.name | as_crispy_field}}
             {{ form.label | as_crispy_field}}
             {% if location_nh %}
-            Location: <br>
-            {% noclook_node_to_link location_nh %}
+            Location <br>
+            {% noclook_node_to_link location_nh %} <a class="label label-important" href="{% url "create_node" "rack" %}"">Switch to location chooser</a>
             {% else %}
             {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: dk-ore H0.08' min_length=2 %}
             {% endif %}
