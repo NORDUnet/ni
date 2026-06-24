@@ -407,7 +407,7 @@ class NewRackForm(forms.Form):
 
     name = forms.CharField(help_text='Name should be the grid location.')
     label = forms.CharField(required=False, help_text='A short label that describes the rack: ZOOM or IBM ESS')
-    relationship_location = relationship_field('location', True)
+    relationship_location = relationship_field('location')
 
 
 class EditRackForm(forms.Form):

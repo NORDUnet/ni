@@ -216,6 +216,7 @@ def noclook_floorplan(site):
         floorplan.add_door(door_x, door_y)
     return {
         'floorplan': floorplan,
+        'parent': site,
     }
 
 
