@@ -1,7 +1,6 @@
 *~
 *.pyc
-logs
-*.log
+*.log*
 db
 dependencies
 settings.py
@@ -18,3 +17,5 @@ src/niweb/sitestatic
 tools/nerds
 docker/data
 .DS_Store
+norduni/apps/saml2auth/config_local.py
+*.egg-info
