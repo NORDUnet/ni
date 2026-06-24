@@ -9,7 +9,7 @@ set -x
 base_dir=${base_dir-"/var/opt/norduni"}
 name=${name-"noclook"}
 # These *can* be set from Puppet, but are less expected to...
-project_dir=${project_dir-"${base_dir}/norduni/src/niweb"}
+project_dir=${project_dir-"${base_dir}/norduni"}
 log_dir=${log_dir-'/var/log/norduni'}
 state_dir=${state_dir-"${base_dir}/run"}
 media_dir=${media_dir-"${base_dir}/media"}
