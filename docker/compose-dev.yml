@@ -54,8 +54,8 @@ services:
       - path: ./dotenv-local
         required: false
     volumes:
-      - ../norduni/niweb:/app/norduni/niweb
-      - ../norduni/scripts:/app/norduni/scripts
+      - ../norduni:/app/norduni
+      #- ../norduni/scripts:/app/norduni/scripts
     command: ["dev"]
     stdin_open: true
     tty: true
