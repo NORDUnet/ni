@@ -87,9 +87,18 @@ def search(request, value='', form=None):
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
-            match (n:Node) where any(prop in keys(n) where n[prop] =~ $search) return n
+            match (n:Node) 
+            with n, toLower(coalesce(n.name, "")) as title, toLower($search_value) as search
+            where any(prop in keys(n) where n[prop] =~ $search) 
+            with n, case 
+                when title = search then 3
+                when title starts with search then 2
+                when title contains search then 1
+                else 0 
+                end as title_match
+            return n order by title_match desc, n.name
             """
-        nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
+        nodes = nc.query_to_list(nc.graphdb.manager, q, search=query, search_value=value)
         if form == 'csv':
             return helpers.dicts_to_csv_response([n['n'] for n in nodes])
         elif form == 'xls':
