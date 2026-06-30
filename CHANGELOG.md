@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-06-30
+### Changed
+- Rack location uses typeahead search instead of combo dropdowns.
+
+### Added
+- Floorplans to rooms along with a button for adding racks directly
+
 ## 2026-04-23
 ### Changed
 - Moved norduniclient to be an internal package - thus it is no longer a dependency
