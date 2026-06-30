@@ -42,6 +42,7 @@
                     <!-- <th>Service</th> -->
                     <th>Dependent service</th>
                     <th>Description</th>
+                    <th>Operational state</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,13 +53,14 @@
                                 <!--<td>{{ row.service_name }}</td> -->
                                 <td><a href="{% noclook_node_to_url dep.handle_id %}">{{ dep.name }}</a></td>
                                 <td>{{ dep.description|default:"" }}</td>
+                                <td>{{ dep.operational_state|default:"" }}</td>
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr class="muted">
                             <!--<td>{{ row.service_name }}</td> -->
                             <td colspan="3">
-                                {% if row.found %}No dependent services{% else %}Service not found{% endif %}
+                                {% if row.found %}No dependent services{% else %}Service {{ row.service_name }} not found{% endif %}
                             </td>
                         </tr>
                     {% endif %}

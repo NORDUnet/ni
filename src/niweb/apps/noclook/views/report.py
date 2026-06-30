@@ -42,7 +42,7 @@ def get_dependent_services(request):
                 ORDER BY dependent.name
                 RETURN service_name,
                        source IS NOT NULL AS found,
-                       collect(DISTINCT dependent { .name, .description, .handle_id }) AS dependents
+                       collect(DISTINCT dependent { .name, .description, .handle_id, .operational_state }) AS dependents
                 ORDER BY service_name
                 """
             services = nc.query_to_list(
