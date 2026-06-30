@@ -67,6 +67,13 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if dependent.services %}
+            <div class="clearfix" style="margin-bottom: 1em;">
+                {% ticket_info dependent.services %}
+            </div>
+        {% endif %}
+        
     {% elif posted %}
         <p>No services found.</p>
     {% endif %}

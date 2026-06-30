@@ -48,10 +48,23 @@ def get_dependent_services(request):
             services = nc.query_to_list(
                 nc.graphdb.manager, q, service_names=service_names
             )
+    # Flatten every row's dependents into a single, de-duplicated list (keyed by
+    # handle_id) so the ticket_info tag can summarise all dependent services.
+    dependent_services = list(
+        {
+            dep["handle_id"]: dep
+            for row in services
+            for dep in row["dependents"]
+        }.values()
+    )
     return render(
         request,
         "noclook/reports/service_dependency_report.html",
-        {"services": services, "posted": posted},
+        {
+            "services": services,
+            "posted": posted,
+            "dependent": {"services": dependent_services},
+        },
     )
 
 @login_required
