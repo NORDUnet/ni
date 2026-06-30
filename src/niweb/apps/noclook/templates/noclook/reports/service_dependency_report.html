@@ -26,12 +26,8 @@
         <div class="well">
             <p>Found {{ dependent.services|length }} dependent service{{ dependent.services|length|pluralize }}.</p>
             <div>Services:
-                {% for row in services %}
-                    {% for dep in row.dependents %}
-                        <span> 
-                            {{ dep.name }},
-                        </span>
-                    {% endfor %}
+                {% for dep_svc in dependent.services %}
+                    <span>{{ dep_svc.name }}{% if not forloop.last %}, {% endif %}</span>
                 {% endfor %}
             </div>
         </div>
