@@ -22,6 +22,7 @@ import graphdb as nc
 def host_reports(request):
     return render(request, "noclook/reports/host_reports.html", {})
 
+
 @login_required
 def get_dependent_services(request):
     """
@@ -52,9 +53,7 @@ def get_dependent_services(request):
     # handle_id) so the ticket_info tag can summarise all dependent services.
     dependent_services = list(
         {
-            dep["handle_id"]: dep
-            for row in services
-            for dep in row["dependents"]
+            dep["handle_id"]: dep for row in services for dep in row["dependents"]
         }.values()
     )
     return render(
@@ -66,6 +65,7 @@ def get_dependent_services(request):
             "dependent": {"services": dependent_services},
         },
     )
+
 
 @login_required
 def host_users(request, host_user_name=None):
