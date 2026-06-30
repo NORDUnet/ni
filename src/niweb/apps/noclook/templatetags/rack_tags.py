@@ -207,7 +207,7 @@ def noclook_floorplan(site):
         return
 
     floorplan = Floorplan(col, row)
-    for r in site.get_has().get('Has'):
+    for r in (site.get_has() or {}).get('Has', []):
         floorplan.add_node(r.get('node'))
 
     door_x = site.data.get('floorplan_door_x')
