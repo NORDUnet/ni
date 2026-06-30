@@ -24,7 +24,7 @@
 
     {% if services %}
         <div class="well">
-            <p>Found {{ services|length }} service{{ services|pluralize }}.</p>
+            <p>Found {{ dependent.services|length }} dependent service{{ dependent.services|length|pluralize }}.</p>
             <div>Services:
                 {% for row in services %}
                     {% for dep in row.dependents %}
