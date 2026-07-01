@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2026-07-01
+### Added
+- Report functionality for checking service dependencies between NI systems.
+
 ## 2026-06-30
 ### Changed
 - Rack location uses typeahead search instead of combo dropdowns.
