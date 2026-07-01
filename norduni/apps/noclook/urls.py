@@ -81,6 +81,7 @@ urlpatterns = [
     path('reports/hosts/host-security-class/<status>/', report.host_security_class),
     re_path(r'^reports/unique-ids\.(?P<file_format>xls|csv)$', report.download_unique_ids),
     path('reports/unique-ids/', report.unique_ids),
+    path('reports/service-dependencies/', report.get_dependent_services, name='service_dependency_report'),
     re_path(r'^reports/rack-cables/(?P<handle_id>\d+)\.(?P<file_format>xls|csv)$', report.download_rack_cables),
 
     # -- list views
