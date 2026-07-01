@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Report functionality for checking service dependencies between NI systems.
 
+### Changed
+- Ordering of search results on the main search result page. Exact name matches are now ranked higher, followed by names starting with the search term, if it is contained in, and then the rest.
+
 ## 2026-06-30
 ### Changed
 - Rack location uses typeahead search instead of combo dropdowns.
