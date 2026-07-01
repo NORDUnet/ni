@@ -9,7 +9,7 @@ set -x
 base_dir=${base_dir-"/var/opt/norduni"}
 name=${name-"noclook"}
 # These *can* be set from Puppet, but are less expected to...
-project_dir=${project_dir-"${base_dir}/norduni/src/niweb"}
+project_dir=${project_dir-"${base_dir}/norduni"}
 log_dir=${log_dir-'/var/log/norduni'}
 state_dir=${state_dir-"${base_dir}/run"}
 media_dir=${media_dir-"${base_dir}/media"}
@@ -17,7 +17,7 @@ workers=${workers-1}
 worker_class=${worker_class-sync}
 worker_threads=${worker_threads-1}
 worker_timeout=${worker_timeout-30}
-gunicorn_args="--bind 0.0.0.0:8080 -w ${workers} -k ${worker_class} --threads ${worker_threads} -t ${worker_timeout} niweb.wsgi"
+gunicorn_args="--bind 0.0.0.0:8080 -w ${workers} -k ${worker_class} --threads ${worker_threads} -t ${worker_timeout} norduni.niweb.wsgi"
 
 chown -R ni: "${log_dir}" "${state_dir}" "${media_dir}"
 

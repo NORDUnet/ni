@@ -4,8 +4,8 @@ Some background reading can be found at https://portal.nordu.net/display/NI/NORD
 
 Other components needed:
 
-- neo4j >= 3.4 and < 4.0
-- postgresql 9.4 or newer
+- neo4j >=4.4
+- postgresql 16 or newer
 
 ## Quick up and running in a docker instance
 
