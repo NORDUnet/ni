@@ -503,6 +503,7 @@ def new_provider(request, **kwargs):
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewProviderForm()
+
     return render(request, 'noclook/create/create_provider.html', {'form': form})
 
 
@@ -513,13 +514,19 @@ def new_rack(request, **kwargs):
         if form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'rack', 'Location')
             helpers.form_update_node(request.user, nh.handle_id, form)
-            if form.cleaned_data['relationship_location']:
-                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+            if kwargs.get('parent_id', None) or form.cleaned_data['relationship_location']:
+                parent_id = kwargs.get('parent_id', None) or form.cleaned_data['relationship_location']
+                parent_nh = NodeHandle.objects.get(pk=parent_id)
                 helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewRackForm()
-    return render(request, 'noclook/create/create_rack.html', {'form': form})
+        # parent is location here...
+        location_nh = None
+        if kwargs.get('parent_id', None):
+            parent_id = kwargs.get('parent_id', None)
+            location_nh = NodeHandle.objects.get(pk=parent_id)
+    return render(request, 'noclook/create/create_rack.html', {'form': form, 'location_nh': location_nh})
 
 
 @staff_member_required

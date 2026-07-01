@@ -30,6 +30,10 @@
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
+
+{% load rack_tags %}
+{% noclook_floorplan node %}
+
 <div class="section">
     <div class="pull-right">
         {% table_search "locations" %}

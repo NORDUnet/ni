@@ -123,7 +123,7 @@ class Floorplan():
 
     def add_tile(self, x, y, tile):
         #TODO: check if inside floor grid
-        if x == -1 or y == -1:
+        if x == -1 or y == -1 or x is None:
             self.unplaced += [tile]
         self.floorplan[(x,y)].append(tile)
 
@@ -207,7 +207,7 @@ def noclook_floorplan(site):
         return
 
     floorplan = Floorplan(col, row)
-    for r in site.get_has().get('Has'):
+    for r in (site.get_has() or {}).get('Has', []):
         floorplan.add_node(r.get('node'))
 
     door_x = site.data.get('floorplan_door_x')
@@ -216,6 +216,7 @@ def noclook_floorplan(site):
         floorplan.add_door(door_x, door_y)
     return {
         'floorplan': floorplan,
+        'parent': site,
     }
 
 
@@ -227,7 +228,7 @@ def noclook_floorplan_placement(site, field_x, field_y, title="Floorplan placeme
         return
     floorplan = Floorplan(col, row)
 
-    for r in site.get_has().get('Has'):
+    for r in (site.get_has() or {}).get('Has', []):
         floorplan.add_node(r.get('node'))
     door_x = site.data.get('floorplan_door_x')
     door_y = site.data.get('floorplan_door_y')
