@@ -216,10 +216,13 @@ def get_peering_partner(peering):
             logger.error('Found more than one Peering Partner with AS number %s', peer_properties['as_number'])
         if not peer_node:
             node_handle = nlu.get_unique_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
-            peer_node = node_handle.get_node()
-            helpers.set_noclook_auto_manage(peer_node, True)
-            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-            logger.info('Peering Partner %s AS(%s) created.', peer_properties['name'], peer_properties['as_number'])
+            if node_handle:
+                peer_node = node_handle.get_node()
+                helpers.set_noclook_auto_manage(peer_node, True)
+                helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+                logger.info('Peering Partner %s AS(%s) created.', peer_properties['name'], peer_properties['as_number'])
+            else:
+                logger.warning('Could not locate or create Peering Partner %s AS(%s).', peer_properties['name'], peer_properties['as_number'])
     if not peer_node and peering.get('description'):
         res = NodeHandle.objects.filter(
             node_name__iexact=peer_properties['name'],
