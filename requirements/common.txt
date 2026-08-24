@@ -10,5 +10,5 @@ django-contrib-comments<3.0
 django-dotenv<1.5
 django-dynamic-preferences<2.0
 django-attachments<2.0
-configparser
+configparser~=7.2
 tzdata

@@ -65,22 +65,21 @@ def get_authorized_users(filename, allowed_groups=["su"]):
         return auth_data
 
     def check_config_file(filename):
-        configparser.SafeConfigParser
         config = configparser.ConfigParser()
         required_sections = ["GROUPS", "GROUPS.STAFF"]
 
         try:
             file = config.read(filename)
             if len(file) == 0:
-                raise IOError
-        except IOError:
-            print("Could not find configuration file %s" % filename)
+                raise OSError
+        except OSError:
+            print(f"Could not find configuration file {filename}")
             sys.exit(1)
         except configparser.ParsingError:
-            print("There was an error parsing %s" % filename)
+            print(f"There was an error parsing {filename}")
             sys.exit(1)
-        except Exception as e:
-            print("There was an unknown error parsing %s: %s" % filename, e)
+        except Exception as e: # noqa: BLE001
+            print(f"There was an unknown error parsing {filename}: {e}")
             sys.exit(1)
         for sect in required_sections:
             if not config.has_section(sect):
