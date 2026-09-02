@@ -98,7 +98,7 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
         helpers.set_part_of(user, iface_node, unit_node.handle_id)
         logger.info('Unit %s.%s created.', iface_node.data['name'], unit_node.data['name'])
     helpers.set_noclook_auto_manage(unit_node, True)
-    unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
+    unit['ip_addresses'] = [address.lower() for address in (unit.get('address') or []) if address]
     helpers.dict_update_node(user, unit_node.handle_id, unit, ['description', 'ip_addresses', 'vlanid'])
     auto_depend_services(unit_node.handle_id, unit.get('description', ''), service_id_regex, 'Unit')
 
